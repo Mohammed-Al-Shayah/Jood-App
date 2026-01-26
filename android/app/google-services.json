@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "65140272990",
+    "project_id": "jood-project-01",
+    "storage_bucket": "jood-project-01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:65140272990:android:86a697f6d950c2123729cf",
+        "android_client_info": {
+          "package_name": "com.example.jood"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjcsDYhVa9WizLECWqBwdv0zuZwVW04JM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
