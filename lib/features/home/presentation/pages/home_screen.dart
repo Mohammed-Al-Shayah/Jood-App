@@ -74,6 +74,7 @@ class HomeScreen extends StatelessWidget {
                           name: item.name,
                           badge: item.badge,
                           price: item.priceFrom,
+                          discount: item.discount,
                           meta: item.meta,
                           slots: item.slotsLeft,
                           rating: item.rating,

@@ -11,6 +11,7 @@ class RestaurantCard extends StatelessWidget {
     required this.name,
     required this.badge,
     required this.price,
+    required this.discount,
     required this.meta,
     required this.slots,
     required this.rating,
@@ -21,6 +22,7 @@ class RestaurantCard extends StatelessWidget {
   final String name;
   final String badge;
   final String price;
+  final String discount;
   final String meta;
   final String slots;
   final String rating;
@@ -29,6 +31,23 @@ class RestaurantCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final trimmedPrice = price.trim();
+    final lowerPrice = trimmedPrice.toLowerCase();
+    final hasFromLabel = lowerPrice.startsWith('from ');
+    final priceLabel = hasFromLabel ? 'From' : '';
+    final priceValue = hasFromLabel
+        ? trimmedPrice.substring(5).trim()
+        : trimmedPrice;
+    final hasBadge = badge.trim().isNotEmpty;
+    final hasDiscount = discount.trim().isNotEmpty || hasBadge;
+    final showDiscountValue = discount.trim().isNotEmpty;
+    final afterDiscountText = showDiscountValue
+        ? 'After discount ${discount.trim()}'
+        : '';
+    final slotsText = hasDiscount && afterDiscountText.isNotEmpty
+        ? afterDiscountText
+        : slots;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -55,24 +74,28 @@ class RestaurantCard extends StatelessWidget {
                     height: 160.h,
                     width: double.infinity,
                     child: ClipRRect(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(16.r)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(16.r),
+                      ),
                       child: SizedBox.expand(child: image),
                     ),
                   ),
-                  Positioned(
-                    top: 12.h,
-                    left: 12.w,
-                    child: Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        borderRadius: BorderRadius.circular(20.r),
+                  if (hasBadge)
+                    Positioned(
+                      top: 12.h,
+                      left: 12.w,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 6.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(20.r),
+                        ),
+                        child: Text(badge, style: AppTextStyles.badge),
                       ),
-                      child: Text(badge, style: AppTextStyles.badge),
                     ),
-                  ),
                 ],
               ),
               Padding(
@@ -123,39 +146,93 @@ class RestaurantCard extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: 10.h),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(price, style: AppTextStyles.cardPrice),
-                            SizedBox(height: 2.h),
-                            Text(slots, style: AppTextStyles.cardSlots),
-                          ],
-                        ),
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 18.w,
-                            vertical: 10.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            borderRadius: BorderRadius.circular(12.r),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.ctaShadow,
-                                blurRadius: 10.r,
-                                offset: Offset(0, 5.h),
+                        if (hasFromLabel)
+                          Row(
+                            children: [
+                              Text(
+                                priceLabel,
+                                style: AppTextStyles.cardSlots.copyWith(
+                                  fontSize: 16.sp,
+                                ),
                               ),
+                              SizedBox(width: 10.w),
+                              Text(
+                                priceValue,
+                                style: AppTextStyles.cardPrice.copyWith(
+                                  fontSize: 18.sp,
+                                  decoration:
+                                      hasDiscount ? TextDecoration.lineThrough : null,
+                                  decorationColor:
+                                      hasDiscount ? Colors.red : null,
+                                  decorationThickness: hasDiscount ? 3 : null,
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+
+                              if (hasDiscount) ...[
+                                if (showDiscountValue)
+                                  Text(
+                                    discount,
+                                    style: AppTextStyles.cardDiscount,
+                                  ),
+                                const Spacer(),
+                                if (hasBadge)
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10.w,
+                                      vertical: 6.h,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      borderRadius: BorderRadius.circular(20.r),
+                                    ),
+                                    child: Text(
+                                      badge,
+                                      style: AppTextStyles.badge,
+                                    ),
+                                  ),
+                              ],
                             ],
                           ),
-                          child: Text(
-                            AppStrings.viewDetails,
-                            style: AppTextStyles.cta,
+
+                        if (!hasFromLabel && trimmedPrice.isNotEmpty)
+                          Text(
+                            trimmedPrice,
+                            style: AppTextStyles.cardPrice.copyWith(
+                              fontSize: 18.sp,
+                            ),
                           ),
-                        ),
+
+                        SizedBox(height: 18.h),
+                        Text(slotsText, style: AppTextStyles.cardSlots),
                       ],
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 18.w,
+                        vertical: 10.h,
+                      ),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.ctaShadow,
+                            blurRadius: 10.r,
+                            offset: Offset(0, 5.h),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          AppStrings.viewDetails,
+                          style: AppTextStyles.cta,
+                        ),
+                      ),
                     ),
                   ],
                 ),

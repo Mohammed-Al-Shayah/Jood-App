@@ -15,13 +15,116 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
   @override
   Future<List<RestaurantModel>> fetchRestaurants() async {
     final snapshot = await _firestore.collection('restaurants').get();
-    return snapshot.docs
-        .map(
-          (doc) => RestaurantModel.fromFirestore(
-            id: doc.id,
-            data: doc.data(),
-          ),
-        )
-        .toList();
+    final today = _formatDate(DateTime.now());
+    final results = <RestaurantModel>[];
+
+    for (final doc in snapshot.docs) {
+      final data = Map<String, dynamic>.from(doc.data());
+      final offers = await _firestore
+          .collection('offers')
+          .where('restaurantId', isEqualTo: doc.id)
+          .where('date', isEqualTo: today)
+          .get();
+
+      var minPrice = double.infinity;
+      var remainingTotal = 0;
+      var currency = '';
+
+      for (final offerDoc in offers.docs) {
+        final offer = offerDoc.data();
+        final status = offer['status'] as String? ?? 'active';
+        if (status != 'active') continue;
+        final priceAdult = _toDouble(offer['priceAdult']);
+        if (priceAdult > 0 && priceAdult < minPrice) {
+          minPrice = priceAdult;
+          currency = offer['currency'] as String? ?? currency;
+        }
+        final remainingAdult = _toInt(offer['capacityAdult']) - _toInt(offer['bookedAdult']);
+        final remainingChild = _toInt(offer['capacityChild']) - _toInt(offer['bookedChild']);
+        remainingTotal += (remainingAdult + remainingChild);
+      }
+
+      final originalPrice = _parseNumber(data['discount']);
+      if (minPrice.isFinite) {
+        if (originalPrice > minPrice) {
+          data['priceFrom'] = 'From ${currency.isEmpty ? '' : '$currency '}'
+              '${originalPrice.toStringAsFixed(0)}';
+          data['discount'] = '${currency.isEmpty ? '' : '$currency '}'
+              '${minPrice.toStringAsFixed(0)}';
+          data['slotsLeft'] = 'After discount '
+              '${currency.isEmpty ? '' : '$currency '}'
+              '${minPrice.toStringAsFixed(0)}';
+        } else {
+          data['priceFrom'] = 'From ${currency.isEmpty ? '' : '$currency '}'
+              '${minPrice.toStringAsFixed(0)}';
+        }
+      }
+      if ((data['slotsLeft'] as String?)?.isEmpty ?? true) {
+        if (remainingTotal > 0) {
+          data['slotsLeft'] = '$remainingTotal slots left';
+        }
+      }
+
+      final discountPercent = _resolveDiscountPercent(
+        data: data,
+        minPrice: minPrice.isFinite ? minPrice : _parseNumber(data['priceFrom']),
+      );
+      if (discountPercent > 0) {
+        data['badge'] = '${discountPercent.round()}% off';
+      }
+
+      results.add(
+        RestaurantModel.fromFirestore(
+          id: doc.id,
+          data: data,
+        ),
+      );
+    }
+
+    return results;
+  }
+
+  static String _formatDate(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is int) return value.toDouble();
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    return 0;
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is num) return value.toInt();
+    return 0;
+  }
+
+  static double _parseNumber(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    final text = value.toString();
+    final match = RegExp(r'(\d+(\.\d+)?)').firstMatch(text);
+    if (match == null) return 0;
+    return double.tryParse(match.group(1) ?? '') ?? 0;
+  }
+
+  static double _resolveDiscountPercent({
+    required Map<String, dynamic> data,
+    required double minPrice,
+  }) {
+    final percentValue = _toDouble(data['discountPercent']);
+    if (percentValue > 0) return percentValue;
+
+    final originalPrice = _parseNumber(data['discount']);
+    if (originalPrice <= 0 || minPrice <= 0 || originalPrice <= minPrice) {
+      return 0;
+    }
+    return ((originalPrice - minPrice) / originalPrice) * 100;
   }
 }

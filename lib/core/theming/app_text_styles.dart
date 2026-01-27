@@ -38,7 +38,7 @@ class AppTextStyles {
 
   static TextStyle get cardTitle => TextStyle(
         color: AppColors.textPrimary,
-        fontSize: 16.sp,
+        fontSize: 18.sp,
         fontWeight: FontWeight.w700,
       );
 
@@ -69,11 +69,11 @@ class AppTextStyles {
   static TextStyle get cardDiscount => TextStyle(
         color: AppColors.primaryDark,
         fontWeight: FontWeight.w700,
-        fontSize: 11.sp,
+        fontSize: 18.sp,
       );
 
   static TextStyle get badge => TextStyle(
-        color: AppColors.badgeText,
+        color: AppColors.cardBackground,
         fontWeight: FontWeight.w700,
         fontSize: 12.sp,
       );
