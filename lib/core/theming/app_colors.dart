@@ -3,6 +3,15 @@ import 'package:flutter/material.dart';
 class AppColors {
   const AppColors._();
 
+  // Legacy aliases for older UI code.
+  static const Color black = Color(0xFF1A1A1A);
+  static const Color white = Colors.white;
+  static const Color whiteColor = Colors.white;
+  static const Color grey = Color(0xFF9AA2A9);
+  static const Color greyAppColor = Color(0xFF9AA2A9);
+  static const Color mainBlue = Color(0xFF1EC5B6);
+  static const Color background = Color(0xFFF6F7FB);
+
   static const Color pageBackground = Color(0xFFF6F7FB);
   static const Color cardBackground = Colors.white;
   static const Color primary = Color(0xFF1EC5B6);

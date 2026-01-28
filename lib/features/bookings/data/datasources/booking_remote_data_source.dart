@@ -27,12 +27,14 @@ class BookingRemoteDataSource {
       final capacityChild = (data['capacityChild'] as num?)?.toInt() ?? 0;
       final bookedAdult = (data['bookedAdult'] as num?)?.toInt() ?? 0;
       final bookedChild = (data['bookedChild'] as num?)?.toInt() ?? 0;
-      final status = data['status'] as String? ?? 'active';
+      final status = (data['status'] as String? ?? 'active')
+          .toLowerCase()
+          .replaceAll(' ', '');
 
       final remainingAdult = capacityAdult - bookedAdult;
       final remainingChild = capacityChild - bookedChild;
 
-      if (status != 'active') {
+      if (status == 'soldout' || status == 'sold_out') {
         throw BookingException('Offer is not active.');
       }
       if (remainingAdult < adults || remainingChild < children) {

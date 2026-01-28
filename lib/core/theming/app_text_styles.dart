@@ -6,6 +6,42 @@ import 'app_colors.dart';
 class AppTextStyles {
   const AppTextStyles._();
 
+  static TextStyle get headingLarge => TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 24.sp,
+        fontWeight: FontWeight.w700,
+      );
+
+  static TextStyle get headingMedium => TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 20.sp,
+        fontWeight: FontWeight.w700,
+      );
+
+  static TextStyle get body => TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w500,
+      );
+
+  static TextStyle get bodySmall => TextStyle(
+        color: AppColors.textSecondary,
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w500,
+      );
+
+  static TextStyle get inputHint => TextStyle(
+        color: AppColors.textMuted,
+        fontSize: 13.sp,
+        fontWeight: FontWeight.w500,
+      );
+
+  static TextStyle get buttonText => TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w700,
+        fontSize: 16.sp,
+      );
+
   static TextStyle get locationLabel => TextStyle(
         color: AppColors.textMuted,
         fontSize: 12.sp,

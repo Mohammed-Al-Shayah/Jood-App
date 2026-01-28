@@ -1,10 +1,9 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/routing/routes.dart';
-import 'core/theming/colors_manager.dart';
+import 'core/theming/app_colors.dart';
 
 class JoodApp extends StatelessWidget {
   final AppRouter appRouter;
@@ -20,18 +19,15 @@ class JoodApp extends StatelessWidget {
         return MaterialApp(
           title: 'Jood',
           debugShowCheckedModeBanner: false,
-          locale: context.locale,
-          supportedLocales: context.supportedLocales,
-          localizationsDelegates: context.localizationDelegates,
           theme: ThemeData(
             fontFamily: 'Cairo',
             textTheme: Typography.material2021().black.apply(
               fontFamilyFallback: const ['Cairo'],
             ),
-            primaryColor: ColorsManager.mainBlue,
-            scaffoldBackgroundColor: Colors.white,
+            primaryColor: AppColors.primary,
+            scaffoldBackgroundColor: AppColors.pageBackground,
           ),
-          initialRoute: Routes.homeScreen,
+          initialRoute: Routes.loginScreen,
           onGenerateRoute: appRouter.generateRoute,
           builder: (context, widget) {
             return MediaQuery(

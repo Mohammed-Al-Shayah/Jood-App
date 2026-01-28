@@ -40,7 +40,7 @@ class RestaurantEntity extends Equatable {
   final List<String> highlights;
   final List<String> inclusions;
   final List<String> exclusions;
-  final String cancellationPolicy;
+  final List<String> cancellationPolicy;
   final List<String> knowBeforeYouGo;
   final bool isActive;
   final DateTime createdAt;

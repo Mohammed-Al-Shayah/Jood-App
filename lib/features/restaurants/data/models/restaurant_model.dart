@@ -47,7 +47,7 @@ class RestaurantModel extends RestaurantEntity {
       highlights: _stringList(data['highlights']),
       inclusions: _stringList(data['inclusions']),
       exclusions: _stringList(data['exclusions']),
-      cancellationPolicy: data['cancellationPolicy'] as String? ?? '',
+      cancellationPolicy: _stringList(data['cancellationPolicy']),
       knowBeforeYouGo: _stringList(data['knowBeforeYouGo']),
       isActive: data['isActive'] as bool? ?? true,
       createdAt: _toDateTime(data['createdAt']),
@@ -55,8 +55,13 @@ class RestaurantModel extends RestaurantEntity {
   }
 
   static List<String> _stringList(dynamic value) {
-    final list = value as List<dynamic>? ?? [];
-    return list.map((item) => item.toString()).toList();
+    if (value is List) {
+      return value.map((item) => item.toString()).toList();
+    }
+    if (value is String && value.trim().isNotEmpty) {
+      return [value];
+    }
+    return const [];
   }
 
   static double _toDouble(dynamic value) {

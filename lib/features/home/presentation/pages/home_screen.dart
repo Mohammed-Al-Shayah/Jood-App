@@ -6,7 +6,9 @@ import '../../../../core/di/service_locator.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
-import '../../../restaurant_detail/presentation/pages/detail_screen.dart';
+import '../../../../core/routing/app_router.dart';
+import '../../../../core/routing/routes.dart';
+import '../../../../core/utils/extensions.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
 import '../widgets/home_header.dart';
@@ -26,7 +28,9 @@ class HomeScreen extends StatelessWidget {
           child: BlocBuilder<HomeCubit, HomeState>(
             builder: (context, state) {
               if (state.status == HomeStatus.loading) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
               }
               if (state.status == HomeStatus.failure) {
                 return Center(
@@ -80,16 +84,16 @@ class HomeScreen extends StatelessWidget {
                           rating: item.rating,
                           image: _RestaurantImage(url: item.imageUrl, name: item.name),
                           onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => DetailScreen(
+                            context.pushNamed(
+                              Routes.detailScreen,
+                              arguments: DetailScreenArgs(
+                                id: item.id,
+                                name: item.name,
+                                meta: item.meta,
+                                rating: item.rating,
+                                image: _RestaurantImage(
+                                  url: item.imageUrl,
                                   name: item.name,
-                                  meta: item.meta,
-                                  rating: item.rating,
-                                  image: _RestaurantImage(
-                                    url: item.imageUrl,
-                                    name: item.name,
-                                  ),
                                 ),
                               ),
                             );
@@ -122,7 +126,7 @@ class _RestaurantImage extends StatelessWidget {
     return Image.network(
       url,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _ImagePlaceholder(label: name),
+      errorBuilder: (_, _, _) => _ImagePlaceholder(label: name),
       loadingBuilder: (_, child, loadingProgress) {
         if (loadingProgress == null) {
           return child;

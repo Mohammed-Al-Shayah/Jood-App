@@ -28,7 +28,7 @@ class OfferModel extends OfferEntity {
     return OfferModel(
       id: doc.id,
       restaurantId: data['restaurantId'] as String? ?? '',
-      date: data['date'] as String? ?? '',
+      date: _readDate(data['date']),
       startTime: data['startTime'] as String? ?? '',
       endTime: data['endTime'] as String? ?? '',
       currency: data['currency'] as String? ?? 'USD',
@@ -62,5 +62,23 @@ class OfferModel extends OfferEntity {
     if (value is Timestamp) return value.toDate();
     if (value is DateTime) return value;
     return DateTime.now();
+  }
+
+  static String _readDate(dynamic value) {
+    if (value is Timestamp) {
+      return _formatDate(value.toDate());
+    }
+    if (value is DateTime) {
+      return _formatDate(value);
+    }
+    if (value == null) return '';
+    return value.toString();
+  }
+
+  static String _formatDate(DateTime date) {
+    final year = date.year.toString().padLeft(4, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 }

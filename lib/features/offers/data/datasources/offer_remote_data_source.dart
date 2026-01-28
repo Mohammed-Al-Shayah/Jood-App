@@ -17,7 +17,20 @@ class OfferRemoteDataSource {
         .where('date', isEqualTo: date)
         .orderBy('startTime')
         .get();
-    return snapshot.docs.map(OfferModel.fromDoc).toList();
+    if (snapshot.docs.isNotEmpty) {
+      return snapshot.docs.map(OfferModel.fromDoc).toList();
+    }
+
+    final fallbackSnapshot = await firestore
+        .collection('offers')
+        .where('restaurantId', isEqualTo: restaurantId)
+        .get();
+    final results = fallbackSnapshot.docs
+        .map(OfferModel.fromDoc)
+        .where((offer) => offer.date == date)
+        .toList();
+    results.sort((a, b) => a.startTime.compareTo(b.startTime));
+    return results;
   }
 
   Future<OfferModel> getOfferById(String id) async {

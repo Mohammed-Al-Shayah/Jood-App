@@ -16,24 +16,32 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
   Future<List<RestaurantModel>> fetchRestaurants() async {
     final snapshot = await _firestore.collection('restaurants').get();
     final today = _formatDate(DateTime.now());
+    final offersSnapshot = await _firestore
+        .collection('offers')
+        .where('date', isEqualTo: today)
+        .get();
+    final offersByRestaurant = <String, List<Map<String, dynamic>>>{};
+    for (final doc in offersSnapshot.docs) {
+      final data = doc.data();
+      final restaurantId = data['restaurantId'] as String?;
+      if (restaurantId == null || restaurantId.isEmpty) continue;
+      offersByRestaurant.putIfAbsent(restaurantId, () => []).add(data);
+    }
     final results = <RestaurantModel>[];
 
     for (final doc in snapshot.docs) {
       final data = Map<String, dynamic>.from(doc.data());
-      final offers = await _firestore
-          .collection('offers')
-          .where('restaurantId', isEqualTo: doc.id)
-          .where('date', isEqualTo: today)
-          .get();
+      final offers = offersByRestaurant[doc.id] ?? const <Map<String, dynamic>>[];
 
       var minPrice = double.infinity;
       var remainingTotal = 0;
       var currency = '';
 
-      for (final offerDoc in offers.docs) {
-        final offer = offerDoc.data();
-        final status = offer['status'] as String? ?? 'active';
-        if (status != 'active') continue;
+      for (final offer in offers) {
+        final status = (offer['status'] as String? ?? 'active')
+            .toLowerCase()
+            .replaceAll(' ', '');
+        if (status == 'soldout' || status == 'sold_out') continue;
         final priceAdult = _toDouble(offer['priceAdult']);
         if (priceAdult > 0 && priceAdult < minPrice) {
           minPrice = priceAdult;
@@ -45,6 +53,13 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
       }
 
       final originalPrice = _parseNumber(data['discount']);
+      final resolvedMinPrice = minPrice.isFinite ? minPrice : 0.0;
+      final discountPercent = _resolveDiscountPercent(
+        data: data,
+        originalPrice: originalPrice,
+        minPrice: resolvedMinPrice,
+        preferComputed: minPrice.isFinite && originalPrice > 0,
+      );
       if (minPrice.isFinite) {
         if (originalPrice > minPrice) {
           data['priceFrom'] = 'From ${currency.isEmpty ? '' : '$currency '}'
@@ -65,10 +80,6 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
         }
       }
 
-      final discountPercent = _resolveDiscountPercent(
-        data: data,
-        minPrice: minPrice.isFinite ? minPrice : _parseNumber(data['priceFrom']),
-      );
       if (discountPercent > 0) {
         data['badge'] = '${discountPercent.round()}% off';
       }
@@ -116,12 +127,20 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
 
   static double _resolveDiscountPercent({
     required Map<String, dynamic> data,
+    required double originalPrice,
     required double minPrice,
+    required bool preferComputed,
   }) {
+    if (preferComputed &&
+        originalPrice > 0 &&
+        minPrice > 0 &&
+        originalPrice > minPrice) {
+      return ((originalPrice - minPrice) / originalPrice) * 100;
+    }
+
     final percentValue = _toDouble(data['discountPercent']);
     if (percentValue > 0) return percentValue;
 
-    final originalPrice = _parseNumber(data['discount']);
     if (originalPrice <= 0 || minPrice <= 0 || originalPrice <= minPrice) {
       return 0;
     }
