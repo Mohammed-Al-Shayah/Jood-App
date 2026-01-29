@@ -85,18 +85,23 @@ class VerifyOtpPage extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: 20.h),
-                    ElevatedButton(
-                      onPressed: state.isValid
-                          ? () => context.pushNamed(Routes.homeScreen)
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30.r),
+                    Center(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: state.isValid
+                              ? () => context.pushNamed(Routes.homeScreen)
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.r),
+                            ),
+                          ),
+                          child: Text('Verify', style: AppTextStyles.cta),
                         ),
                       ),
-                      child: Text('Verify', style: AppTextStyles.cta),
                     ),
                   ],
                 ),

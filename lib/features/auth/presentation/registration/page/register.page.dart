@@ -26,8 +26,25 @@ class RegisterPage extends StatelessWidget {
           foregroundColor: AppColors.textPrimary,
         ),
         body: SafeArea(
-          child: BlocBuilder<RegisterCubit, RegisterState>(
+          child: BlocConsumer<RegisterCubit, RegisterState>(
+            listener: (context, state) {
+              if (state.status == RegisterStatus.failure &&
+                  state.errorMessage != null) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+              }
+              if (state.status == RegisterStatus.success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Verification email sent. Please verify.'),
+                  ),
+                );
+                context.pushNamedAndRemoveAll(Routes.loginScreen);
+              }
+            },
             builder: (context, state) {
+              final isLoading = state.status == RegisterStatus.loading;
               return SingleChildScrollView(
                 padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
                 child: Column(
@@ -50,8 +67,9 @@ class RegisterPage extends StatelessWidget {
                       obscureText: !state.showPassword,
                       onChanged: context.read<RegisterCubit>().updatePassword,
                       suffix: IconButton(
-                        onPressed:
-                            context.read<RegisterCubit>().togglePasswordVisibility,
+                        onPressed: context
+                            .read<RegisterCubit>()
+                            .togglePasswordVisibility,
                         icon: Icon(
                           state.showPassword
                               ? Icons.visibility_off
@@ -64,8 +82,9 @@ class RegisterPage extends StatelessWidget {
                     _Field(
                       hintText: 'Confirm password',
                       obscureText: !state.showConfirmPassword,
-                      onChanged:
-                          context.read<RegisterCubit>().updateConfirmPassword,
+                      onChanged: context
+                          .read<RegisterCubit>()
+                          .updateConfirmPassword,
                       suffix: IconButton(
                         onPressed: context
                             .read<RegisterCubit>()
@@ -106,24 +125,40 @@ class RegisterPage extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'I agree to the Terms of Service and Privacy Policy',
-                            style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp),
+                            style: AppTextStyles.cardMeta.copyWith(
+                              fontSize: 12.sp,
+                            ),
                           ),
                         ),
                       ],
                     ),
                     SizedBox(height: 20.h),
-                    ElevatedButton(
-                      onPressed: state.isValid
-                          ? () => context.pushNamed(Routes.verifyOtpScreen)
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30.r),
+                    Center(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: state.isValid && !isLoading
+                              ? () => context.read<RegisterCubit>().submit()
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.r),
+                            ),
+                          ),
+                          child: isLoading
+                              ? SizedBox(
+                                  height: 18.h,
+                                  width: 18.h,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text('Sign up', style: AppTextStyles.cta),
                         ),
                       ),
-                      child: Text('Sign up', style: AppTextStyles.cta),
                     ),
                   ],
                 ),

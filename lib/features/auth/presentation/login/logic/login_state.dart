@@ -1,3 +1,5 @@
+enum LoginStatus { initial, loading, success, failure }
+
 class LoginState {
   const LoginState({
     required this.email,
@@ -5,6 +7,8 @@ class LoginState {
     required this.rememberMe,
     required this.showPassword,
     required this.isValid,
+    required this.status,
+    this.errorMessage,
   });
 
   final String email;
@@ -12,6 +16,8 @@ class LoginState {
   final bool rememberMe;
   final bool showPassword;
   final bool isValid;
+  final LoginStatus status;
+  final String? errorMessage;
 
   LoginState copyWith({
     String? email,
@@ -19,6 +25,8 @@ class LoginState {
     bool? rememberMe,
     bool? showPassword,
     bool? isValid,
+    LoginStatus? status,
+    String? errorMessage,
   }) {
     return LoginState(
       email: email ?? this.email,
@@ -26,6 +34,8 @@ class LoginState {
       rememberMe: rememberMe ?? this.rememberMe,
       showPassword: showPassword ?? this.showPassword,
       isValid: isValid ?? this.isValid,
+      status: status ?? this.status,
+      errorMessage: errorMessage,
     );
   }
 
@@ -36,6 +46,8 @@ class LoginState {
       rememberMe: false,
       showPassword: false,
       isValid: false,
+      status: LoginStatus.initial,
+      errorMessage: null,
     );
   }
 }

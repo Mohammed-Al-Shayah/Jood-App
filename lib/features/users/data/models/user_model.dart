@@ -6,6 +6,8 @@ class UserModel extends UserEntity {
     required super.fullName,
     required super.email,
     required super.phone,
+    required super.country,
+    required super.city,
     required super.role,
   });
 
@@ -15,6 +17,8 @@ class UserModel extends UserEntity {
       fullName: data['fullName'] as String? ?? '',
       email: data['email'] as String? ?? '',
       phone: data['phone'] as String? ?? '',
+      country: data['country'] as String? ?? '',
+      city: data['city'] as String? ?? '',
       role: data['role'] as String? ?? 'guest',
     );
   }
@@ -24,6 +28,8 @@ class UserModel extends UserEntity {
       'fullName': fullName,
       'email': email,
       'phone': phone,
+      'country': country,
+      'city': city,
       'role': role,
     };
   }

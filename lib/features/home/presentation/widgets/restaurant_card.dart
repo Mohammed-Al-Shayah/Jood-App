@@ -41,12 +41,12 @@ class RestaurantCard extends StatelessWidget {
     final hasBadge = badge.trim().isNotEmpty;
     final hasDiscount = discount.trim().isNotEmpty || hasBadge;
     final showDiscountValue = discount.trim().isNotEmpty;
-    final afterDiscountText = showDiscountValue
-        ? 'After discount ${discount.trim()}'
-        : '';
-    final slotsText = hasDiscount && afterDiscountText.isNotEmpty
-        ? afterDiscountText
-        : slots;
+    // final afterDiscountText = showDiscountValue
+    //     ? 'After discount ${discount.trim()}'
+    //     : '';
+    // final slotsText = hasDiscount && afterDiscountText.isNotEmpty
+    //     ? afterDiscountText
+    //     : slots;
 
     return Material(
       color: Colors.transparent,
@@ -90,7 +90,7 @@ class RestaurantCard extends StatelessWidget {
                           vertical: 6.h,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.red,
+                          color: Color(0xff7c3aed),
                           borderRadius: BorderRadius.circular(20.r),
                         ),
                         child: Text(badge, style: AppTextStyles.badge),
@@ -163,10 +163,13 @@ class RestaurantCard extends StatelessWidget {
                                 priceValue,
                                 style: AppTextStyles.cardPrice.copyWith(
                                   fontSize: 18.sp,
-                                  decoration:
-                                      hasDiscount ? TextDecoration.lineThrough : null,
-                                  decorationColor:
-                                      hasDiscount ? Colors.red : null,
+                                  color: AppColors.textPrimary,
+                                  decoration: hasDiscount
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  decorationColor: hasDiscount
+                                      ? Colors.red
+                                      : null,
                                   decorationThickness: hasDiscount ? 3 : null,
                                 ),
                               ),
@@ -186,7 +189,7 @@ class RestaurantCard extends StatelessWidget {
                                       vertical: 6.h,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.red,
+                                      color: Color(0xff7c3aed),
                                       borderRadius: BorderRadius.circular(20.r),
                                     ),
                                     child: Text(
@@ -207,7 +210,7 @@ class RestaurantCard extends StatelessWidget {
                           ),
 
                         SizedBox(height: 18.h),
-                        Text(slotsText, style: AppTextStyles.cardSlots),
+                        // Text(slotsText, style: AppTextStyles.cardSlots),
                       ],
                     ),
                     Container(

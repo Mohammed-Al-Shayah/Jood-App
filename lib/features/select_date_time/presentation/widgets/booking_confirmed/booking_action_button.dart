@@ -7,13 +7,13 @@ class BookingActionButton extends StatelessWidget {
   const BookingActionButton({
     super.key,
     required this.label,
-    required this.icon,
+    this.icon,
     required this.filled,
     required this.onTap,
   });
 
   final String label;
-  final IconData icon;
+  final IconData? icon;
   final bool filled;
   final VoidCallback onTap;
 
@@ -23,7 +23,7 @@ class BookingActionButton extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: onTap,
-        icon: Icon(icon, size: 18.sp),
+        // icon: Icon(icon, size: 18.sp),
         label: Text(label),
         style: ElevatedButton.styleFrom(
           backgroundColor: filled ? AppColors.primary : Colors.white,

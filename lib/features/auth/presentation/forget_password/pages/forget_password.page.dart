@@ -26,8 +26,25 @@ class ForgetPasswordPage extends StatelessWidget {
           foregroundColor: AppColors.textPrimary,
         ),
         body: SafeArea(
-          child: BlocBuilder<ForgetPasswordCubit, ForgetPasswordState>(
+          child: BlocConsumer<ForgetPasswordCubit, ForgetPasswordState>(
+            listener: (context, state) {
+              if (state.status == ForgetPasswordStatus.failure &&
+                  state.errorMessage != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(state.errorMessage!)),
+                );
+              }
+              if (state.status == ForgetPasswordStatus.success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Reset email sent. Please check your inbox.'),
+                  ),
+                );
+                context.pushNamed(Routes.loginScreen);
+              }
+            },
             builder: (context, state) {
+              final isLoading = state.status == ForgetPasswordStatus.loading;
               return Padding(
                 padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
                 child: Column(
@@ -61,18 +78,32 @@ class ForgetPasswordPage extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: 24.h),
-                    ElevatedButton(
-                      onPressed: state.isValid
-                          ? () => context.pushNamed(Routes.verifyOtpScreen)
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30.r),
+                    Center(
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: state.isValid && !isLoading
+                              ? () => context.read<ForgetPasswordCubit>().submit()
+                              : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30.r),
+                            ),
+                          ),
+                          child: isLoading
+                              ? SizedBox(
+                                  height: 18.h,
+                                  width: 18.h,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text('Verify', style: AppTextStyles.cta),
                         ),
                       ),
-                      child: Text('Verify', style: AppTextStyles.cta),
                     ),
                   ],
                 ),

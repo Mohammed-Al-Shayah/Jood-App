@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/theming/app_colors.dart';
@@ -113,77 +114,75 @@ class DetailScreen extends StatelessWidget {
               ),
             ),
             body: SafeArea(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(bottom: 12.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    DetailHeader(
-                      image: image,
-                      onBack: () => Navigator.of(context).pop(),
-                      name: details?.name ?? name,
-                      rating: ratingLabel,
-                      meta: metaLabel,
-                    ),
-                    if (state.status == RestaurantDetailStatus.loading)
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        child: const LinearProgressIndicator(minHeight: 2),
+              child: Skeletonizer(
+                enabled: state.status == RestaurantDetailStatus.loading,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(bottom: 12.h),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DetailHeader(
+                        image: image,
+                        onBack: () => Navigator.of(context).pop(),
+                        name: details?.name ?? name,
+                        rating: ratingLabel,
+                        meta: metaLabel,
                       ),
-                    if (state.status == RestaurantDetailStatus.failure)
+                      if (state.status == RestaurantDetailStatus.failure)
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16.w),
+                          child: Text(
+                            state.errorMessage ?? 'Failed to load details.',
+                            style: AppTextStyles.cardMeta,
+                          ),
+                        ),
+                      SizedBox(height: 12.h),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16.w),
-                        child: Text(
-                          state.errorMessage ?? 'Failed to load details.',
-                          style: AppTextStyles.cardMeta,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 16.h),
+                            SizedBox(height: 16.h),
+                            _InfoRow(
+                              icon: Icons.schedule,
+                              title: AppStrings.detailsOpenToday,
+                              subtitle: openLabel,
+                            ),
+                            SizedBox(height: 12.h),
+                            _InfoRow(
+                              icon: Icons.location_on_outlined,
+                              title: AppStrings.detailsAddressLabel,
+                              subtitle: addressLabel,
+                              trailingLabel: AppStrings.map,
+                            ),
+                            SizedBox(height: 18.h),
+                            _DetailAccordion(
+                              title: AppStrings.highlightsTitle,
+                              items: highlights,
+                            ),
+                            _DetailAccordion(
+                              title: AppStrings.inclusionsTitle,
+                              items: inclusions,
+                            ),
+                            _DetailAccordion(
+                              title: AppStrings.exclusionsTitle,
+                              items: exclusions,
+                            ),
+                            _DetailAccordion(
+                              title: AppStrings.cancellationTitle,
+                              items: cancellation,
+                            ),
+                            _DetailAccordion(
+                              title: AppStrings.knowBeforeTitle,
+                              items: knowBefore,
+                            ),
+                            SizedBox(height: 12.h),
+                          ],
                         ),
                       ),
-                    SizedBox(height: 12.h),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 16.h),
-                          SizedBox(height: 16.h),
-                          _InfoRow(
-                            icon: Icons.schedule,
-                            title: AppStrings.detailsOpenToday,
-                            subtitle: openLabel,
-                          ),
-                          SizedBox(height: 12.h),
-                          _InfoRow(
-                            icon: Icons.location_on_outlined,
-                            title: AppStrings.detailsAddressLabel,
-                            subtitle: addressLabel,
-                            trailingLabel: AppStrings.map,
-                          ),
-                          SizedBox(height: 18.h),
-                          _DetailAccordion(
-                            title: AppStrings.highlightsTitle,
-                            items: highlights,
-                          ),
-                          _DetailAccordion(
-                            title: AppStrings.inclusionsTitle,
-                            items: inclusions,
-                          ),
-                          _DetailAccordion(
-                            title: AppStrings.exclusionsTitle,
-                            items: exclusions,
-                          ),
-                          _DetailAccordion(
-                            title: AppStrings.cancellationTitle,
-                            items: cancellation,
-                          ),
-                          _DetailAccordion(
-                            title: AppStrings.knowBeforeTitle,
-                            items: knowBefore,
-                          ),
-                          SizedBox(height: 12.h),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

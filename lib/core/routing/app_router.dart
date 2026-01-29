@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../features/home/presentation/pages/home_screen.dart';
+import '../../features/main_shell/presentation/pages/main_shell_screen.dart';
+import '../../features/orders/presentation/pages/orders_screen.dart';
+import '../../features/profile/presentation/pages/profile_screen.dart';
 import '../../features/auth/presentation/login/page/login.page.dart';
 import '../../features/auth/presentation/registration/page/register.page.dart';
 import '../../features/auth/presentation/forget_password/pages/forget_password.page.dart';
@@ -50,7 +52,15 @@ class AppRouter {
         );
       case Routes.homeScreen:
         return MaterialPageRoute(
-          builder: (_) => const HomeScreen(),
+          builder: (_) => const MainShellScreen(),
+        );
+      case Routes.ordersScreen:
+        return MaterialPageRoute(
+          builder: (_) => const OrdersScreen(),
+        );
+      case Routes.profileScreen:
+        return MaterialPageRoute(
+          builder: (_) => const ProfileScreen(),
         );
       case Routes.detailScreen:
         final args = settings.arguments as DetailScreenArgs;

@@ -20,6 +20,8 @@ class UserRepositoryImpl implements UserRepository {
       fullName: user.fullName,
       email: user.email,
       phone: user.phone,
+      country: user.country,
+      city: user.city,
       role: user.role,
     );
     return remoteDataSource.createUser(model);

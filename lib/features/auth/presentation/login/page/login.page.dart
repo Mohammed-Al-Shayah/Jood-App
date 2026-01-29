@@ -19,25 +19,38 @@ class LoginPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text('Log In'),
+          title: Text('Log In', style: AppTextStyles.cardTitle),
           centerTitle: true,
           elevation: 0,
+          automaticallyImplyLeading: false,
           backgroundColor: Colors.white,
           foregroundColor: AppColors.textPrimary,
         ),
         body: SafeArea(
-          child: BlocBuilder<LoginCubit, LoginState>(
+          child: BlocConsumer<LoginCubit, LoginState>(
+            listener: (context, state) {
+              if (state.status == LoginStatus.failure &&
+                  state.errorMessage != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(state.errorMessage!)),
+                );
+              }
+              if (state.status == LoginStatus.success) {
+                context.pushNamedAndRemoveAll(Routes.homeScreen);
+              }
+            },
             builder: (context, state) {
+              final isLoading = state.status == LoginStatus.loading;
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 24.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SizedBox(height: 12.h),
-                    Text(
-                      'Welcome back',
-                      style: AppTextStyles.sectionTitle.copyWith(fontSize: 20.sp),
-                      textAlign: TextAlign.center,
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 100.w,
+                      height: 100.h,
                     ),
                     SizedBox(height: 24.h),
                     _Label(text: 'Email'),
@@ -54,9 +67,13 @@ class LoginPage extends StatelessWidget {
                       keyboardType: TextInputType.visiblePassword,
                       onChanged: context.read<LoginCubit>().updatePassword,
                       suffix: IconButton(
-                        onPressed: context.read<LoginCubit>().togglePasswordVisibility,
+                        onPressed: context
+                            .read<LoginCubit>()
+                            .togglePasswordVisibility,
                         icon: Icon(
-                          state.showPassword ? Icons.visibility_off : Icons.visibility,
+                          state.showPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                           color: AppColors.textMuted,
                         ),
                       ),
@@ -70,26 +87,27 @@ class LoginPage extends StatelessWidget {
                             Checkbox(
                               value: state.rememberMe,
                               activeColor: AppColors.primary,
-                              onChanged: (_) => context.read<LoginCubit>().toggleRemember(),
+                              onChanged: (_) =>
+                                  context.read<LoginCubit>().toggleRemember(),
                             ),
-                            Text(
-                              'Remember me',
-                              style: AppTextStyles.cardMeta,
-                            ),
+                            Text('Remember me', style: AppTextStyles.cardMeta),
                           ],
                         ),
                         TextButton(
                           onPressed: () {
                             context.pushNamed(Routes.forgetPasswordScreen);
                           },
-                          child: const Text('Forgot password?'),
+                          child: Text(
+                            'Forgot password?',
+                            style: AppTextStyles.body,
+                          ),
                         ),
                       ],
                     ),
                     SizedBox(height: 14.h),
                     ElevatedButton(
-                      onPressed: state.isValid
-                          ? () => context.pushNamed(Routes.homeScreen)
+                      onPressed: state.isValid && !isLoading
+                          ? () => context.read<LoginCubit>().submit()
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -98,7 +116,16 @@ class LoginPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30.r),
                         ),
                       ),
-                      child: Text('Log In', style: AppTextStyles.cta),
+                      child: isLoading
+                          ? SizedBox(
+                              height: 18.h,
+                              width: 18.h,
+                              child: const CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text('Log In', style: AppTextStyles.cta),
                     ),
                     SizedBox(height: 14.h),
                     Row(
@@ -113,9 +140,9 @@ class LoginPage extends StatelessWidget {
                     ),
                     SizedBox(height: 14.h),
                     OutlinedButton(
-                      onPressed: () {
-                        context.pushNamed(Routes.registerScreen);
-                      },
+                      onPressed: isLoading
+                          ? null
+                          : () => context.pushNamed(Routes.registerScreen),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: AppColors.textPrimary),
                         padding: EdgeInsets.symmetric(vertical: 14.h),
@@ -125,14 +152,16 @@ class LoginPage extends StatelessWidget {
                       ),
                       child: Text(
                         'Create a new account',
-                        style: AppTextStyles.cardPrice.copyWith(color: AppColors.textPrimary),
+                        style: AppTextStyles.cardPrice.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                     SizedBox(height: 24.h),
                     TextButton(
-                      onPressed: () {
-                        context.pushNamed(Routes.homeScreen);
-                      },
+                      onPressed: isLoading
+                          ? null
+                          : () => context.pushNamed(Routes.homeScreen),
                       child: Text(
                         'Continue as Guest',
                         style: AppTextStyles.cardPrice,

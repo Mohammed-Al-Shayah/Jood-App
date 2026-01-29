@@ -7,6 +7,8 @@ class Routes {
   static const String requestUnderReviewScreen = '/request-under-review';
   static const String beneficiaryCreateStoryScreen = '/beneficiary-create-story';
   static const String homeScreen = '/home';
+  static const String ordersScreen = '/orders';
+  static const String profileScreen = '/profile';
   static const String detailScreen = '/detail';
   static const String selectDateTimeScreen = '/select-date-time';
   static const String selectGuestsScreen = '/select-guests';

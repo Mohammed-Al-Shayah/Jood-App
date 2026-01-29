@@ -48,7 +48,13 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<RestaurantRepository>(
     () => RestaurantRepositoryImpl(remoteDataSource: getIt()),
   );
-  getIt.registerFactory<HomeCubit>(() => HomeCubit(repository: getIt()));
+  getIt.registerFactory<HomeCubit>(
+    () => HomeCubit(
+      repository: getIt(),
+      getUserById: getIt(),
+      auth: getIt(),
+    ),
+  );
   getIt.registerLazySingleton<OfferRemoteDataSource>(
     () => OfferRemoteDataSource(getIt()),
   );
@@ -61,11 +67,15 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<BookingFlowCubit>(
     () => BookingFlowCubit(getOffersForDate: getIt()),
   );
-  getIt.registerFactory<LoginCubit>(() => LoginCubit());
-  getIt.registerFactory<ForgetPasswordCubit>(() => ForgetPasswordCubit());
+  getIt.registerFactory<LoginCubit>(() => LoginCubit(auth: getIt()));
+  getIt.registerFactory<ForgetPasswordCubit>(
+    () => ForgetPasswordCubit(auth: getIt()),
+  );
   getIt.registerFactory<ChangePasswordCubit>(() => ChangePasswordCubit());
   getIt.registerFactory<OtpCubit>(() => OtpCubit());
-  getIt.registerFactory<RegisterCubit>(() => RegisterCubit());
+  getIt.registerFactory<RegisterCubit>(
+    () => RegisterCubit(auth: getIt(), createUser: getIt()),
+  );
   getIt.registerLazySingleton<UserRemoteDataSource>(
     () => UserRemoteDataSource(firestore: getIt()),
   );

@@ -47,47 +47,54 @@ class BookingConfirmedScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: Colors.white,
+          bottomNavigationBar: SafeArea(
+            top: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 16.h),
+              child: BookingActionButton(
+                label: AppStrings.backToHome,
+                filled: true,
+                onTap: () {
+                  context.pushNamedAndRemoveAll(Routes.homeScreen);
+                },
+              ),
+            ),
+          ),
           body: SafeArea(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 12.h),
-                  const BookingStatusBadge(),
-                  SizedBox(height: 12.h),
-                  Text('Booking Confirmed!', style: AppTextStyles.cardTitle),
-                  SizedBox(height: 12.h),
-                  Text(
-                    'Your booking at $restaurantName is confirmed.',
-                    style: AppTextStyles.cardMeta.copyWith(fontSize: 16.sp),
-                  ),
-                  SizedBox(height: 18.h),
-                  BookingQrCard(
-                    key: ValueKey(bookingCode),
-                    code: bookingCode,
-                  ),
-                  SizedBox(height: 16.h),
-                  BookingDetailsCard(
-                    restaurantName: restaurantName,
-                    dateLabel: dateLabel,
-                    timeLabel: timeLabel,
-                    guestsLabel: guestsLabel,
-                    totalPaid: _formatCurrency(currency, totalAmount),
-                  ),
-                  SizedBox(height: 14.h),
-                  const BookingImportantCard(),
-                  SizedBox(height: 16.h),
-                  BookingActionButton(
-                    label: AppStrings.backToHome,
-                    icon: Icons.location_on_outlined,
-                    filled: true,
-                    onTap: () {
-                      context.pushNamed(Routes.homeScreen);
-                    },
-                  ),
-                
-                ],
+            child: PopScope(
+              canPop: false,
+              onPopInvoked: (_) {
+                context.pushNamedAndRemoveAll(Routes.homeScreen);
+              },
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 96.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 12.h),
+                    const BookingStatusBadge(),
+                    SizedBox(height: 12.h),
+                    Text('Booking Confirmed!', style: AppTextStyles.cardTitle),
+                    SizedBox(height: 12.h),
+                    Text(
+                      'Your booking at $restaurantName is confirmed.',
+                      style: AppTextStyles.cardMeta.copyWith(fontSize: 16.sp),
+                    ),
+                    SizedBox(height: 18.h),
+                    BookingQrCard(key: ValueKey(bookingCode), code: bookingCode),
+                    SizedBox(height: 16.h),
+                    BookingDetailsCard(
+                      restaurantName: restaurantName,
+                      dateLabel: dateLabel,
+                      timeLabel: timeLabel,
+                      guestsLabel: guestsLabel,
+                      totalPaid: _formatCurrency(currency, totalAmount),
+                    ),
+                    SizedBox(height: 14.h),
+                    const BookingImportantCard(),
+                    SizedBox(height: 8.h),
+                  ],
+                ),
               ),
             ),
           ),

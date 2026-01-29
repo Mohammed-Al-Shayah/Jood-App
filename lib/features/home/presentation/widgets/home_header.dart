@@ -5,14 +5,13 @@ import '../../../../core/theming/app_colors.dart';
 import '../../../../core/utils/app_strings.dart';
 
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key});
+  const HomeHeader({super.key, required this.locationText});
+  final String locationText;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.cardBackground,
-      ),
+      decoration: const BoxDecoration(color: AppColors.cardBackground),
       child: Row(
         children: [
           Icon(
@@ -34,7 +33,7 @@ class HomeHeader extends StatelessWidget {
               ),
               SizedBox(height: 2.h),
               Text(
-                AppStrings.cityName,
+                locationText,
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
@@ -52,11 +51,7 @@ class HomeHeader extends StatelessWidget {
               color: AppColors.iconStroke,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.tune,
-              color: AppColors.textPrimary,
-              size: 25.sp,
-            ),
+            child: Icon(Icons.tune, color: AppColors.textPrimary, size: 25.sp),
           ),
         ],
       ),

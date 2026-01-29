@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/routing/app_router.dart';
@@ -36,6 +37,8 @@ class SelectDateTimeScreen extends StatelessWidget {
         builder: (context, state) {
           final selectedLabel = formatOfferDate(state.selectedDate);
           final selectedIndex = state.selectedOfferIndex;
+          final isLoading = state.status == BookingFlowStatus.loading;
+          final offers = isLoading ? _skeletonOffers() : state.offers;
 
           return Scaffold(
             backgroundColor: Colors.white,
@@ -91,75 +94,74 @@ class SelectDateTimeScreen extends StatelessWidget {
                   SizedBox(height: 12.h),
 
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            height: 86.h,
-                            child: DateStrip(
-                              dates: state.dates,
-                              selectedIndex: state.selectedDateIndex,
-                              onDateTap: (index) => context
-                                  .read<BookingFlowCubit>()
-                                  .selectDate(index),
-                              onMoreTap: () => _openDatePicker(context),
-                            ),
-                          ),
-                          SizedBox(height: 20.h),
-                          Text(
-                            '${AppStrings.availableOffersFor} $selectedLabel',
-                            style: AppTextStyles.sectionTitle.copyWith(
-                              fontSize: 18.sp,
-                            ),
-                          ),
-                          SizedBox(height: 24.h),
-                          if (state.status == BookingFlowStatus.loading)
-                            const Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.primary,
+                    child: Skeletonizer(
+                      enabled: isLoading,
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              height: 86.h,
+                              child: DateStrip(
+                                dates: state.dates,
+                                selectedIndex: state.selectedDateIndex,
+                                onDateTap: (index) => context
+                                    .read<BookingFlowCubit>()
+                                    .selectDate(index),
+                                onMoreTap: () => _openDatePicker(context),
                               ),
                             ),
-                          if (state.status == BookingFlowStatus.failure)
+                            SizedBox(height: 20.h),
                             Text(
-                              state.errorMessage ?? 'Failed to load offers.',
-                              style: AppTextStyles.cardMeta,
+                              '${AppStrings.availableOffersFor} $selectedLabel',
+                              style: AppTextStyles.sectionTitle.copyWith(
+                                fontSize: 18.sp,
+                              ),
                             ),
-                          if (state.status == BookingFlowStatus.ready &&
-                              state.offers.isEmpty )
-                            Column(
-                              children: [
-                                SizedBox(height: 200.h,),
+                            SizedBox(height: 24.h),
+                            if (state.status == BookingFlowStatus.failure)
+                              Text(
+                                state.errorMessage ?? 'Failed to load offers.',
+                                style: AppTextStyles.cardMeta,
+                              ),
+                            if (state.status == BookingFlowStatus.ready &&
+                                state.offers.isEmpty)
+                              Column(
+                                children: [
+                                  SizedBox(height: 200.h),
                                   Center(
-                              child: Text(
-                                'No offers available for this date.',
-                                style: AppTextStyles.cardMeta.copyWith(
-                                  fontSize: 16.sp,color: AppColors.textPrimary),
+                                    child: Text(
+                                      'No offers available for this date.',
+                                      style: AppTextStyles.cardMeta.copyWith(
+                                        fontSize: 16.sp,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                              ],
-                            ),
-                          
-                          ...state.offers.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final offer = entry.value;
-                            return Padding(
-                              padding: EdgeInsets.only(bottom: 12.h),
-                              child: OfferCard(
-                                offer: offer,
-                                isSelected: selectedIndex == index,
-                                statusLabel: _statusLabel(offer),
-                                statusColor: _statusColor(offer),
-                                onTap: _isSoldOut(offer)
-                                    ? null
-                                    : () => context
-                                          .read<BookingFlowCubit>()
-                                          .toggleOffer(index),
-                              ),
-                            );
-                          }),
-                        ],
+                            ...offers.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final offer = entry.value;
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: 12.h),
+                                child: OfferCard(
+                                  offer: offer,
+                                  isSelected:
+                                      !isLoading && selectedIndex == index,
+                                  statusLabel: _statusLabel(offer),
+                                  statusColor: _statusColor(offer),
+                                  onTap: isLoading || _isSoldOut(offer)
+                                      ? null
+                                      : () => context
+                                            .read<BookingFlowCubit>()
+                                            .toggleOffer(index),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -189,7 +191,6 @@ class SelectDateTimeScreen extends StatelessWidget {
               surface: Colors.white,
               onSurface: AppColors.textPrimary,
             ),
-            dialogBackgroundColor: Colors.white,
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
@@ -197,7 +198,7 @@ class SelectDateTimeScreen extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
+            ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
           ),
           child: child ?? const SizedBox.shrink(),
         );
@@ -258,4 +259,48 @@ int _remainingTotal(OfferEntity offer) {
   final remainingAdult = offer.remainingAdult < 0 ? 0 : offer.remainingAdult;
   final remainingChild = offer.remainingChild < 0 ? 0 : offer.remainingChild;
   return remainingAdult + remainingChild;
+}
+
+List<OfferEntity> _skeletonOffers() {
+  final now = DateTime.now();
+  return [
+    OfferEntity(
+      id: 'skeleton-1',
+      restaurantId: 'skeleton',
+      date: now.toIso8601String(),
+      startTime: '12:00 PM',
+      endTime: '02:00 PM',
+      currency: r'$',
+      priceAdult: 120,
+      priceChild: 80,
+      capacityAdult: 20,
+      capacityChild: 10,
+      bookedAdult: 0,
+      bookedChild: 0,
+      status: 'Available',
+      title: 'Buffet Entry',
+      entryConditions: const ['Entry condition'],
+      createdAt: now,
+      updatedAt: now,
+    ),
+    OfferEntity(
+      id: 'skeleton-2',
+      restaurantId: 'skeleton',
+      date: now.toIso8601String(),
+      startTime: '04:00 PM',
+      endTime: '06:00 PM',
+      currency: r'$',
+      priceAdult: 140,
+      priceChild: 90,
+      capacityAdult: 20,
+      capacityChild: 10,
+      bookedAdult: 0,
+      bookedChild: 0,
+      status: 'Available',
+      title: 'Buffet Entry',
+      entryConditions: const ['Entry condition'],
+      createdAt: now,
+      updatedAt: now,
+    ),
+  ];
 }
