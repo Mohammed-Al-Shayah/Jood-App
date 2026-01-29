@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../features/main_shell/presentation/pages/main_shell_screen.dart';
-import '../../features/orders/presentation/pages/orders_screen.dart';
-import '../../features/profile/presentation/pages/profile_screen.dart';
+import '../../features/bookings/presentation/pages/orders_screen.dart';
+import '../../features/users/presentation/pages/profile_screen.dart';
 import '../../features/auth/presentation/login/page/login.page.dart';
 import '../../features/auth/presentation/registration/page/register.page.dart';
 import '../../features/auth/presentation/forget_password/pages/forget_password.page.dart';
@@ -11,12 +11,12 @@ import '../../features/auth/presentation/otp/page/verify_otp.page.dart';
 import '../../features/auth/presentation/change_password/pages/change_password.page.dart';
 import '../../features/auth/presentation/registration/page/request_under_review.page.dart';
 import '../../features/auth/presentation/registration/page/beneficiary_create_story.page.dart';
-import '../../features/restaurant_detail/presentation/pages/detail_screen.dart';
-import '../../features/select_date_time/presentation/cubit/booking_flow_cubit.dart';
-import '../../features/select_date_time/presentation/pages/booking_confirmed_screen.dart';
-import '../../features/select_date_time/presentation/pages/payment_screen.dart';
-import '../../features/select_date_time/presentation/pages/select_date_time_screen.dart';
-import '../../features/select_date_time/presentation/pages/select_guests_screen.dart';
+import '../../features/restaurants/presentation/pages/detail_screen.dart';
+import '../../features/bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
+import '../../features/bookings/booking_flow/presentation/pages/booking_confirmed_screen.dart';
+import '../../features/bookings/booking_flow/presentation/pages/payment_screen.dart';
+import '../../features/bookings/booking_flow/presentation/pages/select_date_time_screen.dart';
+import '../../features/bookings/booking_flow/presentation/pages/select_guests_screen.dart';
 import 'routes.dart';
 
 class AppRouter {

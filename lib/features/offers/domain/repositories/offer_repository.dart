@@ -5,5 +5,10 @@ abstract class OfferRepository {
     String restaurantId,
     String date,
   );
+  Future<List<OfferEntity>> getOffersByRestaurantAndDateRange(
+    String restaurantId,
+    String startDate,
+    String endDate,
+  );
   Future<OfferEntity> getOfferById(String id);
 }

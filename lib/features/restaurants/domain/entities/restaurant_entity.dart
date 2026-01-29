@@ -9,6 +9,7 @@ class RestaurantEntity extends Equatable {
     required this.rating,
     required this.reviewsCount,
     required this.coverImageUrl,
+    required this.about,
     required this.phone,
     required this.address,
     required this.geoLat,
@@ -31,6 +32,7 @@ class RestaurantEntity extends Equatable {
   final double rating;
   final int reviewsCount;
   final String coverImageUrl;
+  final String about;
   final String phone;
   final String address;
   final double geoLat;
@@ -54,6 +56,7 @@ class RestaurantEntity extends Equatable {
         rating,
         reviewsCount,
         coverImageUrl,
+        about,
         phone,
         address,
         geoLat,

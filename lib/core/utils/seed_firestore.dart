@@ -28,6 +28,8 @@ class SeedFirestore {
         'reviewsCount': 128,
         'coverImageUrl':
             'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
+        'about':
+            'Seafood-forward buffet with live stations, sunset views, and a relaxed coastal vibe.',
         'phone': '+971 55 123 4567',
         'address': 'Jumeirah Beach Rd, Dubai',
         'geo': {'lat': 25.2048, 'lng': 55.2708},
@@ -56,6 +58,8 @@ class SeedFirestore {
         'reviewsCount': 92,
         'coverImageUrl':
             'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
+        'about':
+            'Downtown dining with seasonal menus, family-friendly seating, and a skyline backdrop.',
         'phone': '+971 50 987 6543',
         'address': 'Downtown Boulevard, Dubai',
         'geo': {'lat': 25.2048, 'lng': 55.2708},
@@ -83,6 +87,8 @@ class SeedFirestore {
         'reviewsCount': 214,
         'coverImageUrl':
             'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=1200&q=80',
+        'about':
+            'Palm-side terrace featuring chef specials, live music nights, and panoramic views.',
         'phone': '+971 52 222 3344',
         'address': 'The Palm, Crescent Rd, Dubai',
         'geo': {'lat': 25.1124, 'lng': 55.1390},
@@ -111,6 +117,8 @@ class SeedFirestore {
         'reviewsCount': 76,
         'coverImageUrl':
             'https://images.unsplash.com/photo-1421622548261-c45bfe178854?auto=format&fit=crop&w=1200&q=80',
+        'about':
+            'Bold street-food flavors with late-night bites and casual indoor-outdoor seating.',
         'phone': '+971 56 888 9922',
         'address': 'Bay Square, Business Bay, Dubai',
         'geo': {'lat': 25.1886, 'lng': 55.2636},
@@ -138,6 +146,8 @@ class SeedFirestore {
         'reviewsCount': 143,
         'coverImageUrl':
             'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80',
+        'about':
+            'Marina-side grill buffet with open kitchen, fresh salads, and a breezy terrace.',
         'phone': '+971 55 707 8899',
         'address': 'Marina Walk, Dubai',
         'geo': {'lat': 25.0800, 'lng': 55.1400},
@@ -165,6 +175,8 @@ class SeedFirestore {
         'reviewsCount': 41,
         'coverImageUrl':
             'https://images.unsplash.com/photo-1481931098730-318b6f776db0?auto=format&fit=crop&w=1200&q=80',
+        'about':
+            'Laid-back brunch spot with traditional dishes, tea service, and heritage vibes.',
         'phone': '+971 54 111 2233',
         'address': 'Al Fahidi Historical District, Dubai',
         'geo': {'lat': 25.2630, 'lng': 55.2972},

@@ -16,6 +16,19 @@ class OfferRepositoryImpl implements OfferRepository {
   }
 
   @override
+  Future<List<OfferEntity>> getOffersByRestaurantAndDateRange(
+    String restaurantId,
+    String startDate,
+    String endDate,
+  ) {
+    return remoteDataSource.getOffersByRestaurantAndDateRange(
+      restaurantId,
+      startDate,
+      endDate,
+    );
+  }
+
+  @override
   Future<OfferEntity> getOfferById(String id) {
     return remoteDataSource.getOfferById(id);
   }

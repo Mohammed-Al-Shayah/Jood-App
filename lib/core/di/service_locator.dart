@@ -6,11 +6,12 @@ import '../../features/home/data/datasources/restaurant_remote_data_source.dart'
 import '../../features/home/data/repositories/restaurant_repository_impl.dart';
 import '../../features/home/domain/repositories/restaurant_repository.dart';
 import '../../features/home/presentation/cubit/home_cubit.dart';
-import '../../features/select_date_time/presentation/cubit/booking_flow_cubit.dart';
+import '../../features/bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
 import '../../features/offers/data/datasources/offer_remote_data_source.dart';
 import '../../features/offers/data/repositories/offer_repository_impl.dart';
 import '../../features/offers/domain/repositories/offer_repository.dart';
 import '../../features/offers/domain/usecases/get_offers_for_date_usecase.dart';
+import '../../features/offers/domain/usecases/get_offers_for_range_usecase.dart';
 import '../../features/auth/presentation/login/logic/login_cubit.dart';
 import '../../features/auth/presentation/forget_password/logic/forget_password_cubit.dart';
 import '../../features/auth/presentation/change_password/logic/change_password_cubit.dart';
@@ -26,7 +27,7 @@ import '../../features/payments/data/repositories/payment_repository_impl.dart';
 import '../../features/payments/domain/repositories/payment_repository.dart';
 import '../../features/payments/domain/usecases/create_payment_usecase.dart';
 import '../../features/payments/domain/usecases/get_payment_by_booking_usecase.dart';
-import '../../features/restaurant_detail/presentation/cubit/restaurant_detail_cubit.dart';
+import '../../features/restaurants/presentation/cubit/restaurant_detail_cubit.dart';
 import '../../features/restaurants/data/datasources/restaurant_remote_data_source.dart'
     as restaurants_ds;
 import '../../features/restaurants/data/repositories/restaurant_repository_impl.dart'
@@ -64,8 +65,14 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<GetOffersForDateUseCase>(
     () => GetOffersForDateUseCase(getIt()),
   );
+  getIt.registerLazySingleton<GetOffersForRangeUseCase>(
+    () => GetOffersForRangeUseCase(getIt()),
+  );
   getIt.registerFactory<BookingFlowCubit>(
-    () => BookingFlowCubit(getOffersForDate: getIt()),
+    () => BookingFlowCubit(
+      getOffersForDate: getIt(),
+      getOffersForRange: getIt(),
+    ),
   );
   getIt.registerFactory<LoginCubit>(() => LoginCubit(auth: getIt()));
   getIt.registerFactory<ForgetPasswordCubit>(

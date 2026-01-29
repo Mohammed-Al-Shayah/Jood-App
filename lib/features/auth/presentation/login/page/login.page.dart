@@ -31,9 +31,9 @@ class LoginPage extends StatelessWidget {
             listener: (context, state) {
               if (state.status == LoginStatus.failure &&
                   state.errorMessage != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(state.errorMessage!)),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
               }
               if (state.status == LoginStatus.success) {
                 context.pushNamedAndRemoveAll(Routes.homeScreen);
@@ -48,7 +48,7 @@ class LoginPage extends StatelessWidget {
                   children: [
                     SizedBox(height: 12.h),
                     Image.asset(
-                      'assets/images/logo.png',
+                      'assets/images/logo1.png',
                       width: 100.w,
                       height: 100.h,
                     ),

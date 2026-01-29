@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jood/core/widgets/main_bottom_nav.dart';
 import 'package:jood/features/home/presentation/pages/home_screen.dart';
-import 'package:jood/features/orders/presentation/pages/orders_screen.dart';
-import 'package:jood/features/profile/presentation/pages/profile_screen.dart';
+import 'package:jood/features/bookings/presentation/pages/orders_screen.dart';
+import 'package:jood/features/users/presentation/pages/profile_screen.dart';
 
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
@@ -19,11 +19,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   @override
   void initState() {
     super.initState();
-    _tabs = const [
-      HomeTab(),
-      OrdersTab(),
-      ProfileTab(),
-    ];
+    _tabs = const [HomeTab(), OrdersTab(), ProfileTab()];
   }
 
   void _onTap(int index) {
@@ -40,10 +36,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: IndexedStack(
-          index: _currentIndex,
-          children: _tabs,
-        ),
+        body: IndexedStack(index: _currentIndex, children: _tabs),
         bottomNavigationBar: MainBottomNavBar(
           currentIndex: _currentIndex,
           onTap: _onTap,

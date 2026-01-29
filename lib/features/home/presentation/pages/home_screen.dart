@@ -106,6 +106,7 @@ class HomeTab extends StatelessWidget {
                           image: _RestaurantImage(
                             url: item.imageUrl,
                             name: item.name,
+                            showLabel: false,
                           ),
                           onTap: isLoading
                               ? null
@@ -120,6 +121,7 @@ class HomeTab extends StatelessWidget {
                                       image: _RestaurantImage(
                                         url: item.imageUrl,
                                         name: item.name,
+                                        showLabel: false,
                                       ),
                                     ),
                                   );
@@ -139,21 +141,27 @@ class HomeTab extends StatelessWidget {
 }
 
 class _RestaurantImage extends StatelessWidget {
-  const _RestaurantImage({required this.url, required this.name});
+  const _RestaurantImage({
+    required this.url,
+    required this.name,
+    this.showLabel = true,
+  });
 
   final String url;
   final String name;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
     if (url.isEmpty) {
-      return _ImagePlaceholder(label: name);
+      return _ImagePlaceholder(label: showLabel ? name : null);
     }
     return CachedNetworkImage(
       imageUrl: url,
       fit: BoxFit.cover,
-      placeholder: (_, __) => _ImagePlaceholder(label: name),
-      errorWidget: (_, __, ___) => _ImagePlaceholder(label: name),
+      placeholder: (_, _) => _ImagePlaceholder(label: showLabel ? name : null),
+      errorWidget: (_, _, _) =>
+          _ImagePlaceholder(label: showLabel ? name : null),
     );
   }
 }
@@ -161,7 +169,7 @@ class _RestaurantImage extends StatelessWidget {
 class _ImagePlaceholder extends StatelessWidget {
   const _ImagePlaceholder({required this.label});
 
-  final String label;
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -174,12 +182,14 @@ class _ImagePlaceholder extends StatelessWidget {
         ),
       ),
       child: Center(
-        child: Text(
-          label,
-          style: AppTextStyles.sectionTitle.copyWith(
-            color: AppColors.textPrimary,
-          ),
-        ),
+        child: label == null || label!.isEmpty
+            ? const SizedBox.shrink()
+            : Text(
+                label!,
+                style: AppTextStyles.sectionTitle.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
       ),
     );
   }
