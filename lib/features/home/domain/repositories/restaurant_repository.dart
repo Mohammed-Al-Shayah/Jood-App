@@ -1,5 +1,5 @@
-import '../entities/restaurant.dart';
+import '../../../restaurants/domain/entities/restaurant_entity.dart';
 
 abstract class RestaurantRepository {
-  Future<List<Restaurant>> getRestaurants();
+  Future<List<RestaurantEntity>> getRestaurants();
 }

@@ -53,9 +53,9 @@ class LoginPage extends StatelessWidget {
                       height: 100.h,
                     ),
                     SizedBox(height: 24.h),
-                    _Label(text: 'Email'),
+                    _Label(text: 'Email or Phone'),
                     _TextField(
-                      hintText: 'Enter your email',
+                      hintText: 'Enter your email or phone',
                       keyboardType: TextInputType.emailAddress,
                       onChanged: context.read<LoginCubit>().updateEmail,
                     ),

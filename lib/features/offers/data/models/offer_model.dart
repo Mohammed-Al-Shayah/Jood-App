@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/offer_entity.dart';
+import '../../../../core/utils/number_utils.dart';
+import '../../../../core/utils/date_utils.dart';
 
 class OfferModel extends OfferEntity {
   const OfferModel({
@@ -11,6 +13,7 @@ class OfferModel extends OfferEntity {
     required super.endTime,
     required super.currency,
     required super.priceAdult,
+    required super.priceAdultOriginal,
     required super.priceChild,
     required super.capacityAdult,
     required super.capacityChild,
@@ -32,8 +35,9 @@ class OfferModel extends OfferEntity {
       startTime: data['startTime'] as String? ?? '',
       endTime: data['endTime'] as String? ?? '',
       currency: data['currency'] as String? ?? 'USD',
-      priceAdult: _toDouble(data['priceAdult']),
-      priceChild: _toDouble(data['priceChild']),
+      priceAdult: NumberUtils.toDouble(data['priceAdult']),
+      priceAdultOriginal: NumberUtils.toDouble(data['priceAdultOriginal']),
+      priceChild: NumberUtils.toDouble(data['priceChild']),
       capacityAdult: (data['capacityAdult'] as num?)?.toInt() ?? 0,
       capacityChild: (data['capacityChild'] as num?)?.toInt() ?? 0,
       bookedAdult: (data['bookedAdult'] as num?)?.toInt() ?? 0,
@@ -51,12 +55,7 @@ class OfferModel extends OfferEntity {
     return list.map((item) => item.toString()).toList();
   }
 
-  static double _toDouble(dynamic value) {
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    return 0;
-  }
+  // Number parsing moved to NumberUtils
 
   static DateTime _toDateTime(dynamic value) {
     if (value is Timestamp) return value.toDate();
@@ -66,19 +65,15 @@ class OfferModel extends OfferEntity {
 
   static String _readDate(dynamic value) {
     if (value is Timestamp) {
-      return _formatDate(value.toDate());
+      return AppDateUtils.formatDate(value.toDate());
     }
     if (value is DateTime) {
-      return _formatDate(value);
+      return AppDateUtils.formatDate(value);
     }
     if (value == null) return '';
     return value.toString();
   }
 
-  static String _formatDate(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
-  }
+  // Date formatting moved to DateUtils
 }
+

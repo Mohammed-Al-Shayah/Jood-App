@@ -4,8 +4,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/utils/extensions.dart';
-import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 import '../cubit/booking_flow_cubit.dart';
 import '../cubit/booking_flow_state.dart';
 import '../widgets/booking_confirmed/booking_confirmed_utils.dart';
@@ -25,7 +25,7 @@ class BookingConfirmedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<BookingFlowCubit, BookingFlowState>(
       builder: (context, state) {
-        final selectedOffer = _selectedOffer(state);
+        final selectedOffer = state.selectedOffer();
         final dateLabel = formatOfferDate(state.selectedDate);
         final timeLabel = selectedOffer?.startTime ?? '--';
         final currency = selectedOffer?.currency ?? r'$';
@@ -88,7 +88,7 @@ class BookingConfirmedScreen extends StatelessWidget {
                       dateLabel: dateLabel,
                       timeLabel: timeLabel,
                       guestsLabel: guestsLabel,
-                      totalPaid: _formatCurrency(currency, totalAmount),
+                      totalPaid: formatCurrency(currency, totalAmount),
                     ),
                     SizedBox(height: 14.h),
                     const BookingImportantCard(),
@@ -103,22 +103,6 @@ class BookingConfirmedScreen extends StatelessWidget {
     );
   }
 
-  OfferEntity? _selectedOffer(BookingFlowState state) {
-    final index = state.selectedOfferIndex;
-    if (index == null) return null;
-    if (index < 0 || index >= state.offers.length) return null;
-    return state.offers[index];
-  }
-}
-
-String _formatCurrency(String currency, double value) {
-  final rounded = value.round();
-  final trimmed = currency.trim();
-  if (trimmed.isEmpty) {
-    return '\$$rounded';
-  }
-  final isSymbol = trimmed.length == 1;
-  return isSymbol ? '$trimmed$rounded' : '$trimmed $rounded';
 }
 
 String _codeFromSelection(

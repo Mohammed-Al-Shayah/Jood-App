@@ -26,9 +26,12 @@ class OfferCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final borderColor = isSelected ? AppColors.primary : Colors.transparent;
     final timeLabel = offer.startTime.isEmpty ? '--' : offer.startTime;
-    final titleLabel =
-        offer.title.isEmpty ? AppStrings.buffetEntry : offer.title;
+    final titleLabel = offer.title.isEmpty
+        ? AppStrings.buffetEntry
+        : offer.title;
     final priceLabel = _formatPrice(offer);
+    final originalPriceLabel = _formatOriginalPrice(offer);
+    final discountPercentLabel = _formatDiscountPercent(offer);
 
     return Material(
       color: Colors.transparent,
@@ -91,6 +94,27 @@ class OfferCard extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
+                      if (originalPriceLabel.isNotEmpty)
+                        Text(
+                          originalPriceLabel,
+                          style: AppTextStyles.cardMeta.copyWith(
+                            fontSize: 12.sp,
+                            color: AppColors.textMuted,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      if (discountPercentLabel.isNotEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(top: 2.h),
+                          child: Text(
+                            discountPercentLabel,
+                            style: AppTextStyles.cardMeta.copyWith(
+                              fontSize: 11.sp,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                       Text(
                         priceLabel,
                         style: AppTextStyles.cardPrice.copyWith(
@@ -100,9 +124,7 @@ class OfferCard extends StatelessWidget {
                       SizedBox(height: 4.h),
                       Text(
                         AppStrings.perAdult,
-                        style: AppTextStyles.cardMeta.copyWith(
-                          fontSize: 13.sp,
-                        ),
+                        style: AppTextStyles.cardMeta.copyWith(fontSize: 13.sp),
                       ),
                     ],
                   ),
@@ -157,4 +179,21 @@ String _formatPrice(OfferEntity offer) {
   return isSymbol ? '$currency$value' : '$currency $value';
 }
 
+String _formatOriginalPrice(OfferEntity offer) {
+  final original = offer.priceAdultOriginal.round();
+  if (original <= 0 || original <= offer.priceAdult) return '';
+  final currency = offer.currency.trim();
+  if (currency.isEmpty) {
+    return '\$$original';
+  }
+  final isSymbol = currency.length == 1;
+  return isSymbol ? '$currency$original' : '$currency $original';
+}
 
+String _formatDiscountPercent(OfferEntity offer) {
+  final original = offer.priceAdultOriginal;
+  final current = offer.priceAdult;
+  if (original <= 0 || current <= 0 || original <= current) return '';
+  final percent = ((original - current) / original) * 100;
+  return '${percent.round()}% off';
+}

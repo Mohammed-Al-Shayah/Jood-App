@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
-import 'package:jood/features/offers/domain/entities/offer_entity.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 import '../cubit/booking_flow_cubit.dart';
 import '../cubit/booking_flow_state.dart';
 import '../widgets/date_utils.dart';
@@ -26,7 +26,7 @@ class SelectGuestsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<BookingFlowCubit, BookingFlowState>(
       builder: (context, state) {
-        final selectedOffer = _selectedOffer(state);
+        final selectedOffer = state.selectedOffer();
         final dateLabel = formatOfferDate(state.selectedDate);
         final summaryTime = selectedOffer == null
             ? dateLabel
@@ -34,9 +34,23 @@ class SelectGuestsScreen extends StatelessWidget {
         final currency = selectedOffer?.currency ?? r'$';
         final adultPrice = selectedOffer?.priceAdult ?? 0;
         final childPrice = selectedOffer?.priceChild ?? 0;
+        final adultOriginal = selectedOffer?.priceAdultOriginal ?? 0;
+        final childOriginal =
+            (adultPrice > 0 && adultOriginal > 0 && childPrice > 0)
+            ? childPrice * (adultOriginal / adultPrice)
+            : childPrice;
         final adultTotal = adultPrice * state.adultCount;
         final childTotal = childPrice * state.childCount;
         final subtotal = adultTotal + childTotal;
+        final originalAdultTotal = adultOriginal * state.adultCount;
+        final originalChildTotal = childOriginal * state.childCount;
+        final originalSubtotal = originalAdultTotal + originalChildTotal;
+        final discountTotal = originalSubtotal > subtotal
+            ? (originalSubtotal - subtotal)
+            : 0;
+        const taxRate = 0.05;
+        final tax = subtotal * taxRate;
+        final totalPayable = subtotal + tax;
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -104,7 +118,10 @@ class SelectGuestsScreen extends StatelessWidget {
                               TicketRow(
                                 label: AppStrings.adults,
                                 ageLabel: AppStrings.adultsAge,
-                                priceLabel: _formatCurrency(currency, adultPrice),
+                                priceLabel: formatCurrency(
+                                  currency,
+                                  adultPrice,
+                                ),
                                 count: state.adultCount,
                                 onAdd: () => context
                                     .read<BookingFlowCubit>()
@@ -122,7 +139,10 @@ class SelectGuestsScreen extends StatelessWidget {
                               TicketRow(
                                 label: AppStrings.children,
                                 ageLabel: AppStrings.childrenAge,
-                                priceLabel: _formatCurrency(currency, childPrice),
+                                priceLabel: formatCurrency(
+                                  currency,
+                                  childPrice,
+                                ),
                                 count: state.childCount,
                                 onAdd: () => context
                                     .read<BookingFlowCubit>()
@@ -181,17 +201,17 @@ class SelectGuestsScreen extends StatelessWidget {
                                 ],
                               ),
                               SizedBox(height: 12.h),
-                                SummaryRow(
-                                  label:
-                                      '${AppStrings.adults} x${state.adultCount}',
-                                  value: _formatCurrency(currency, adultTotal),
-                                ),
+                              SummaryRow(
+                                label:
+                                    '${AppStrings.adults} x${state.adultCount}',
+                                value: formatCurrency(currency, adultTotal),
+                              ),
                               if (state.childCount > 0) ...[
                                 SizedBox(height: 6.h),
                                 SummaryRow(
                                   label:
                                       '${AppStrings.children} x${state.childCount}',
-                                  value: _formatCurrency(currency, childTotal),
+                                  value: formatCurrency(currency, childTotal),
                                 ),
                               ],
                               SizedBox(height: 10.h),
@@ -199,12 +219,30 @@ class SelectGuestsScreen extends StatelessWidget {
                               SizedBox(height: 10.h),
                               SummaryRow(
                                 label: AppStrings.subtotal,
-                                value: _formatCurrency(currency, subtotal),
+                                value: formatCurrency(currency, subtotal),
+                              ),
+                              SizedBox(height: 6.h),
+                              SummaryRow(
+                                label: 'Before discount',
+                                value: formatCurrency(
+                                  currency,
+                                  originalSubtotal,
+                                ),
+                              ),
+                              SizedBox(height: 6.h),
+                              SummaryRow(
+                                label: 'Discount',
+                                value: formatCurrency(currency, -discountTotal),
+                              ),
+                              SizedBox(height: 6.h),
+                              SummaryRow(
+                                label: 'Tax (5%)',
+                                value: formatCurrency(currency, tax),
                               ),
                               SizedBox(height: 6.h),
                               SummaryRow(
                                 label: AppStrings.totalPayable,
-                                value: _formatCurrency(currency, subtotal),
+                                value: formatCurrency(currency, totalPayable),
                                 isBold: true,
                               ),
                             ],
@@ -221,23 +259,4 @@ class SelectGuestsScreen extends StatelessWidget {
       },
     );
   }
-
-  OfferEntity? _selectedOffer(BookingFlowState state) {
-    final index = state.selectedOfferIndex;
-    if (index == null) return null;
-    if (index < 0 || index >= state.offers.length) return null;
-    return state.offers[index];
-  }
 }
-
-String _formatCurrency(String currency, double value) {
-  final rounded = value.round();
-  final trimmed = currency.trim();
-  if (trimmed.isEmpty) {
-    return '\$$rounded';
-  }
-  final isSymbol = trimmed.length == 1 || RegExp(r'[$€£¥]').hasMatch(trimmed);
-  return isSymbol ? '$trimmed$rounded' : '$trimmed $rounded';
-}
-
-

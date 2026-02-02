@@ -1,3 +1,4 @@
+import '../../../../core/utils/auth_validators.dart';
 import '../../domain/entities/user_entity.dart';
 
 class UserModel extends UserEntity {
@@ -28,6 +29,7 @@ class UserModel extends UserEntity {
       'fullName': fullName,
       'email': email,
       'phone': phone,
+      'phoneNormalized': AuthValidators.normalizePhone(phone),
       'country': country,
       'city': city,
       'role': role,

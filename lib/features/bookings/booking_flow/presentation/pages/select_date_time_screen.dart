@@ -10,6 +10,7 @@ import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/widgets/bottom_cta_bar.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 import '../cubit/booking_flow_cubit.dart';
 import '../cubit/booking_flow_state.dart';
@@ -45,44 +46,21 @@ class SelectDateTimeScreen extends StatelessWidget {
             backgroundColor: Colors.white,
             bottomNavigationBar: selectedIndex == null
                 ? null
-                : Container(
-                    padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 16.h),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.shadowColor,
-                          blurRadius: 14.r,
-                          offset: Offset(0, -6.h),
+                : BottomCtaBar(
+                    label: 'Next',
+                    onPressed: () {
+                      context.pushNamed(
+                        Routes.selectGuestsScreen,
+                        arguments: SelectGuestsArgs(
+                          restaurantName: name,
+                          cubit: context.read<BookingFlowCubit>(),
                         ),
-                      ],
-                    ),
-                    child: SafeArea(
-                      top: false,
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            context.pushNamed(
-                              Routes.selectGuestsScreen,
-                              arguments: SelectGuestsArgs(
-                                restaurantName: name,
-                                cubit: context.read<BookingFlowCubit>(),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14.r),
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 14.h),
-                            elevation: 0,
-                          ),
-                          child: Text('Next', style: AppTextStyles.cta),
-                        ),
-                      ),
-                    ),
+                      );
+                    },
+                    backgroundColor: Colors.white,
+                    shadowColor: AppColors.shadowColor,
+                    textStyle: AppTextStyles.cta,
+                    buttonColor: AppColors.primary,
                   ),
             body: SafeArea(
               child: Column(
@@ -111,6 +89,8 @@ class SelectDateTimeScreen extends StatelessWidget {
                                     .read<BookingFlowCubit>()
                                     .selectDate(index),
                                 onMoreTap: () => _openDatePicker(context),
+                                datePrices: state.datePrices,
+                                currency: state.currency,
                               ),
                             ),
                             SizedBox(height: 20.h),
@@ -264,6 +244,7 @@ List<OfferEntity> _skeletonOffers() {
       endTime: '02:00 PM',
       currency: r'$',
       priceAdult: 120,
+      priceAdultOriginal: 145,
       priceChild: 80,
       capacityAdult: 20,
       capacityChild: 10,
@@ -283,6 +264,7 @@ List<OfferEntity> _skeletonOffers() {
       endTime: '06:00 PM',
       currency: r'$',
       priceAdult: 140,
+      priceAdultOriginal: 170,
       priceChild: 90,
       capacityAdult: 20,
       capacityChild: 10,

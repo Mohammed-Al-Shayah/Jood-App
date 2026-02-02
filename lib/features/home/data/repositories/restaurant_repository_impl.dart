@@ -1,6 +1,6 @@
-import '../../domain/entities/restaurant.dart';
 import '../../domain/repositories/restaurant_repository.dart';
 import '../datasources/restaurant_remote_data_source.dart';
+import '../../../restaurants/domain/entities/restaurant_entity.dart';
 
 class RestaurantRepositoryImpl implements RestaurantRepository {
   RestaurantRepositoryImpl({required RestaurantRemoteDataSource remoteDataSource})
@@ -9,7 +9,7 @@ class RestaurantRepositoryImpl implements RestaurantRepository {
   final RestaurantRemoteDataSource _remoteDataSource;
 
   @override
-  Future<List<Restaurant>> getRestaurants() {
+  Future<List<RestaurantEntity>> getRestaurants() {
     return _remoteDataSource.fetchRestaurants();
   }
 }

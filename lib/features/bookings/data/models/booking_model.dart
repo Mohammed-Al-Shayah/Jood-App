@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/booking_entity.dart';
+import '../../../../core/utils/number_utils.dart';
 
 class BookingModel extends BookingEntity {
   const BookingModel({
@@ -37,11 +38,11 @@ class BookingModel extends BookingEntity {
       adults: (data['adults'] as num?)?.toInt() ?? 0,
       children: (data['children'] as num?)?.toInt() ?? 0,
       currency: data['currency'] as String? ?? 'USD',
-      unitPriceAdult: _toDouble(data['unitPriceAdult']),
-      unitPriceChild: _toDouble(data['unitPriceChild']),
-      subtotal: _toDouble(data['subtotal']),
-      discount: _toDouble(data['discount']),
-      total: _toDouble(data['total']),
+      unitPriceAdult: NumberUtils.toDouble(data['unitPriceAdult']),
+      unitPriceChild: NumberUtils.toDouble(data['unitPriceChild']),
+      subtotal: NumberUtils.toDouble(data['subtotal']),
+      discount: NumberUtils.toDouble(data['discount']),
+      total: NumberUtils.toDouble(data['total']),
       status: data['status'] as String? ?? 'confirmed',
       bookingCode: data['bookingCode'] as String? ?? '',
       qrPayload: data['qrPayload'] as String? ?? '',
@@ -50,12 +51,7 @@ class BookingModel extends BookingEntity {
     );
   }
 
-  static double _toDouble(dynamic value) {
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    return 0;
-  }
+  // Number parsing moved to NumberUtils
 
   static DateTime _toDateTime(dynamic value) {
     if (value is Timestamp) return value.toDate();

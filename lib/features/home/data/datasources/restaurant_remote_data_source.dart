@@ -1,21 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../models/restaurant_model.dart';
+import '../../../restaurants/data/models/restaurant_model.dart';
+import '../../../restaurants/domain/entities/restaurant_entity.dart';
+import '../../../../core/utils/number_utils.dart';
+import '../../../../core/utils/date_utils.dart';
 
 abstract class RestaurantRemoteDataSource {
-  Future<List<RestaurantModel>> fetchRestaurants();
+  Future<List<RestaurantEntity>> fetchRestaurants();
 }
 
 class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
   RestaurantRemoteDataSourceImpl({required FirebaseFirestore firestore})
-      : _firestore = firestore;
+    : _firestore = firestore;
 
   final FirebaseFirestore _firestore;
 
   @override
-  Future<List<RestaurantModel>> fetchRestaurants() async {
+  Future<List<RestaurantEntity>> fetchRestaurants() async {
     final snapshot = await _firestore.collection('restaurants').get();
-    final today = _formatDate(DateTime.now());
+    final today = AppDateUtils.formatDate(DateTime.now());
     final offersSnapshot = await _firestore
         .collection('offers')
         .where('date', isEqualTo: today)
@@ -31,9 +34,11 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
 
     for (final doc in snapshot.docs) {
       final data = Map<String, dynamic>.from(doc.data());
-      final offers = offersByRestaurant[doc.id] ?? const <Map<String, dynamic>>[];
+      final offers =
+          offersByRestaurant[doc.id] ?? const <Map<String, dynamic>>[];
 
       var minPrice = double.infinity;
+      var minOriginalPrice = double.infinity;
       var remainingTotal = 0;
       var currency = '';
 
@@ -42,36 +47,58 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
             .toLowerCase()
             .replaceAll(' ', '');
         if (status == 'soldout' || status == 'sold_out') continue;
-        final priceAdult = _toDouble(offer['priceAdult']);
+        final priceAdult = NumberUtils.toDouble(offer['priceAdult']);
         if (priceAdult > 0 && priceAdult < minPrice) {
           minPrice = priceAdult;
           currency = offer['currency'] as String? ?? currency;
         }
-        final remainingAdult = _toInt(offer['capacityAdult']) - _toInt(offer['bookedAdult']);
-        final remainingChild = _toInt(offer['capacityChild']) - _toInt(offer['bookedChild']);
+        final originalAdult = NumberUtils.toDouble(offer['priceAdultOriginal']);
+        if (originalAdult > 0 && originalAdult < minOriginalPrice) {
+          minOriginalPrice = originalAdult;
+          currency = offer['currency'] as String? ?? currency;
+        }
+        final remainingAdult = NumberUtils.toInt(offer['capacityAdult']) -
+            NumberUtils.toInt(offer['bookedAdult']);
+        final remainingChild =
+            NumberUtils.toInt(offer['capacityChild']) -
+            NumberUtils.toInt(offer['bookedChild']);
         remainingTotal += (remainingAdult + remainingChild);
       }
 
-      final originalPrice = _parseNumber(data['discount']);
-      final resolvedMinPrice = minPrice.isFinite ? minPrice : 0.0;
+      final labelPriceFrom = NumberUtils.parseNumber(data['priceFrom']);
+      final labelDiscount = NumberUtils.parseNumber(data['discount']);
+      // final resolvedMinPrice = minPrice.isFinite ? minPrice : 0.0;
+      final resolvedOriginal = minOriginalPrice.isFinite
+          ? minOriginalPrice
+          : _max(labelPriceFrom, labelDiscount);
+      final resolvedCurrent = minPrice.isFinite
+          ? minPrice
+          : _min(labelPriceFrom, labelDiscount);
       final discountPercent = _resolveDiscountPercent(
         data: data,
-        originalPrice: originalPrice,
-        minPrice: resolvedMinPrice,
-        preferComputed: minPrice.isFinite && originalPrice > 0,
+        originalPrice: resolvedOriginal,
+        minPrice: resolvedCurrent,
+        preferComputed: resolvedCurrent > 0 && resolvedOriginal > 0,
       );
-      if (minPrice.isFinite) {
-        if (originalPrice > minPrice) {
-          data['priceFrom'] = 'From ${currency.isEmpty ? '' : '$currency '}'
-              '${originalPrice.toStringAsFixed(0)}';
-          data['discount'] = '${currency.isEmpty ? '' : '$currency '}'
-              '${minPrice.toStringAsFixed(0)}';
-          data['slotsLeft'] = 'After discount '
-              '${currency.isEmpty ? '' : '$currency '}'
-              '${minPrice.toStringAsFixed(0)}';
+      final labelCurrency = currency.isNotEmpty
+          ? currency
+          : _currencyFromLabel(data['priceFrom']) ??
+                _currencyFromLabel(data['discount']) ??
+                '';
+      if (resolvedCurrent > 0) {
+        final priceLabel =
+            '${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(0)}';
+        data['discountValue'] = resolvedCurrent;
+        if (resolvedOriginal > resolvedCurrent) {
+          data['priceFrom'] =
+              'From ${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedOriginal.toStringAsFixed(0)}';
+          data['discount'] = priceLabel;
+          data['slotsLeft'] = 'After discount $priceLabel';
+          data['priceFromValue'] = resolvedOriginal;
         } else {
-          data['priceFrom'] = 'From ${currency.isEmpty ? '' : '$currency '}'
-              '${minPrice.toStringAsFixed(0)}';
+          data['priceFrom'] =
+              'From ${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(0)}';
+          data['priceFromValue'] = resolvedCurrent;
         }
       }
       if ((data['slotsLeft'] as String?)?.isEmpty ?? true) {
@@ -79,50 +106,46 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
           data['slotsLeft'] = '$remainingTotal slots left';
         }
       }
+      data['priceFromValue'] ??= NumberUtils.parseNumber(data['priceFrom']);
+      data['discountValue'] ??= NumberUtils.parseNumber(data['discount']);
 
       if (discountPercent > 0) {
         data['badge'] = '${discountPercent.round()}% off';
+      } else {
+        final ratingValue = NumberUtils.toDouble(data['rating']);
+        final badgeText = (data['badge'] as String? ?? '').trim();
+        if (badgeText.isEmpty) {
+          if (ratingValue >= 4.5) {
+            data['badge'] = 'Top rated';
+          } else if (ratingValue >= 4.0) {
+            data['badge'] = 'Popular';
+          }
+        }
       }
 
-      results.add(
-        RestaurantModel.fromFirestore(
-          id: doc.id,
-          data: data,
-        ),
-      );
+      results.add(RestaurantModel.fromMap(id: doc.id, data: data));
     }
 
     return results;
   }
 
-  static String _formatDate(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
+  static double _min(double a, double b) {
+    if (a <= 0) return b;
+    if (b <= 0) return a;
+    return a < b ? a : b;
   }
 
-  static double _toDouble(dynamic value) {
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    return 0;
+  static double _max(double a, double b) {
+    return a > b ? a : b;
   }
 
-  static int _toInt(dynamic value) {
-    if (value is int) return value;
-    if (value is double) return value.toInt();
-    if (value is num) return value.toInt();
-    return 0;
-  }
-
-  static double _parseNumber(dynamic value) {
-    if (value == null) return 0;
-    if (value is num) return value.toDouble();
-    final text = value.toString();
-    final match = RegExp(r'(\d+(\.\d+)?)').firstMatch(text);
-    if (match == null) return 0;
-    return double.tryParse(match.group(1) ?? '') ?? 0;
+  static String? _currencyFromLabel(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    if (text.isEmpty) return null;
+    final match = RegExp(r'([A-Za-z]{2,})').firstMatch(text);
+    if (match == null) return null;
+    return match.group(1);
   }
 
   static double _resolveDiscountPercent({
@@ -138,7 +161,7 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
       return ((originalPrice - minPrice) / originalPrice) * 100;
     }
 
-    final percentValue = _toDouble(data['discountPercent']);
+    final percentValue = NumberUtils.toDouble(data['discountPercent']);
     if (percentValue > 0) return percentValue;
 
     if (originalPrice <= 0 || minPrice <= 0 || originalPrice <= minPrice) {

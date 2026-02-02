@@ -10,6 +10,7 @@ import '../../../../core/utils/app_strings.dart';
 import '../../../../core/routing/app_router.dart';
 import '../../../../core/routing/routes.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../core/widgets/bottom_cta_bar.dart';
 import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
 import '../cubit/restaurant_detail_cubit.dart';
 import '../cubit/restaurant_detail_state.dart';
@@ -73,47 +74,22 @@ class DetailScreen extends StatelessWidget {
 
           return Scaffold(
             backgroundColor: Colors.white,
-            bottomNavigationBar: Container(
+            bottomNavigationBar: BottomCtaBar(
+              label: AppStrings.checkAvailability,
+              onPressed: () {
+                context.pushNamed(
+                  Routes.selectDateTimeScreen,
+                  arguments: SelectDateTimeArgs(
+                    restaurantId: id,
+                    name: details?.name ?? name,
+                  ),
+                );
+              },
+              backgroundColor: AppColors.cardBackground,
+              shadowColor: AppColors.ctaShadow,
+              textStyle: AppTextStyles.cta,
+              buttonColor: AppColors.primary,
               padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 16.h),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.ctaShadow,
-                    blurRadius: 16.r,
-                    offset: Offset(0, -6.h),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      context.pushNamed(
-                        Routes.selectDateTimeScreen,
-                        arguments: SelectDateTimeArgs(
-                          restaurantId: id,
-                          name: details?.name ?? name,
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14.r),
-                      ),
-                      padding: EdgeInsets.symmetric(vertical: 14.h),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      AppStrings.checkAvailability,
-                      style: AppTextStyles.cta,
-                    ),
-                  ),
-                ),
-              ),
             ),
             body: SafeArea(
               child: Skeletonizer(

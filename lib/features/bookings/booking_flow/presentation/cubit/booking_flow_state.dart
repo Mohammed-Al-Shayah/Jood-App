@@ -14,6 +14,8 @@ class BookingFlowState {
     required this.selectedOfferIndex,
     required this.adultCount,
     required this.childCount,
+    required this.datePrices,
+    required this.currency,
     this.errorMessage,
   });
 
@@ -25,6 +27,8 @@ class BookingFlowState {
   final int? selectedOfferIndex;
   final int adultCount;
   final int childCount;
+  final Map<String, double> datePrices;
+  final String currency;
   final String? errorMessage;
 
   BookingFlowState copyWith({
@@ -36,6 +40,8 @@ class BookingFlowState {
     Object? selectedOfferIndex = _unset,
     int? adultCount,
     int? childCount,
+    Map<String, double>? datePrices,
+    String? currency,
     Object? errorMessage = _unset,
   }) {
     return BookingFlowState(
@@ -49,6 +55,8 @@ class BookingFlowState {
           : selectedOfferIndex as int?,
       adultCount: adultCount ?? this.adultCount,
       childCount: childCount ?? this.childCount,
+      datePrices: datePrices ?? this.datePrices,
+      currency: currency ?? this.currency,
       errorMessage: errorMessage == _unset ? this.errorMessage : errorMessage as String?,
     );
   }
@@ -63,8 +71,19 @@ class BookingFlowState {
       selectedOfferIndex: null,
       adultCount: 1,
       childCount: 0,
+      datePrices: const {},
+      currency: '',
       errorMessage: null,
     );
+  }
+}
+
+extension BookingFlowStateX on BookingFlowState {
+  OfferEntity? selectedOffer() {
+    final index = selectedOfferIndex;
+    if (index == null) return null;
+    if (index < 0 || index >= offers.length) return null;
+    return offers[index];
   }
 }
 

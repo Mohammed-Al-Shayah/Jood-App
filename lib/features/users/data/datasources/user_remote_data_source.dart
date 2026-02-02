@@ -14,7 +14,35 @@ class UserRemoteDataSource {
     return UserModel.fromMap(doc.id, data);
   }
 
+  Future<UserModel?> getUserByPhone(String phone) async {
+    final normalized = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    final byNormalized = await firestore
+        .collection('users')
+        .where('phoneNormalized', isEqualTo: normalized)
+        .limit(1)
+        .get();
+    if (byNormalized.docs.isNotEmpty) {
+      final doc = byNormalized.docs.first;
+      return UserModel.fromMap(doc.id, doc.data());
+    }
+    final query = await firestore
+        .collection('users')
+        .where('phone', isEqualTo: phone)
+        .limit(1)
+        .get();
+    if (query.docs.isEmpty) return null;
+    final doc = query.docs.first;
+    return UserModel.fromMap(doc.id, doc.data());
+  }
+
   Future<void> createUser(UserModel user) {
+    return firestore.collection('users').doc(user.id).set(
+          user.toMap(),
+          SetOptions(merge: true),
+        );
+  }
+
+  Future<void> updateUser(UserModel user) {
     return firestore.collection('users').doc(user.id).set(
           user.toMap(),
           SetOptions(merge: true),

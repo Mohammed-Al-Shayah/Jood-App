@@ -5,8 +5,13 @@ import '../../../../core/theming/app_colors.dart';
 import '../../../../core/utils/app_strings.dart';
 
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key, required this.locationText});
+  const HomeHeader({
+    super.key,
+    required this.locationText,
+    required this.onFilterTap,
+  });
   final String locationText;
+  final VoidCallback onFilterTap;
 
   @override
   Widget build(BuildContext context) {
@@ -44,14 +49,22 @@ class HomeHeader extends StatelessWidget {
           ),
           SizedBox(width: 8.w),
           const Spacer(),
-          Container(
-            height: 40.r,
-            width: 40.r,
-            decoration: const BoxDecoration(
-              color: AppColors.iconStroke,
-              shape: BoxShape.circle,
+          InkWell(
+            borderRadius: BorderRadius.circular(20.r),
+            onTap: onFilterTap,
+            child: Container(
+              height: 40.r,
+              width: 40.r,
+              decoration: const BoxDecoration(
+                color: AppColors.iconStroke,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.tune,
+                color: AppColors.textPrimary,
+                size: 25.sp,
+              ),
             ),
-            child: Icon(Icons.tune, color: AppColors.textPrimary, size: 25.sp),
           ),
         ],
       ),

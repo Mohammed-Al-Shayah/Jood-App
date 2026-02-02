@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
+import '../../otp/verify_otp_args.dart';
 import '../logic/register_cubit.dart';
 import '../logic/register_state.dart';
 
@@ -34,13 +36,26 @@ class RegisterPage extends StatelessWidget {
                   context,
                 ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
               }
-              if (state.status == RegisterStatus.success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Verification email sent. Please verify.'),
+              if (state.status == RegisterStatus.phoneOtpSent &&
+                  state.verificationId != null) {
+                context.pushNamed(
+                  Routes.verifyOtpScreen,
+                  arguments: VerifyOtpArgs(
+                    verificationId: state.verificationId!,
+                    resendToken: state.resendToken,
+                    fullName: state.fullName.trim(),
+                    password: state.password,
+                    email: state.email.trim().isEmpty
+                        ? null
+                        : state.email.trim(),
+                    phone: state.phone.trim(),
+                    country: state.country.trim(),
+                    city: state.city.trim(),
                   ),
                 );
-                context.pushNamedAndRemoveAll(Routes.loginScreen);
+              }
+              if (state.status == RegisterStatus.phoneVerified) {
+                context.pushNamedAndRemoveAll(Routes.homeScreen);
               }
             },
             builder: (context, state) {
@@ -54,18 +69,21 @@ class RegisterPage extends StatelessWidget {
                     _Field(
                       hintText: 'Enter your full name',
                       onChanged: context.read<RegisterCubit>().updateFullName,
+                      errorText: state.fullNameError,
                     ),
-                    _Label(text: 'Email Address'),
+                    _Label(text: 'Email Address (optional)'),
                     _Field(
                       hintText: 'Enter your email address',
                       keyboardType: TextInputType.emailAddress,
                       onChanged: context.read<RegisterCubit>().updateEmail,
+                      errorText: state.emailError,
                     ),
                     _Label(text: 'Password'),
                     _Field(
                       hintText: 'Create a password',
                       obscureText: !state.showPassword,
                       onChanged: context.read<RegisterCubit>().updatePassword,
+                      errorText: state.passwordError,
                       suffix: IconButton(
                         onPressed: context
                             .read<RegisterCubit>()
@@ -85,6 +103,7 @@ class RegisterPage extends StatelessWidget {
                       onChanged: context
                           .read<RegisterCubit>()
                           .updateConfirmPassword,
+                      errorText: state.confirmPasswordError,
                       suffix: IconButton(
                         onPressed: context
                             .read<RegisterCubit>()
@@ -97,21 +116,49 @@ class RegisterPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _Label(text: 'Phone Number'),
-                    _Field(
-                      hintText: 'Enter your phone number',
+                    _Label(text: 'Phone Number (for OTP)'),
+                    InternationalPhoneNumberInput(
+                      initialValue: PhoneNumber(isoCode: state.phoneIso),
+                      onInputChanged: (number) {
+                        context.read<RegisterCubit>().updatePhone(
+                          number.phoneNumber ?? '',
+                        );
+                        final iso = number.isoCode;
+                        if (iso != null && iso.isNotEmpty) {
+                          context.read<RegisterCubit>().updatePhoneIso(iso);
+                        }
+                      },
+                      selectorConfig: const SelectorConfig(
+                        selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                      ),
                       keyboardType: TextInputType.phone,
-                      onChanged: context.read<RegisterCubit>().updatePhone,
+                      inputDecoration: InputDecoration(
+                        hintText: 'Enter your phone number',
+                        errorText: state.phoneError,
+                        filled: true,
+                        fillColor: const Color(0xFFF6F7FB),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 14.h,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30.r),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
                     ),
                     _Label(text: 'Country'),
-                    _Field(
+                    _PickerField(
                       hintText: 'Select country',
-                      onChanged: context.read<RegisterCubit>().updateCountry,
+                      value: state.country,
+                      onTap: () => _showCountryPicker(context),
+                      errorText: state.countryError,
                     ),
                     _Label(text: 'City'),
                     _Field(
                       hintText: 'Enter your city',
                       onChanged: context.read<RegisterCubit>().updateCity,
+                      errorText: state.cityError,
                     ),
                     SizedBox(height: 10.h),
                     Row(
@@ -132,6 +179,16 @@ class RegisterPage extends StatelessWidget {
                         ),
                       ],
                     ),
+                    if (state.termsError != null)
+                      Padding(
+                        padding: EdgeInsets.only(left: 8.w, top: 4.h),
+                        child: Text(
+                          state.termsError!,
+                          style: AppTextStyles.cardMeta.copyWith(
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      ),
                     SizedBox(height: 20.h),
                     Center(
                       child: SizedBox(
@@ -156,7 +213,7 @@ class RegisterPage extends StatelessWidget {
                                     color: Colors.white,
                                   ),
                                 )
-                              : Text('Sign up', style: AppTextStyles.cta),
+                              : Text('Send OTP', style: AppTextStyles.cta),
                         ),
                       ),
                     ),
@@ -195,6 +252,7 @@ class _Field extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.suffix,
+    this.errorText,
   });
 
   final String hintText;
@@ -202,6 +260,7 @@ class _Field extends StatelessWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final Widget? suffix;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +271,7 @@ class _Field extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hintText,
         suffixIcon: suffix,
+        errorText: errorText,
         filled: true,
         fillColor: const Color(0xFFF6F7FB),
         contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
@@ -222,4 +282,117 @@ class _Field extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PickerField extends StatelessWidget {
+  const _PickerField({
+    required this.hintText,
+    required this.value,
+    required this.onTap,
+    this.errorText,
+  });
+
+  final String hintText;
+  final String value;
+  final VoidCallback onTap;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEmpty = value.trim().isEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(30.r),
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F7FB),
+              borderRadius: BorderRadius.circular(30.r),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    isEmpty ? hintText : value,
+                    style: AppTextStyles.cardMeta.copyWith(
+                      color: isEmpty
+                          ? AppColors.textMuted
+                          : AppColors.textPrimary,
+                      fontSize: 14.sp,
+                    ),
+                  ),
+                ),
+                Icon(Icons.keyboard_arrow_down, color: AppColors.textMuted),
+              ],
+            ),
+          ),
+        ),
+        if (errorText != null)
+          Padding(
+            padding: EdgeInsets.only(left: 16.w, top: 4.h),
+            child: Text(
+              errorText!,
+              style: AppTextStyles.cardMeta.copyWith(color: Colors.redAccent),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+void _showCountryPicker(BuildContext context) {
+  const countries = [
+    'United Arab Emirates',
+    'Saudi Arabia',
+    'Qatar',
+    'Kuwait',
+    'Bahrain',
+    'Oman',
+    'Egypt',
+    'Jordan',
+    'Lebanon',
+    'Palestine',
+    'Iraq',
+    'Syria',
+    'Morocco',
+    'Algeria',
+    'Tunisia',
+    'Yemen',
+  ];
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+    ),
+    builder: (sheetContext) {
+      return SafeArea(
+        child: ListView.separated(
+          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
+          itemCount: countries.length,
+          separatorBuilder: (_, _) => Divider(color: AppColors.shadowColor),
+          itemBuilder: (_, index) {
+            final country = countries[index];
+            return ListTile(
+              title: Text(
+                country,
+                style: AppTextStyles.cardMeta.copyWith(
+                  fontSize: 15.sp,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              onTap: () {
+                context.read<RegisterCubit>().updateCountry(country);
+                Navigator.pop(sheetContext);
+              },
+            );
+          },
+        ),
+      );
+    },
+  );
 }

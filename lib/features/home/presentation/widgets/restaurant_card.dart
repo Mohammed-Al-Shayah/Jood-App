@@ -41,12 +41,6 @@ class RestaurantCard extends StatelessWidget {
     final hasBadge = badge.trim().isNotEmpty;
     final hasDiscount = discount.trim().isNotEmpty || hasBadge;
     final showDiscountValue = discount.trim().isNotEmpty;
-    // final afterDiscountText = showDiscountValue
-    //     ? 'After discount ${discount.trim()}'
-    //     : '';
-    // final slotsText = hasDiscount && afterDiscountText.isNotEmpty
-    //     ? afterDiscountText
-    //     : slots;
 
     return Material(
       color: Colors.transparent,
@@ -85,15 +79,26 @@ class RestaurantCard extends StatelessWidget {
                       top: 12.h,
                       left: 12.w,
                       child: Container(
+                        width: 80.w,
+                        height: 40.h,
                         padding: EdgeInsets.symmetric(
                           horizontal: 10.w,
                           vertical: 6.h,
                         ),
                         decoration: BoxDecoration(
                           color: Color(0xff7c3aed),
+                          // color: Colors.green,
                           borderRadius: BorderRadius.circular(20.r),
                         ),
-                        child: Text(badge, style: AppTextStyles.badge),
+                        child: Center(
+                          child: Text(
+                            badge,
+                            style: AppTextStyles.badge.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16.sp,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -182,21 +187,21 @@ class RestaurantCard extends StatelessWidget {
                                     style: AppTextStyles.cardDiscount,
                                   ),
                                 const Spacer(),
-                                if (hasBadge)
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 10.w,
-                                      vertical: 6.h,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Color(0xff7c3aed),
-                                      borderRadius: BorderRadius.circular(20.r),
-                                    ),
-                                    child: Text(
-                                      badge,
-                                      style: AppTextStyles.badge,
-                                    ),
-                                  ),
+                                // if (hasBadge)
+                                //   Container(
+                                //     padding: EdgeInsets.symmetric(
+                                //       horizontal: 10.w,
+                                //       vertical: 6.h,
+                                //     ),
+                                //     decoration: BoxDecoration(
+                                //       color: Color(0xff7c3aed),
+                                //       borderRadius: BorderRadius.circular(20.r),
+                                //     ),
+                                //     child: Text(
+                                //       badge,
+                                //       style: AppTextStyles.badge,
+                                //     ),
+                                //   ),
                               ],
                             ],
                           ),

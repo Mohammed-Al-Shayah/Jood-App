@@ -11,11 +11,15 @@ class DateChip extends StatelessWidget {
     required this.date,
     required this.isSelected,
     required this.onTap,
+    this.price,
+    this.currency = '',
   });
 
   final DateTime date;
   final bool isSelected;
   final VoidCallback onTap;
+  final double? price;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +36,8 @@ class DateChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(14.r),
         onTap: onTap,
         child: Container(
-          width: 60.w,
-          height: 80.h,
+          width: 64.w,
+          height: 96.h,
           padding: EdgeInsets.symmetric(vertical: 6.h),
           alignment: Alignment.center,
           child: FittedBox(
@@ -65,6 +69,17 @@ class DateChip extends StatelessWidget {
                     fontSize: 13.sp,
                   ),
                 ),
+                if (price != null) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    _formatPrice(price!, currency),
+                    style: AppTextStyles.cardMeta.copyWith(
+                      color: subColor,
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -72,6 +87,13 @@ class DateChip extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatPrice(double value, String currency) {
+  final rounded = value.round();
+  if (currency.trim().isEmpty) return '$rounded';
+  final isSymbol = currency.trim().length == 1;
+  return isSymbol ? '$currency$rounded' : '$currency $rounded';
 }
 
 

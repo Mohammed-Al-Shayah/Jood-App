@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:jood/features/offers/domain/usecases/get_offers_for_date_usecase.dart';
 import 'package:jood/features/offers/domain/usecases/get_offers_for_range_usecase.dart';
+import 'package:jood/core/utils/date_utils.dart';
 import 'booking_flow_state.dart';
 
 class BookingFlowCubit extends Cubit<BookingFlowState> {
@@ -26,6 +27,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
         selectedDateIndex: 0,
       ),
     );
+    await _loadDateStripPrices(dates);
     await _loadOffersForDate(selectedDate);
   }
 
@@ -88,7 +90,8 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
       return;
     }
     try {
-      final offers = await getOffersForDate(restaurantId, _formatDate(date));
+      final offers =
+          await getOffersForDate(restaurantId, AppDateUtils.formatDate(date));
       emit(
         state.copyWith(
           status: BookingFlowStatus.ready,
@@ -115,12 +118,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
     });
   }
 
-  String _formatDate(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
-  }
+  // Date formatting moved to DateUtils
 
   Future<Map<String, double>> loadDiscountPricesForMonth(DateTime month) async {
     final restaurantId = _restaurantId;
@@ -128,8 +126,8 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
 
     final start = DateTime(month.year, month.month, 1);
     final end = DateTime(month.year, month.month + 1, 0);
-    final startKey = _formatDate(start);
-    final endKey = _formatDate(end);
+    final startKey = AppDateUtils.formatDate(start);
+    final endKey = AppDateUtils.formatDate(end);
 
     final offers = await getOffersForRange(restaurantId, startKey, endKey);
     final prices = <String, double>{};
@@ -145,4 +143,31 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
 
     return prices;
   }
+
+  Future<void> _loadDateStripPrices(List<DateTime> dates) async {
+    final restaurantId = _restaurantId;
+    if (restaurantId == null || dates.isEmpty) return;
+    final startKey = AppDateUtils.formatDate(dates.first);
+    final endKey = AppDateUtils.formatDate(dates.last);
+    try {
+      final offers = await getOffersForRange(restaurantId, startKey, endKey);
+      final prices = <String, double>{};
+      var currency = state.currency;
+      for (final offer in offers) {
+        if (currency.isEmpty && offer.currency.trim().isNotEmpty) {
+          currency = offer.currency.trim();
+        }
+        final dayKey = offer.date;
+        final candidate = offer.priceAdult;
+        final current = prices[dayKey];
+        if (current == null || candidate < current) {
+          prices[dayKey] = candidate;
+        }
+      }
+      emit(state.copyWith(datePrices: prices, currency: currency));
+    } catch (_) {
+      // Ignore date strip pricing failures.
+    }
+  }
 }
+

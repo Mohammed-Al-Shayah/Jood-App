@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'date_chip.dart';
 import 'more_chip.dart';
+import 'package:jood/core/utils/date_utils.dart';
 
 class DateStrip extends StatelessWidget {
   const DateStrip({
@@ -11,12 +12,16 @@ class DateStrip extends StatelessWidget {
     required this.selectedIndex,
     required this.onDateTap,
     required this.onMoreTap,
+    required this.datePrices,
+    required this.currency,
   });
 
   final List<DateTime> dates;
   final int selectedIndex;
   final ValueChanged<int> onDateTap;
   final VoidCallback onMoreTap;
+  final Map<String, double> datePrices;
+  final String currency;
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +37,15 @@ class DateStrip extends StatelessWidget {
             onTap: onMoreTap,
           );
         }
+        final date = dates[index];
+        final key = AppDateUtils.formatDate(date);
+        final price = datePrices[key];
         return DateChip(
-          date: dates[index],
+          date: date,
           isSelected: selectedIndex == index,
           onTap: () => onDateTap(index),
+          price: price,
+          currency: currency,
         );
       },
     );

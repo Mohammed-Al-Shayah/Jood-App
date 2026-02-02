@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'date_utils.dart';
 
 class SeedFirestore {
   const SeedFirestore._();
 
-  static const String _seedDocId = 'demo_v2';
+  static const String _seedDocId = 'demo_v4';
 
   static Future<void> ensureSeeded() async {
     final firestore = FirebaseFirestore.instance;
@@ -43,8 +44,8 @@ class SeedFirestore {
         ],
         'knowBeforeYouGo': ['Bring ID', 'Smart casual dress code'],
         'badge': '20% off',
-        'priceFrom': 'From AED 120',
-        'discount': 'AED 150',
+        'priceFrom': 'From AED 150',
+        'discount': 'AED 120',
         'discountPercent': 20,
         'slotsLeft': '6 slots left',
         'isActive': true,
@@ -67,13 +68,11 @@ class SeedFirestore {
         'highlights': ['Organic menu', 'Kids friendly', 'City view'],
         'inclusions': ['Soft drinks'],
         'exclusions': ['Valet parking'],
-        'cancellationPolicy': [
-          'No cancellation within 2 hours',
-        ],
+        'cancellationPolicy': ['No cancellation within 2 hours'],
         'knowBeforeYouGo': ['Arrive 10 mins early'],
         'badge': '15% off',
-        'priceFrom': 'From AED 95',
-        'discount': 'AED 120',
+        'priceFrom': 'From AED 120',
+        'discount': 'AED 95',
         'discountPercent': 15,
         'slotsLeft': '10 slots left',
         'isActive': true,
@@ -102,8 +101,8 @@ class SeedFirestore {
         ],
         'knowBeforeYouGo': ['Smart casual dress code', 'Valet available'],
         'badge': 'Top rated',
-        'priceFrom': 'From AED 160',
-        'discount': 'AED 200',
+        'priceFrom': 'From AED 200',
+        'discount': 'AED 160',
         'discountPercent': 20,
         'slotsLeft': '4 slots left',
         'isActive': true,
@@ -126,13 +125,11 @@ class SeedFirestore {
         'highlights': ['Street food', 'Late night bites'],
         'inclusions': ['Soft drinks', 'Free Wi-Fi'],
         'exclusions': ['Parking fees'],
-        'cancellationPolicy': [
-          'No cancellation within 3 hours',
-        ],
+        'cancellationPolicy': ['No cancellation within 3 hours'],
         'knowBeforeYouGo': ['Arrive 10 mins early', 'Family seating available'],
         'badge': 'Popular',
-        'priceFrom': 'From AED 75',
-        'discount': 'AED 95',
+        'priceFrom': 'From AED 95',
+        'discount': 'AED 75',
         'discountPercent': 21,
         'slotsLeft': '12 slots left',
         'isActive': true,
@@ -160,8 +157,8 @@ class SeedFirestore {
         ],
         'knowBeforeYouGo': ['Smart casual'],
         'badge': '10% off',
-        'priceFrom': 'From AED 110',
-        'discount': 'AED 125',
+        'priceFrom': 'From AED 125',
+        'discount': 'AED 110',
         'discountPercent': 12,
         'slotsLeft': '8 slots left',
         'isActive': true,
@@ -184,13 +181,11 @@ class SeedFirestore {
         'highlights': ['Traditional dishes', 'Family friendly'],
         'inclusions': ['Tea & coffee'],
         'exclusions': ['Parking'],
-        'cancellationPolicy': [
-          'No cancellation within 1 hour',
-        ],
+        'cancellationPolicy': ['No cancellation within 1 hour'],
         'knowBeforeYouGo': ['Casual dress', 'Outdoor seating limited'],
         'badge': '',
-        'priceFrom': 'From AED 65',
-        'discount': 'AED 80',
+        'priceFrom': 'From AED 80',
+        'discount': 'AED 65',
         'discountPercent': 18,
         'slotsLeft': '15 slots left',
         'isActive': true,
@@ -198,15 +193,19 @@ class SeedFirestore {
     ];
 
     for (final restaurant in restaurants) {
-      final ref = firestore.collection('restaurants').doc(restaurant['id'] as String);
+      final ref = firestore
+          .collection('restaurants')
+          .doc(restaurant['id'] as String);
       batch.set(ref, {
         ...restaurant,
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
 
-    final dates =
-        List.generate(7, (index) => DateTime.now().add(Duration(days: index)));
+    final dates = List.generate(
+      7,
+      (index) => DateTime.now().add(Duration(days: index)),
+    );
     final times = [
       {'start': '09:00', 'end': '11:00', 'title': 'Breakfast Entry'},
       {'start': '12:00', 'end': '14:00', 'title': 'Lunch Entry'},
@@ -226,7 +225,9 @@ class SeedFirestore {
           if (breakfastLunchOnlyDays.contains(dIndex) && !isBreakfastOrLunch) {
             continue;
           }
-          final offerRef = firestore.collection('offers').doc(
+          final offerRef = firestore
+              .collection('offers')
+              .doc(
                 _offerId(
                   restaurant['id'] as String,
                   date,
@@ -234,35 +235,39 @@ class SeedFirestore {
                 ),
               );
 
-          final baseAdult = 70 +
-              (rIndex * 15) +
-              (tIndex * 8) +
-              (dIndex * 6);
+          final baseAdult = 70 + (rIndex * 15) + (tIndex * 8) + (dIndex * 6);
           final baseChild = (baseAdult * 0.5).round();
           final capacityAdult = 20 + (rIndex * 5);
           final capacityChild = 10 + (tIndex * 3);
-          final bookedAdult = (dIndex % 3 == 0) ? (capacityAdult - 2) : (rIndex);
-          final bookedChild = (dIndex % 4 == 0) ? (capacityChild - 1) : (tIndex);
+          final bookedAdult = (dIndex % 3 == 0)
+              ? (capacityAdult - 2)
+              : (rIndex);
+          final bookedChild = (dIndex % 4 == 0)
+              ? (capacityChild - 1)
+              : (tIndex);
 
-          final isSoldOut = bookedAdult >= capacityAdult ||
+          final isSoldOut =
+              bookedAdult >= capacityAdult ||
               bookedChild >= capacityChild ||
               (dIndex == 6 && tIndex == 4);
-          final isLow = !isSoldOut &&
+          final isLow =
+              !isSoldOut &&
               ((capacityAdult - bookedAdult) <= 3 ||
                   (capacityChild - bookedChild) <= 3);
           final status = isSoldOut
               ? 'sold_out'
               : isLow
-                  ? 'low'
-                  : 'active';
+              ? 'low'
+              : 'active';
 
           batch.set(offerRef, {
             'restaurantId': restaurant['id'],
-            'date': _formatDate(date),
+            'date': AppDateUtils.formatDate(date),
             'startTime': time['start'],
             'endTime': time['end'],
             'currency': 'AED',
             'priceAdult': baseAdult,
+            'priceAdultOriginal': baseAdult + 25,
             'priceChild': baseChild,
             'time': time['start'],
             'price': 'AED $baseAdult',
@@ -364,12 +369,14 @@ class SeedFirestore {
       final discount = 0.0;
       final total = subtotal - discount;
 
-      final bookingRef = firestore.collection('bookings').doc(booking['id'] as String);
+      final bookingRef = firestore
+          .collection('bookings')
+          .doc(booking['id'] as String);
       batch.set(bookingRef, {
         'userId': booking['userId'],
         'restaurantId': restaurantId,
         'offerId': offerId,
-        'date': _formatDate(date),
+        'date': AppDateUtils.formatDate(date),
         'startTime': time['start'],
         'adults': adults,
         'children': children,
@@ -393,7 +400,9 @@ class SeedFirestore {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      final paymentRef = firestore.collection('payments').doc('pay_${booking['id']}');
+      final paymentRef = firestore
+          .collection('payments')
+          .doc('pay_${booking['id']}');
       batch.set(paymentRef, {
         'bookingId': booking['id'],
         'amount': total,
@@ -406,15 +415,11 @@ class SeedFirestore {
     await batch.commit();
   }
 
-  static String _formatDate(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
-  }
+  // Date formatting moved to DateUtils
 
   static String _offerId(String restaurantId, DateTime date, String startTime) {
     final safeTime = startTime.replaceAll(':', '');
-    return 'offer_${restaurantId}_${_formatDate(date)}_$safeTime';
+    return 'offer_${restaurantId}_${AppDateUtils.formatDate(date)}_$safeTime';
   }
 }
+

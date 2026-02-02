@@ -9,6 +9,7 @@ class OfferEntity extends Equatable {
     required this.endTime,
     required this.currency,
     required this.priceAdult,
+    required this.priceAdultOriginal,
     required this.priceChild,
     required this.capacityAdult,
     required this.capacityChild,
@@ -28,6 +29,7 @@ class OfferEntity extends Equatable {
   final String endTime;
   final String currency;
   final double priceAdult;
+  final double priceAdultOriginal;
   final double priceChild;
   final int capacityAdult;
   final int capacityChild;
@@ -51,6 +53,7 @@ class OfferEntity extends Equatable {
         endTime,
         currency,
         priceAdult,
+        priceAdultOriginal,
         priceChild,
         capacityAdult,
         capacityChild,

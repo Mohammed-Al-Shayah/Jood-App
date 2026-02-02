@@ -4,10 +4,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/routing/app_router.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
-import 'package:jood/features/offers/domain/entities/offer_entity.dart';
+import 'package:jood/core/widgets/bottom_cta_bar.dart';
 import '../cubit/booking_flow_cubit.dart';
 import '../cubit/booking_flow_state.dart';
 import '../widgets/date_utils.dart';
@@ -25,7 +26,7 @@ class PaymentScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<BookingFlowCubit, BookingFlowState>(
       builder: (context, state) {
-        final selectedOffer = _selectedOffer(state);
+        final selectedOffer = state.selectedOffer();
         final dateLabel = formatOfferDate(state.selectedDate);
         final summaryTime = selectedOffer == null
             ? dateLabel
@@ -39,47 +40,22 @@ class PaymentScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: Colors.white,
-          bottomNavigationBar: Container(
-            padding: EdgeInsets.fromLTRB(16.w, 10.h, 16.w, 16.h),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadowColor,
-                  blurRadius: 14.r,
-                  offset: Offset(0, -6.h),
+          bottomNavigationBar: BottomCtaBar(
+            label:
+                '${AppStrings.confirmAndPay} ${formatCurrency(currency, totalAmount)}',
+            onPressed: () {
+              context.pushNamed(
+                Routes.bookingConfirmedScreen,
+                arguments: BookingConfirmedArgs(
+                  restaurantName: restaurantName,
+                  cubit: context.read<BookingFlowCubit>(),
                 ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    context.pushNamed(
-                      Routes.bookingConfirmedScreen,
-                      arguments: BookingConfirmedArgs(
-                        restaurantName: restaurantName,
-                        cubit: context.read<BookingFlowCubit>(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    '${AppStrings.confirmAndPay} ${_formatCurrency(currency, totalAmount)}',
-                    style: AppTextStyles.cta,
-                  ),
-                ),
-              ),
-            ),
+              );
+            },
+            backgroundColor: Colors.white,
+            shadowColor: AppColors.shadowColor,
+            textStyle: AppTextStyles.cta,
+            buttonColor: AppColors.primary,
           ),
           body: SafeArea(
             child: Column(
@@ -99,7 +75,7 @@ class PaymentScreen extends StatelessWidget {
                         PaymentSummaryCard(
                           restaurantName: restaurantName,
                           timeLabel: summaryTime,
-                          totalAmount: _formatCurrency(currency, totalAmount),
+                          totalAmount: formatCurrency(currency, totalAmount),
                           adultsCount: state.adultCount,
                           childrenCount: state.childCount,
                         ),
@@ -182,23 +158,4 @@ class PaymentScreen extends StatelessWidget {
       },
     );
   }
-
-  OfferEntity? _selectedOffer(BookingFlowState state) {
-    final index = state.selectedOfferIndex;
-    if (index == null) return null;
-    if (index < 0 || index >= state.offers.length) return null;
-    return state.offers[index];
-  }
 }
-
-String _formatCurrency(String currency, double value) {
-  final rounded = value.round();
-  final trimmed = currency.trim();
-  if (trimmed.isEmpty) {
-    return '\$$rounded';
-  }
-  final isSymbol = trimmed.length == 1 || RegExp(r'[$€£¥]').hasMatch(trimmed);
-  return isSymbol ? '$trimmed$rounded' : '$trimmed $rounded';
-}
-
-

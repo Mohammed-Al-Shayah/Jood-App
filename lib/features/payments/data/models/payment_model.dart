@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/payment_entity.dart';
+import '../../../../core/utils/number_utils.dart';
 
 class PaymentModel extends PaymentEntity {
   const PaymentModel({
@@ -17,7 +18,7 @@ class PaymentModel extends PaymentEntity {
     return PaymentModel(
       id: doc.id,
       bookingId: data['bookingId'] as String? ?? '',
-      amount: _toDouble(data['amount']),
+      amount: NumberUtils.toDouble(data['amount']),
       status: data['status'] as String? ?? 'pending',
       method: data['method'] as String? ?? 'card',
       createdAt: _toDateTime(data['createdAt']),
@@ -34,12 +35,7 @@ class PaymentModel extends PaymentEntity {
     };
   }
 
-  static double _toDouble(dynamic value) {
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    return 0;
-  }
+  // Number parsing moved to NumberUtils
 
   static DateTime _toDateTime(dynamic value) {
     if (value is Timestamp) return value.toDate();

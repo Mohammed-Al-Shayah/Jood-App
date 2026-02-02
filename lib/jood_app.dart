@@ -26,14 +26,19 @@ class JoodApp extends StatelessWidget {
             ),
             primaryColor: AppColors.primary,
             scaffoldBackgroundColor: AppColors.pageBackground,
+            appBarTheme: const AppBarTheme(
+              backgroundColor: Colors.white,
+              foregroundColor: AppColors.textPrimary,
+              elevation: 0,
+            ),
           ),
           initialRoute: Routes.loginScreen,
           onGenerateRoute: appRouter.generateRoute,
           builder: (context, widget) {
             return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: TextScaler.noScaling,
-              ),
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: TextScaler.noScaling),
               child: widget ?? const SizedBox.shrink(),
             );
           },

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/date_utils.dart';
 
 class CalendarSheet extends StatefulWidget {
   const CalendarSheet({
@@ -223,7 +223,7 @@ class _MonthSection extends StatelessWidget {
             final isPast = date.isBefore(
               DateTime(today.year, today.month, today.day),
             );
-            final price = prices[_formatDate(date)];
+            final price = prices[AppDateUtils.formatDate(date)];
 
             return _DayCell(
               day: dayNumber,
@@ -339,11 +339,4 @@ String _monthLabel(DateTime date) {
 
 bool _isSameDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
-}
-
-String _formatDate(DateTime date) {
-  final year = date.year.toString().padLeft(4, '0');
-  final month = date.month.toString().padLeft(2, '0');
-  final day = date.day.toString().padLeft(2, '0');
-  return '$year-$month-$day';
 }

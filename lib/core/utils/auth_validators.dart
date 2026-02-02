@@ -5,7 +5,21 @@ class AuthValidators {
     return value.contains('@') && value.contains('.');
   }
 
+  static bool isPhone(String value) {
+    final digits = normalizePhone(value);
+    return digits.length >= 7 && digits.length <= 15;
+  }
+
   static bool isPassword(String value) {
     return value.trim().length >= 6;
+  }
+
+  static String normalizePhone(String value) {
+    return value.replaceAll(RegExp(r'[^0-9]'), '');
+  }
+
+  static String phoneToEmail(String phone) {
+    final digits = normalizePhone(phone);
+    return 'phone_$digits@jood.app';
   }
 }

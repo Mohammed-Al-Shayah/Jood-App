@@ -14,6 +14,11 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
+  Future<UserEntity?> getUserByPhone(String phone) {
+    return remoteDataSource.getUserByPhone(phone);
+  }
+
+  @override
   Future<void> createUser(UserEntity user) {
     final model = UserModel(
       id: user.id,
@@ -25,5 +30,19 @@ class UserRepositoryImpl implements UserRepository {
       role: user.role,
     );
     return remoteDataSource.createUser(model);
+  }
+
+  @override
+  Future<void> updateUser(UserEntity user) {
+    final model = UserModel(
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      country: user.country,
+      city: user.city,
+      role: user.role,
+    );
+    return remoteDataSource.updateUser(model);
   }
 }

@@ -15,13 +15,15 @@ import '../../features/offers/domain/usecases/get_offers_for_range_usecase.dart'
 import '../../features/auth/presentation/login/logic/login_cubit.dart';
 import '../../features/auth/presentation/forget_password/logic/forget_password_cubit.dart';
 import '../../features/auth/presentation/change_password/logic/change_password_cubit.dart';
-import '../../features/auth/presentation/otp/logic/otp_cubit.dart';
 import '../../features/auth/presentation/registration/logic/register_cubit.dart';
 import '../../features/users/data/datasources/user_remote_data_source.dart';
 import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/domain/repositories/user_repository.dart';
 import '../../features/users/domain/usecases/create_user_usecase.dart';
 import '../../features/users/domain/usecases/get_user_by_id_usecase.dart';
+import '../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
+import '../../features/users/domain/usecases/update_user_usecase.dart';
+import '../../features/users/presentation/cubit/profile_cubit.dart';
 import '../../features/payments/data/datasources/payment_remote_data_source.dart';
 import '../../features/payments/data/repositories/payment_repository_impl.dart';
 import '../../features/payments/domain/repositories/payment_repository.dart';
@@ -74,14 +76,19 @@ Future<void> setupServiceLocator() async {
       getOffersForRange: getIt(),
     ),
   );
-  getIt.registerFactory<LoginCubit>(() => LoginCubit(auth: getIt()));
+  getIt.registerFactory<LoginCubit>(
+    () => LoginCubit(auth: getIt(), getUserByPhone: getIt()),
+  );
   getIt.registerFactory<ForgetPasswordCubit>(
     () => ForgetPasswordCubit(auth: getIt()),
   );
   getIt.registerFactory<ChangePasswordCubit>(() => ChangePasswordCubit());
-  getIt.registerFactory<OtpCubit>(() => OtpCubit());
   getIt.registerFactory<RegisterCubit>(
-    () => RegisterCubit(auth: getIt(), createUser: getIt()),
+    () => RegisterCubit(
+      auth: getIt(),
+      createUser: getIt(),
+      getUserByPhone: getIt(),
+    ),
   );
   getIt.registerLazySingleton<UserRemoteDataSource>(
     () => UserRemoteDataSource(firestore: getIt()),
@@ -92,8 +99,14 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<GetUserByIdUseCase>(
     () => GetUserByIdUseCase(getIt()),
   );
+  getIt.registerLazySingleton<GetUserByPhoneUseCase>(
+    () => GetUserByPhoneUseCase(getIt()),
+  );
   getIt.registerLazySingleton<CreateUserUseCase>(
     () => CreateUserUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<UpdateUserUseCase>(
+    () => UpdateUserUseCase(getIt()),
   );
   getIt.registerLazySingleton<PaymentRemoteDataSource>(
     () => PaymentRemoteDataSource(firestore: getIt()),
@@ -118,5 +131,8 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<RestaurantDetailCubit>(
     () => RestaurantDetailCubit(getRestaurantDetails: getIt()),
+  );
+  getIt.registerFactory<ProfileCubit>(
+    () => ProfileCubit(getUserById: getIt(), auth: getIt()),
   );
 }

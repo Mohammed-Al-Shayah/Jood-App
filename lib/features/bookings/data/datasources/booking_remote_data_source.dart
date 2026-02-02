@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/errors/exceptions.dart';
 import '../models/booking_model.dart';
+import '../../../../core/utils/number_utils.dart';
 
 class BookingRemoteDataSource {
   BookingRemoteDataSource(this.firestore);
@@ -41,8 +42,8 @@ class BookingRemoteDataSource {
         throw BookingException('Sold out / Not enough tickets.');
       }
 
-      final priceAdult = _toDouble(data['priceAdult']);
-      final priceChild = _toDouble(data['priceChild']);
+      final priceAdult = NumberUtils.toDouble(data['priceAdult']);
+      final priceChild = NumberUtils.toDouble(data['priceChild']);
       final subtotal = priceAdult * adults + priceChild * children;
       final discount = 0.0;
       final total = subtotal - discount;
@@ -113,12 +114,7 @@ class BookingRemoteDataSource {
     return BookingModel.fromDoc(doc);
   }
 
-  static double _toDouble(dynamic value) {
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    return 0;
-  }
+  // Number parsing moved to NumberUtils
 
   static String _generateCode() {
     final random = Random();

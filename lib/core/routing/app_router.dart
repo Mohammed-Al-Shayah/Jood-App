@@ -8,6 +8,7 @@ import '../../features/auth/presentation/login/page/login.page.dart';
 import '../../features/auth/presentation/registration/page/register.page.dart';
 import '../../features/auth/presentation/forget_password/pages/forget_password.page.dart';
 import '../../features/auth/presentation/otp/page/verify_otp.page.dart';
+import '../../features/auth/presentation/otp/verify_otp_args.dart';
 import '../../features/auth/presentation/change_password/pages/change_password.page.dart';
 import '../../features/auth/presentation/registration/page/request_under_review.page.dart';
 import '../../features/auth/presentation/registration/page/beneficiary_create_story.page.dart';
@@ -35,8 +36,9 @@ class AppRouter {
           builder: (_) => const ForgetPasswordPage(),
         );
       case Routes.verifyOtpScreen:
+        final args = settings.arguments as VerifyOtpArgs;
         return MaterialPageRoute(
-          builder: (_) => const VerifyOtpPage(),
+          builder: (_) => VerifyOtpPage(args: args),
         );
       case Routes.changePasswordScreen:
         return MaterialPageRoute(

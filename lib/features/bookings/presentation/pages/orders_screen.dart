@@ -19,60 +19,76 @@ class OrdersScreen extends StatelessWidget {
 class OrdersTab extends StatelessWidget {
   const OrdersTab({super.key});
 
+  static const List<_OrderItem> _orders = [
+    _OrderItem(
+      title: 'The Gran...',
+      date: 'Jan 28, 2024',
+      time: '07:00 PM',
+      price: '2147',
+      status: _OrderStatus.confirmed,
+      actionLabel: 'View QR',
+      guestsLabel: '2 Adults + 1 Child',
+      imageUrl:
+          'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80',
+    ),
+    _OrderItem(
+      title: 'Spice Garden',
+      date: 'Jan 20, 2024',
+      time: '12:00 PM',
+      price: '1996',
+      status: _OrderStatus.used,
+      actionLabel: 'View Details',
+      imageUrl:
+          'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80',
+    ),
+    _OrderItem(
+      title: 'Ocean Blue',
+      date: 'Jan 15, 2024',
+      time: '09:00 AM',
+      price: '1896',
+      status: _OrderStatus.expired,
+      actionLabel: 'View Details',
+      imageUrl:
+          'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final orders = [
-      const _OrderItem(
-        title: 'The Gran...',
-        date: 'Jan 28, 2024',
-        time: '07:00 PM',
-        price: '2147',
-        status: _OrderStatus.confirmed,
-        actionLabel: 'View QR',
-        guestsLabel: '2 Adults + 1 Child',
-        imageUrl:
-            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80',
-      ),
-      const _OrderItem(
-        title: 'Spice Garden',
-        date: 'Jan 20, 2024',
-        time: '12:00 PM',
-        price: '1996',
-        status: _OrderStatus.used,
-        actionLabel: 'View Details',
-        imageUrl:
-            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80',
-      ),
-      const _OrderItem(
-        title: 'Ocean Blue',
-        date: 'Jan 15, 2024',
-        time: '09:00 AM',
-        price: '1896',
-        status: _OrderStatus.expired,
-        actionLabel: 'View Details',
-        imageUrl:
-            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400&q=80',
-      ),
-    ];
-
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('My Orders', style: AppTextStyles.headingMedium),
-            SizedBox(height: 4.h),
-            Text('3 bookings', style: AppTextStyles.cardMeta),
-            SizedBox(height: 16.h),
-            ...orders.map(
-              (order) => Padding(
-                padding: EdgeInsets.only(bottom: 14.h),
-                child: _OrderCard(order: order),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('My Orders', style: AppTextStyles.headingMedium),
+                  SizedBox(height: 4.h),
+                  Text(
+                    '${_orders.length} bookings',
+                    style: AppTextStyles.cardMeta,
+                  ),
+                  SizedBox(height: 16.h),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
+            sliver: SliverList.builder(
+              itemCount: _orders.length,
+              itemBuilder: (context, index) {
+                final order = _orders[index];
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 14.h),
+                  child: _OrderCard(order: order),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

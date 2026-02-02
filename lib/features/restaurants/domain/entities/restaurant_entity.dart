@@ -23,6 +23,12 @@ class RestaurantEntity extends Equatable {
     required this.knowBeforeYouGo,
     required this.isActive,
     required this.createdAt,
+    this.badge = '',
+    this.priceFrom = '',
+    this.discount = '',
+    this.slotsLeft = '',
+    this.priceFromValue = 0,
+    this.discountValue = 0,
   });
 
   final String id;
@@ -46,6 +52,12 @@ class RestaurantEntity extends Equatable {
   final List<String> knowBeforeYouGo;
   final bool isActive;
   final DateTime createdAt;
+  final String badge;
+  final String priceFrom;
+  final String discount;
+  final String slotsLeft;
+  final double priceFromValue;
+  final double discountValue;
 
   @override
   List<Object?> get props => [
@@ -70,5 +82,11 @@ class RestaurantEntity extends Equatable {
         knowBeforeYouGo,
         isActive,
         createdAt,
+        badge,
+        priceFrom,
+        discount,
+        slotsLeft,
+        priceFromValue,
+        discountValue,
       ];
 }

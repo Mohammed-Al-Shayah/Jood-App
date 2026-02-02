@@ -6,7 +6,9 @@ import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
 
 class HomeSearchBar extends StatelessWidget {
-  const HomeSearchBar({super.key});
+  const HomeSearchBar({super.key, required this.onChanged});
+
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -34,11 +36,13 @@ class HomeSearchBar extends StatelessWidget {
           filled: true,
           fillColor: AppColors.iconStroke,
           prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
-          contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: 12.w,
+            vertical: 12.h,
+          ),
         ),
-        style: AppTextStyles.searchHint.copyWith(
-          color: AppColors.textPrimary,
-        ),
+        style: AppTextStyles.searchHint.copyWith(color: AppColors.textPrimary),
+        onChanged: onChanged,
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/restaurant_entity.dart';
+import '../../../../core/utils/number_utils.dart';
 
 class RestaurantModel extends RestaurantEntity {
   const RestaurantModel({
@@ -25,25 +26,38 @@ class RestaurantModel extends RestaurantEntity {
     required super.knowBeforeYouGo,
     required super.isActive,
     required super.createdAt,
+    super.badge,
+    super.priceFrom,
+    super.discount,
+    super.slotsLeft,
+    super.priceFromValue,
+    super.discountValue,
   });
 
   factory RestaurantModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
+    return RestaurantModel.fromMap(id: doc.id, data: data);
+  }
+
+  factory RestaurantModel.fromMap({
+    required String id,
+    required Map<String, dynamic> data,
+  }) {
     final geo = (data['geo'] as Map?) ?? {};
     final openHours = (data['openHours'] as Map?) ?? {};
     return RestaurantModel(
-      id: doc.id,
+      id: id,
       name: data['name'] as String? ?? '',
       cityId: data['cityId'] as String? ?? '',
       area: data['area'] as String? ?? '',
-      rating: _toDouble(data['rating']),
+      rating: NumberUtils.toDouble(data['rating']),
       reviewsCount: (data['reviewsCount'] as num?)?.toInt() ?? 0,
-      coverImageUrl: data['coverImageUrl'] as String? ?? '',
+      coverImageUrl: _stringValue(data['coverImageUrl']),
       about: data['about'] as String? ?? '',
       phone: data['phone'] as String? ?? '',
       address: data['address'] as String? ?? '',
-      geoLat: _toDouble(geo['lat']),
-      geoLng: _toDouble(geo['lng']),
+      geoLat: NumberUtils.toDouble(geo['lat']),
+      geoLng: NumberUtils.toDouble(geo['lng']),
       openFrom: openHours['from'] as String? ?? '',
       openTo: openHours['to'] as String? ?? '',
       highlights: _stringList(data['highlights']),
@@ -53,6 +67,12 @@ class RestaurantModel extends RestaurantEntity {
       knowBeforeYouGo: _stringList(data['knowBeforeYouGo']),
       isActive: data['isActive'] as bool? ?? true,
       createdAt: _toDateTime(data['createdAt']),
+      badge: _stringValue(data['badge']),
+      priceFrom: _stringValue(data['priceFrom']),
+      discount: _stringValue(data['discount']),
+      slotsLeft: _stringValue(data['slotsLeft']),
+      priceFromValue: NumberUtils.toDouble(data['priceFromValue']),
+      discountValue: NumberUtils.toDouble(data['discountValue']),
     );
   }
 
@@ -66,12 +86,12 @@ class RestaurantModel extends RestaurantEntity {
     return const [];
   }
 
-  static double _toDouble(dynamic value) {
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    return 0;
+  static String _stringValue(dynamic value) {
+    if (value == null) return '';
+    return value.toString();
   }
+
+  // Number parsing moved to NumberUtils
 
   static DateTime _toDateTime(dynamic value) {
     if (value is Timestamp) return value.toDate();
