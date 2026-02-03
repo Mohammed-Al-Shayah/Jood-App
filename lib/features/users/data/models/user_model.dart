@@ -10,6 +10,7 @@ class UserModel extends UserEntity {
     required super.country,
     required super.city,
     required super.role,
+    super.restaurantId,
   });
 
   factory UserModel.fromMap(String id, Map<String, dynamic> data) {
@@ -21,6 +22,7 @@ class UserModel extends UserEntity {
       country: data['country'] as String? ?? '',
       city: data['city'] as String? ?? '',
       role: data['role'] as String? ?? 'guest',
+      restaurantId: data['restaurantId'] as String?,
     );
   }
 
@@ -33,6 +35,7 @@ class UserModel extends UserEntity {
       'country': country,
       'city': city,
       'role': role,
+      'restaurantId': restaurantId,
     };
   }
 }

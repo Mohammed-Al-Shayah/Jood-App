@@ -29,6 +29,12 @@ import '../../features/payments/data/repositories/payment_repository_impl.dart';
 import '../../features/payments/domain/repositories/payment_repository.dart';
 import '../../features/payments/domain/usecases/create_payment_usecase.dart';
 import '../../features/payments/domain/usecases/get_payment_by_booking_usecase.dart';
+import '../../features/bookings/data/datasources/booking_remote_data_source.dart';
+import '../../features/bookings/data/repositories/booking_repository_impl.dart'
+    as bookings_repo;
+import '../../features/bookings/domain/repositories/booking_repository.dart'
+    as bookings_domain;
+import '../../features/bookings/domain/usecases/create_booking_usecase.dart';
 import '../../features/restaurants/presentation/cubit/restaurant_detail_cubit.dart';
 import '../../features/restaurants/data/datasources/restaurant_remote_data_source.dart'
     as restaurants_ds;
@@ -52,11 +58,7 @@ Future<void> setupServiceLocator() async {
     () => RestaurantRepositoryImpl(remoteDataSource: getIt()),
   );
   getIt.registerFactory<HomeCubit>(
-    () => HomeCubit(
-      repository: getIt(),
-      getUserById: getIt(),
-      auth: getIt(),
-    ),
+    () => HomeCubit(repository: getIt(), getUserById: getIt(), auth: getIt()),
   );
   getIt.registerLazySingleton<OfferRemoteDataSource>(
     () => OfferRemoteDataSource(getIt()),
@@ -71,10 +73,8 @@ Future<void> setupServiceLocator() async {
     () => GetOffersForRangeUseCase(getIt()),
   );
   getIt.registerFactory<BookingFlowCubit>(
-    () => BookingFlowCubit(
-      getOffersForDate: getIt(),
-      getOffersForRange: getIt(),
-    ),
+    () =>
+        BookingFlowCubit(getOffersForDate: getIt(), getOffersForRange: getIt()),
   );
   getIt.registerFactory<LoginCubit>(
     () => LoginCubit(auth: getIt(), getUserByPhone: getIt()),
@@ -119,6 +119,15 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<CreatePaymentUseCase>(
     () => CreatePaymentUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<BookingRemoteDataSource>(
+    () => BookingRemoteDataSource(getIt()),
+  );
+  getIt.registerLazySingleton<bookings_domain.BookingRepository>(
+    () => bookings_repo.BookingRepositoryImpl(getIt()),
+  );
+  getIt.registerLazySingleton<CreateBookingUseCase>(
+    () => CreateBookingUseCase(getIt<bookings_domain.BookingRepository>()),
   );
   getIt.registerLazySingleton<restaurants_ds.RestaurantRemoteDataSource>(
     () => restaurants_ds.RestaurantRemoteDataSource(getIt()),

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
 
 class BookingQrCard extends StatelessWidget {
-  const BookingQrCard({super.key, required this.code});
+  const BookingQrCard({super.key, required this.code, required this.qrData});
 
   final String code;
+  final String qrData;
 
   @override
   Widget build(BuildContext context) {
@@ -28,17 +30,27 @@ class BookingQrCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 160.w,
-            height: 160.w,
+            width: 220.w,
+            height: 220.w,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14.r),
               border: Border.all(color: const Color(0xFFE9EDF1)),
             ),
-            child: Icon(
-              Icons.qr_code_2,
-              size: 120.sp,
-              color: AppColors.textPrimary,
+            child: Center(
+              child: QrImageView(
+                data: qrData,
+                size: 188.w,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(
+                  eyeShape: QrEyeShape.square,
+                  color: Colors.black,
+                ),
+                dataModuleStyle: const QrDataModuleStyle(
+                  dataModuleShape: QrDataModuleShape.square,
+                  color: Colors.black,
+                ),
+              ),
             ),
           ),
           SizedBox(height: 8.h),
@@ -72,5 +84,3 @@ class BookingQrCard extends StatelessWidget {
     );
   }
 }
-
-

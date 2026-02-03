@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../features/main_shell/presentation/pages/main_shell_screen.dart';
 import '../../features/bookings/presentation/pages/orders_screen.dart';
+import '../../features/bookings/presentation/pages/order_qr_scanner_screen.dart';
 import '../../features/users/presentation/pages/profile_screen.dart';
 import '../../features/auth/presentation/login/page/login.page.dart';
 import '../../features/auth/presentation/registration/page/register.page.dart';
@@ -24,26 +25,16 @@ class AppRouter {
   Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case Routes.loginScreen:
-        return MaterialPageRoute(
-          builder: (_) => const LoginPage(),
-        );
+        return MaterialPageRoute(builder: (_) => const LoginPage());
       case Routes.registerScreen:
-        return MaterialPageRoute(
-          builder: (_) => const RegisterPage(),
-        );
+        return MaterialPageRoute(builder: (_) => const RegisterPage());
       case Routes.forgetPasswordScreen:
-        return MaterialPageRoute(
-          builder: (_) => const ForgetPasswordPage(),
-        );
+        return MaterialPageRoute(builder: (_) => const ForgetPasswordPage());
       case Routes.verifyOtpScreen:
         final args = settings.arguments as VerifyOtpArgs;
-        return MaterialPageRoute(
-          builder: (_) => VerifyOtpPage(args: args),
-        );
+        return MaterialPageRoute(builder: (_) => VerifyOtpPage(args: args));
       case Routes.changePasswordScreen:
-        return MaterialPageRoute(
-          builder: (_) => const ChangePasswordPage(),
-        );
+        return MaterialPageRoute(builder: (_) => const ChangePasswordPage());
       case Routes.requestUnderReviewScreen:
         return MaterialPageRoute(
           builder: (_) => const RequestUnderReviewPage(),
@@ -53,17 +44,13 @@ class AppRouter {
           builder: (_) => const BeneficiaryCreateStoryPage(),
         );
       case Routes.homeScreen:
-        return MaterialPageRoute(
-          builder: (_) => const MainShellScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const MainShellScreen());
       case Routes.ordersScreen:
-        return MaterialPageRoute(
-          builder: (_) => const OrdersScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const OrdersScreen());
+      case Routes.orderQrScannerScreen:
+        return MaterialPageRoute(builder: (_) => const OrderQrScannerScreen());
       case Routes.profileScreen:
-        return MaterialPageRoute(
-          builder: (_) => const ProfileScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case Routes.detailScreen:
         final args = settings.arguments as DetailScreenArgs;
         return MaterialPageRoute(
@@ -104,13 +91,15 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => BlocProvider.value(
             value: args.cubit,
-            child: BookingConfirmedScreen(restaurantName: args.restaurantName),
+            child: BookingConfirmedScreen(
+              restaurantName: args.restaurantName,
+              bookingCode: args.bookingCode,
+              qrData: args.qrData,
+            ),
           ),
         );
       default:
-        return MaterialPageRoute(
-          builder: (_) => const LoginPage(),
-        );
+        return MaterialPageRoute(builder: (_) => const LoginPage());
     }
   }
 }
@@ -132,30 +121,21 @@ class DetailScreenArgs {
 }
 
 class SelectDateTimeArgs {
-  const SelectDateTimeArgs({
-    required this.restaurantId,
-    required this.name,
-  });
+  const SelectDateTimeArgs({required this.restaurantId, required this.name});
 
   final String restaurantId;
   final String name;
 }
 
 class SelectGuestsArgs {
-  const SelectGuestsArgs({
-    required this.restaurantName,
-    required this.cubit,
-  });
+  const SelectGuestsArgs({required this.restaurantName, required this.cubit});
 
   final String restaurantName;
   final BookingFlowCubit cubit;
 }
 
 class PaymentArgs {
-  const PaymentArgs({
-    required this.restaurantName,
-    required this.cubit,
-  });
+  const PaymentArgs({required this.restaurantName, required this.cubit});
 
   final String restaurantName;
   final BookingFlowCubit cubit;
@@ -165,8 +145,12 @@ class BookingConfirmedArgs {
   const BookingConfirmedArgs({
     required this.restaurantName,
     required this.cubit,
+    this.bookingCode,
+    this.qrData,
   });
 
   final String restaurantName;
   final BookingFlowCubit cubit;
+  final String? bookingCode;
+  final String? qrData;
 }

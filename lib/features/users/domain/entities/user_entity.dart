@@ -9,6 +9,7 @@ class UserEntity extends Equatable {
     required this.country,
     required this.city,
     required this.role,
+    this.restaurantId,
   });
 
   final String id;
@@ -18,7 +19,17 @@ class UserEntity extends Equatable {
   final String country;
   final String city;
   final String role;
+  final String? restaurantId;
 
   @override
-  List<Object?> get props => [id, fullName, email, phone, country, city, role];
+  List<Object?> get props => [
+    id,
+    fullName,
+    email,
+    phone,
+    country,
+    city,
+    role,
+    restaurantId,
+  ];
 }

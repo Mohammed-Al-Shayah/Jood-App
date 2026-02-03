@@ -239,16 +239,17 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
       await current.updateEmail(newEmail);
       await current.sendEmailVerification();
     }
-      final updated = UserEntity(
-        id: _user.id,
-        fullName: state.fullName.trim(),
-        email: newEmail.isNotEmpty ? newEmail : _user.email,
-        phone: state.phone.trim(),
-        country: state.country.trim(),
-        city: state.city.trim(),
-        role: _user.role,
-      );
-      await _updateUser(updated);
+    final updated = UserEntity(
+      id: _user.id,
+      fullName: state.fullName.trim(),
+      email: newEmail.isNotEmpty ? newEmail : _user.email,
+      phone: state.phone.trim(),
+      country: state.country.trim(),
+      city: state.city.trim(),
+      role: _user.role,
+      restaurantId: _user.restaurantId,
+    );
+    await _updateUser(updated);
   }
 
   void _startTimer() {

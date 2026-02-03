@@ -79,6 +79,8 @@ class HomeTab extends StatelessWidget {
                               state.userCity,
                               state.userCountry,
                             ),
+                            onScannerTap: () =>
+                                context.pushNamed(Routes.orderQrScannerScreen),
                             onFilterTap: () => _showSortSheet(context),
                           ),
                           SizedBox(height: 24.h),

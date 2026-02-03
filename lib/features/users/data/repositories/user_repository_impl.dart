@@ -28,6 +28,7 @@ class UserRepositoryImpl implements UserRepository {
       country: user.country,
       city: user.city,
       role: user.role,
+      restaurantId: user.restaurantId,
     );
     return remoteDataSource.createUser(model);
   }
@@ -42,6 +43,7 @@ class UserRepositoryImpl implements UserRepository {
       country: user.country,
       city: user.city,
       role: user.role,
+      restaurantId: user.restaurantId,
     );
     return remoteDataSource.updateUser(model);
   }

@@ -69,11 +69,12 @@ class BookingRemoteDataSource {
         'subtotal': subtotal,
         'discount': discount,
         'total': total,
-        'status': 'confirmed',
+        'status': 'paid',
         'bookingCode': bookingCode,
-        'qrPayload': 'BOOKING:$bookingCode',
+        'qrPayload': bookingCode,
         'createdAt': FieldValue.serverTimestamp(),
         'paidAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       return BookingModel(
@@ -91,9 +92,9 @@ class BookingRemoteDataSource {
         subtotal: subtotal,
         discount: discount,
         total: total,
-        status: 'confirmed',
+        status: 'paid',
         bookingCode: bookingCode,
-        qrPayload: 'BOOKING:$bookingCode',
+        qrPayload: bookingCode,
         createdAt: DateTime.now(),
         paidAt: DateTime.now(),
       );

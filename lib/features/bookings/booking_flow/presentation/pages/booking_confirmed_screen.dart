@@ -17,9 +17,16 @@ import '../widgets/booking_confirmed/booking_action_button.dart';
 import '../widgets/date_utils.dart';
 
 class BookingConfirmedScreen extends StatelessWidget {
-  const BookingConfirmedScreen({super.key, required this.restaurantName});
+  const BookingConfirmedScreen({
+    super.key,
+    required this.restaurantName,
+    this.bookingCode,
+    this.qrData,
+  });
 
   final String restaurantName;
+  final String? bookingCode;
+  final String? qrData;
 
   @override
   Widget build(BuildContext context) {
@@ -38,12 +45,17 @@ class BookingConfirmedScreen extends StatelessWidget {
           state.adultCount,
           state.childCount,
         );
-        final bookingCode = _codeFromSelection(
-          selectedOffer?.id,
-          state.selectedDate,
-          state.adultCount,
-          state.childCount,
-        );
+        final resolvedBookingCode =
+            bookingCode ??
+            _codeFromSelection(
+              selectedOffer?.id,
+              state.selectedDate,
+              state.adultCount,
+              state.childCount,
+            );
+        final resolvedQrData = (qrData != null && qrData!.trim().isNotEmpty)
+            ? qrData!
+            : resolvedBookingCode;
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -81,7 +93,11 @@ class BookingConfirmedScreen extends StatelessWidget {
                       style: AppTextStyles.cardMeta.copyWith(fontSize: 16.sp),
                     ),
                     SizedBox(height: 18.h),
-                    BookingQrCard(key: ValueKey(bookingCode), code: bookingCode),
+                    BookingQrCard(
+                      key: ValueKey(resolvedBookingCode),
+                      code: resolvedBookingCode,
+                      qrData: resolvedQrData,
+                    ),
                     SizedBox(height: 16.h),
                     BookingDetailsCard(
                       restaurantName: restaurantName,
@@ -102,7 +118,6 @@ class BookingConfirmedScreen extends StatelessWidget {
       },
     );
   }
-
 }
 
 String _codeFromSelection(
@@ -118,5 +133,3 @@ String _codeFromSelection(
   final hash = base.codeUnits.fold(0, (sum, unit) => sum + unit) % 10000;
   return 'BKG$dateLabel${people.toString().padLeft(2, '0')}${hash.toString().padLeft(4, '0')}';
 }
-
-

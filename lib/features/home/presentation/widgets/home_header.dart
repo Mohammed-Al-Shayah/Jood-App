@@ -9,9 +9,11 @@ class HomeHeader extends StatelessWidget {
     super.key,
     required this.locationText,
     required this.onFilterTap,
+    this.onScannerTap,
   });
   final String locationText;
   final VoidCallback onFilterTap;
+  final VoidCallback? onScannerTap;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +51,26 @@ class HomeHeader extends StatelessWidget {
           ),
           SizedBox(width: 8.w),
           const Spacer(),
+          if (onScannerTap != null) ...[
+            InkWell(
+              borderRadius: BorderRadius.circular(20.r),
+              onTap: onScannerTap,
+              child: Container(
+                height: 40.r,
+                width: 40.r,
+                decoration: const BoxDecoration(
+                  color: AppColors.iconStroke,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.qr_code_scanner,
+                  color: AppColors.textPrimary,
+                  size: 22.sp,
+                ),
+              ),
+            ),
+            SizedBox(width: 8.w),
+          ],
           InkWell(
             borderRadius: BorderRadius.circular(20.r),
             onTap: onFilterTap,

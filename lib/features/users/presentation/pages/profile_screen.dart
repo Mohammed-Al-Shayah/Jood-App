@@ -125,6 +125,29 @@ class ProfileTab extends StatelessWidget {
                   //   ],
                   // ),
                   SizedBox(height: 16.h),
+                  if (user.role.toLowerCase() == 'staff' ||
+                      user.role.toLowerCase() == 'restaurant_staff' ||
+                      user.role.toLowerCase() == 'admin') ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          context.pushNamed(Routes.orderQrScannerScreen);
+                        },
+                        icon: const Icon(Icons.qr_code_scanner),
+                        label: const Text('Scan Order QR'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
