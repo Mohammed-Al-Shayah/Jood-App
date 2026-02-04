@@ -32,13 +32,13 @@ class BookingRemoteDataSource {
           .toLowerCase()
           .replaceAll(' ', '');
 
-      final remainingAdult = capacityAdult - bookedAdult;
-      final remainingChild = capacityChild - bookedChild;
+      final remainingTotal =
+          (capacityAdult + capacityChild) - (bookedAdult + bookedChild);
 
       if (status == 'soldout' || status == 'sold_out') {
         throw BookingException('Offer is not active.');
       }
-      if (remainingAdult < adults || remainingChild < children) {
+      if (remainingTotal < (adults + children)) {
         throw BookingException('Sold out / Not enough tickets.');
       }
 

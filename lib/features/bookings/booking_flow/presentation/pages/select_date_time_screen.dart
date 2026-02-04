@@ -228,9 +228,10 @@ _OfferAvailability _availabilityFor(OfferEntity offer) {
 enum _OfferAvailability { available, low, soldOut }
 
 int _remainingTotal(OfferEntity offer) {
-  final remainingAdult = offer.remainingAdult < 0 ? 0 : offer.remainingAdult;
-  final remainingChild = offer.remainingChild < 0 ? 0 : offer.remainingChild;
-  return remainingAdult + remainingChild;
+  final totalCapacity = offer.capacityAdult + offer.capacityChild;
+  final totalBooked = offer.bookedAdult + offer.bookedChild;
+  final remaining = totalCapacity - totalBooked;
+  return remaining < 0 ? 0 : remaining;
 }
 
 List<OfferEntity> _skeletonOffers() {

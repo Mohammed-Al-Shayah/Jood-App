@@ -27,6 +27,17 @@ class SelectGuestsScreen extends StatelessWidget {
     return BlocBuilder<BookingFlowCubit, BookingFlowState>(
       builder: (context, state) {
         final selectedOffer = state.selectedOffer();
+        final remainingTotal = selectedOffer == null
+            ? 0
+            : ((selectedOffer.capacityAdult + selectedOffer.capacityChild) -
+                      (selectedOffer.bookedAdult + selectedOffer.bookedChild))
+                  .clamp(0, 1000000)
+                  .toInt();
+        final selectedTotal = state.adultCount + state.childCount;
+        final adultsCanAdd =
+            selectedOffer != null && selectedTotal < remainingTotal;
+        final childrenCanAdd =
+            selectedOffer != null && selectedTotal < remainingTotal;
         final dateLabel = formatOfferDate(state.selectedDate);
         final summaryTime = selectedOffer == null
             ? dateLabel
@@ -72,6 +83,17 @@ class SelectGuestsScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
+                    if (selectedOffer == null) return;
+                    if (selectedTotal > remainingTotal) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Selected tickets are no longer available. Please adjust quantities.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     context.pushNamed(
                       Routes.paymentScreen,
                       arguments: PaymentArgs(
@@ -123,9 +145,11 @@ class SelectGuestsScreen extends StatelessWidget {
                                   adultPrice,
                                 ),
                                 count: state.adultCount,
-                                onAdd: () => context
-                                    .read<BookingFlowCubit>()
-                                    .incrementAdults(),
+                                onAdd: adultsCanAdd
+                                    ? () => context
+                                          .read<BookingFlowCubit>()
+                                          .incrementAdults()
+                                    : null,
                                 onRemove: state.adultCount > 1
                                     ? () => context
                                           .read<BookingFlowCubit>()
@@ -144,9 +168,11 @@ class SelectGuestsScreen extends StatelessWidget {
                                   childPrice,
                                 ),
                                 count: state.childCount,
-                                onAdd: () => context
-                                    .read<BookingFlowCubit>()
-                                    .incrementChildren(),
+                                onAdd: childrenCanAdd
+                                    ? () => context
+                                          .read<BookingFlowCubit>()
+                                          .incrementChildren()
+                                    : null,
                                 onRemove: state.childCount > 0
                                     ? () => context
                                           .read<BookingFlowCubit>()
@@ -216,12 +242,12 @@ class SelectGuestsScreen extends StatelessWidget {
                               ],
                               SizedBox(height: 10.h),
                               Divider(color: AppColors.shadowColor),
+                              // SizedBox(height: 10.h),
+                              // SummaryRow(
+                              //   label: AppStrings.subtotal,
+                              //   value: formatCurrency(currency, subtotal),
+                              // ),
                               SizedBox(height: 10.h),
-                              SummaryRow(
-                                label: AppStrings.subtotal,
-                                value: formatCurrency(currency, subtotal),
-                              ),
-                              SizedBox(height: 6.h),
                               SummaryRow(
                                 label: 'Before discount',
                                 value: formatCurrency(
@@ -236,7 +262,7 @@ class SelectGuestsScreen extends StatelessWidget {
                               ),
                               SizedBox(height: 6.h),
                               SummaryRow(
-                                label: 'Tax (5%)',
+                                label: 'VAT (5%)',
                                 value: formatCurrency(currency, tax),
                               ),
                               SizedBox(height: 6.h),

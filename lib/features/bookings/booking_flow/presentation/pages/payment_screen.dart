@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -22,7 +21,6 @@ import 'package:thawani_payment/models/products.dart';
 import '../cubit/booking_flow_cubit.dart';
 import '../cubit/booking_flow_state.dart';
 import '../widgets/date_utils.dart';
-import '../widgets/payment/payment_input_field.dart';
 import '../widgets/payment/payment_secure_card.dart';
 import '../widgets/payment/payment_summary_card.dart';
 import '../widgets/select_date_header.dart';
@@ -38,9 +36,45 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   bool _isSubmitting = false;
+  final _formKey = GlobalKey<FormState>();
+  final _cardholderController = TextEditingController();
+  final _cardNumberController = TextEditingController();
+  final _expiryController = TextEditingController();
+  final _cvvController = TextEditingController();
+
+  @override
+  void dispose() {
+    _cardholderController.dispose();
+    _cardNumberController.dispose();
+    _expiryController.dispose();
+    _cvvController.dispose();
+    super.dispose();
+  }
+
+  String _extractPaymentErrorMessage(Map status) {
+    final data = status['data'];
+    final nestedMessage = data is Map
+        ? (data['message'] ?? data['description'] ?? data['error'])
+        : null;
+    final code = status['code'] ?? status['status'];
+    final directMessage =
+        status['message'] ?? status['error'] ?? status['detail'];
+
+    final message = (nestedMessage ?? directMessage)?.toString().trim();
+    if (message != null && message.isNotEmpty) {
+      return code == null ? message : 'Payment failed ($code): $message';
+    }
+    return code == null
+        ? 'Payment failed. Please check your Thawani keys/settings.'
+        : 'Payment failed ($code). Please check your Thawani keys/settings.';
+  }
 
   Future<void> _confirmAndPay(BookingFlowState state) async {
     if (_isSubmitting) return;
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
     final offer = state.selectedOffer();
     if (offer == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -67,19 +101,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
-    final totalAmount =
+    final subtotal =
         (offer.priceAdult * state.adultCount) +
         (offer.priceChild * state.childCount);
-    final totalAmountInBaisa = _toBaisa(totalAmount);
+    const taxRate = 0.05;
+    final tax = subtotal * taxRate;
+    final totalPayable = subtotal + tax;
+    final totalAmountInBaisa = _toBaisa(totalPayable);
 
     setState(() => _isSubmitting = true);
     try {
       Thawani.pay(
         context,
-        // api: ThawaniConfig.apiKey,
-        api: 'rRQ26GcsZzoEhbrP2HZvLYDbn9C9et',
-        pKey: 'HGvTMLDssJghr9tlN9gr4DVYt0qyBy',
-        // pKey: ThawaniConfig.publishableApiKey,
+        api: ThawaniConfig.apiKey,
+        // api: 'rRQ26GcsZzoEhbrP2HZvLYDbn9C9et',
+        // pKey: 'HGvTMLDssJghr9tlN9gr4DVYt0qyBy',
+        pKey: ThawaniConfig.publishableApiKey,
         metadata: {
           'userId': user.uid,
           'restaurant': widget.restaurantName,
@@ -95,7 +132,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             unitAmount: totalAmountInBaisa,
           ),
         ],
-        clintID: '12345',
+        clintID: user.uid,
         testMode: ThawaniConfig.isTestMode,
         onCreate: (_) {},
         onCancelled: (_) {
@@ -108,9 +145,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         onError: (status) {
           if (!mounted) return;
           setState(() => _isSubmitting = false);
-          final message =
-              (status['message'] ?? status['error'] ?? 'Payment failed.')
-                  .toString();
+          final message = _extractPaymentErrorMessage(status);
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(message)));
@@ -120,7 +155,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             _handlePaymentSuccess(
               state: state,
               userId: user.uid,
-              totalAmount: totalAmount,
+              totalAmount: totalPayable,
             ),
           );
         },
@@ -162,6 +197,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
       );
 
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment completed successfully.')),
+      );
       context.pushNamed(
         Routes.bookingConfirmedScreen,
         arguments: BookingConfirmedArgs(
@@ -205,14 +243,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
         final childPrice = selectedOffer?.priceChild ?? 0;
         final adultTotal = adultPrice * state.adultCount;
         final childTotal = childPrice * state.childCount;
-        final totalAmount = adultTotal + childTotal;
+        final subtotal = adultTotal + childTotal;
+        const taxRate = 0.05;
+        final tax = subtotal * taxRate;
+        final totalPayable = subtotal + tax;
 
         return Scaffold(
           backgroundColor: Colors.white,
           bottomNavigationBar: BottomCtaBar(
             label: _isSubmitting
                 ? 'Processing...'
-                : '${AppStrings.confirmAndPay} ${formatCurrency(currency, totalAmount)}',
+                : '${AppStrings.confirmAndPay} ${formatCurrency(currency, totalPayable)}',
             onPressed: () => _confirmAndPay(state),
             backgroundColor: Colors.white,
             shadowColor: AppColors.shadowColor,
@@ -231,85 +272,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        PaymentSummaryCard(
-                          restaurantName: widget.restaurantName,
-                          timeLabel: summaryTime,
-                          totalAmount: formatCurrency(currency, totalAmount),
-                          adultsCount: state.adultCount,
-                          childrenCount: state.childCount,
-                        ),
-                        SizedBox(height: 18.h),
-                        Text(
-                          AppStrings.cardholderName,
-                          style: AppTextStyles.sectionTitle.copyWith(
-                            fontSize: 14.sp,
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          PaymentSummaryCard(
+                            restaurantName: widget.restaurantName,
+                            timeLabel: summaryTime,
+                            totalAmount: formatCurrency(currency, totalPayable),
+                            adultsCount: state.adultCount,
+                            childrenCount: state.childCount,
                           ),
-                        ),
-                        SizedBox(height: 8.h),
-                        PaymentInputField(
-                          hintText: 'John Doe',
-                          keyboardType: TextInputType.name,
-                        ),
-                        SizedBox(height: 14.h),
-                        Text(
-                          AppStrings.cardNumber,
-                          style: AppTextStyles.sectionTitle.copyWith(
-                            fontSize: 14.sp,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        PaymentInputField(
-                          hintText: '1234 5678 9012 3456',
-                          keyboardType: TextInputType.number,
-                        ),
-                        SizedBox(height: 14.h),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppStrings.expiryDate,
-                                    style: AppTextStyles.sectionTitle.copyWith(
-                                      fontSize: 14.sp,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8.h),
-                                  PaymentInputField(
-                                    hintText: 'MM/YY',
-                                    keyboardType: TextInputType.datetime,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: 12.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    AppStrings.cvv,
-                                    style: AppTextStyles.sectionTitle.copyWith(
-                                      fontSize: 14.sp,
-                                    ),
-                                  ),
-                                  SizedBox(height: 8.h),
-                                  PaymentInputField(
-                                    hintText: '123',
-                                    keyboardType: TextInputType.number,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 16.h),
-                        const PaymentSecureCard(),
-                      ],
+                          SizedBox(height: 18.h),
+                          const PaymentSecureCard(),
+                        ],
+                      ),
                     ),
                   ),
                 ),

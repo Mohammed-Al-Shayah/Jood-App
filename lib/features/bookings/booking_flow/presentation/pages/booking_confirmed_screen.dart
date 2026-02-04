@@ -40,7 +40,10 @@ class BookingConfirmedScreen extends StatelessWidget {
         final childPrice = selectedOffer?.priceChild ?? 0;
         final adultTotal = adultPrice * state.adultCount;
         final childTotal = childPrice * state.childCount;
-        final totalAmount = adultTotal + childTotal;
+        final subtotal = adultTotal + childTotal;
+        const taxRate = 0.05;
+        final tax = subtotal * taxRate;
+        final totalAmount = subtotal + tax;
         final guestsLabel = buildGuestsLabel(
           state.adultCount,
           state.childCount,

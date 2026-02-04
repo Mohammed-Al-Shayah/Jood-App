@@ -19,7 +19,7 @@ class TicketRow extends StatelessWidget {
   final String ageLabel;
   final String priceLabel;
   final int count;
-  final VoidCallback onAdd;
+  final VoidCallback? onAdd;
   final VoidCallback? onRemove;
 
   @override
@@ -64,7 +64,7 @@ class TicketRow extends StatelessWidget {
             RoundIconButton(
               icon: Icons.add,
               onTap: onAdd,
-              isEnabled: true,
+              isEnabled: onAdd != null,
               isFilled: true,
             ),
           ],
