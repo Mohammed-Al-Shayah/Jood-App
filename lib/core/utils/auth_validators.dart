@@ -17,9 +17,4 @@ class AuthValidators {
   static String normalizePhone(String value) {
     return value.replaceAll(RegExp(r'[^0-9]'), '');
   }
-
-  static String phoneToEmail(String phone) {
-    final digits = normalizePhone(phone);
-    return 'phone_$digits@jood.app';
-  }
 }

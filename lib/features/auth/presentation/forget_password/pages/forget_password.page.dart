@@ -6,6 +6,8 @@ import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
+import '../../otp/verify_otp_args.dart';
 import '../logic/forget_password_cubit.dart';
 import '../logic/forget_password_state.dart';
 
@@ -30,17 +32,30 @@ class ForgetPasswordPage extends StatelessWidget {
             listener: (context, state) {
               if (state.status == ForgetPasswordStatus.failure &&
                   state.errorMessage != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(state.errorMessage!)),
+                showAppSnackBar(
+                  context,
+                  state.errorMessage!,
+                  type: SnackBarType.error,
                 );
               }
               if (state.status == ForgetPasswordStatus.success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Reset email sent. Please check your inbox.'),
-                  ),
+                showAppSnackBar(
+                  context,
+                  'Reset email sent. Please check your inbox.',
+                  type: SnackBarType.success,
                 );
                 context.pushNamed(Routes.loginScreen);
+              }
+              if (state.status == ForgetPasswordStatus.phoneOtpSent &&
+                  state.verificationId != null) {
+                context.pushNamed(
+                  Routes.verifyOtpScreen,
+                  arguments: VerifyOtpArgs.resetPassword(
+                    verificationId: state.verificationId!,
+                    phone: state.input.trim(),
+                    resendToken: state.resendToken,
+                  ),
+                );
               }
             },
             builder: (context, state) {
@@ -51,20 +66,24 @@ class ForgetPasswordPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Enter the email associated with your account, and we will send you a code to reset your password.',
+                      'Enter your email to receive a reset link, or enter your phone to verify with OTP and set a new password.',
                       style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp),
                     ),
                     SizedBox(height: 24.h),
                     Text(
-                      'Email',
-                      style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
+                      'Email or Phone',
+                      style: AppTextStyles.sectionTitle.copyWith(
+                        fontSize: 14.sp,
+                      ),
                     ),
                     SizedBox(height: 8.h),
                     TextField(
                       keyboardType: TextInputType.emailAddress,
-                      onChanged: context.read<ForgetPasswordCubit>().updateEmail,
+                      onChanged: context
+                          .read<ForgetPasswordCubit>()
+                          .updateIdentifier,
                       decoration: InputDecoration(
-                        hintText: 'Enter your email',
+                        hintText: 'Enter your email or phone',
                         filled: true,
                         fillColor: const Color(0xFFF6F7FB),
                         contentPadding: EdgeInsets.symmetric(
@@ -83,7 +102,8 @@ class ForgetPasswordPage extends StatelessWidget {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: state.isValid && !isLoading
-                              ? () => context.read<ForgetPasswordCubit>().submit()
+                              ? () =>
+                                    context.read<ForgetPasswordCubit>().submit()
                               : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,

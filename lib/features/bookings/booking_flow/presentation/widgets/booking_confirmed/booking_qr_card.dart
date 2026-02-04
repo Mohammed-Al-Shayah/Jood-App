@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 
 class BookingQrCard extends StatelessWidget {
   const BookingQrCard({super.key, required this.code, required this.qrData});
@@ -58,17 +59,17 @@ class BookingQrCard extends StatelessWidget {
           result['isSuccess'] == true ||
           (result['filePath']?.toString().isNotEmpty ?? false);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isSaved ? 'QR saved to gallery.' : 'Could not save QR to gallery.',
-          ),
-        ),
+      showAppSnackBar(
+        context,
+        isSaved ? 'QR saved to gallery.' : 'Could not save QR to gallery.',
+        type: isSaved ? SnackBarType.success : SnackBarType.error,
       );
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save QR to gallery: $error')),
+      showAppSnackBar(
+        context,
+        'Failed to save QR to gallery: $error',
+        type: SnackBarType.error,
       );
     }
   }
@@ -79,9 +80,11 @@ class BookingQrCard extends StatelessWidget {
       await Share.shareXFiles([XFile(file.path)], text: 'Booking Code: $code');
     } catch (error) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
+      showAppSnackBar(
         context,
-      ).showSnackBar(SnackBar(content: Text('Failed to share QR: $error')));
+        'Failed to share QR: $error',
+        type: SnackBarType.error,
+      );
     }
   }
 

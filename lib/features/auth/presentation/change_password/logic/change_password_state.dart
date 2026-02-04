@@ -1,3 +1,5 @@
+enum ChangePasswordStatus { initial, loading, success, failure }
+
 class ChangePasswordState {
   const ChangePasswordState({
     required this.password,
@@ -5,6 +7,8 @@ class ChangePasswordState {
     required this.showPassword,
     required this.showConfirmPassword,
     required this.isValid,
+    required this.status,
+    this.errorMessage,
   });
 
   final String password;
@@ -12,6 +16,8 @@ class ChangePasswordState {
   final bool showPassword;
   final bool showConfirmPassword;
   final bool isValid;
+  final ChangePasswordStatus status;
+  final String? errorMessage;
 
   ChangePasswordState copyWith({
     String? password,
@@ -19,6 +25,8 @@ class ChangePasswordState {
     bool? showPassword,
     bool? showConfirmPassword,
     bool? isValid,
+    ChangePasswordStatus? status,
+    String? errorMessage,
   }) {
     return ChangePasswordState(
       password: password ?? this.password,
@@ -26,6 +34,8 @@ class ChangePasswordState {
       showPassword: showPassword ?? this.showPassword,
       showConfirmPassword: showConfirmPassword ?? this.showConfirmPassword,
       isValid: isValid ?? this.isValid,
+      status: status ?? this.status,
+      errorMessage: errorMessage,
     );
   }
 
@@ -36,6 +46,8 @@ class ChangePasswordState {
       showPassword: false,
       showConfirmPassword: false,
       isValid: false,
+      status: ChangePasswordStatus.initial,
+      errorMessage: null,
     );
   }
 }

@@ -6,6 +6,7 @@ import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import '../../domain/entities/user_entity.dart';
 import '../cubit/profile_edit_cubit.dart';
 import '../cubit/profile_edit_state.dart';
@@ -44,6 +45,13 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           child: BlocConsumer<ProfileEditCubit, ProfileEditState>(
             listener: (context, state) {
               if (state.status == ProfileEditStatus.success) {
+                if (state.successMessage != null) {
+                  showAppSnackBar(
+                    context,
+                    state.successMessage!,
+                    type: SnackBarType.success,
+                  );
+                }
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!mounted) return;
                   if (_otpSheetOpen && Navigator.of(context).canPop()) {
@@ -57,8 +65,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               }
               if (state.status == ProfileEditStatus.failure &&
                   state.errorMessage != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(state.errorMessage!)),
+                showAppSnackBar(
+                  context,
+                  state.errorMessage!,
+                  type: SnackBarType.error,
                 );
               }
               if (state.status == ProfileEditStatus.otpSent && !_otpSheetOpen) {
@@ -74,7 +84,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               }
             },
             builder: (context, state) {
-              final isSaving = state.status == ProfileEditStatus.saving ||
+              final isSaving =
+                  state.status == ProfileEditStatus.saving ||
                   state.status == ProfileEditStatus.otpSending ||
                   state.status == ProfileEditStatus.otpVerifying;
               return SingleChildScrollView(
@@ -85,7 +96,9 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                     _Label(text: 'Full name'),
                     _Field(
                       initialValue: state.fullName,
-                      onChanged: context.read<ProfileEditCubit>().updateFullName,
+                      onChanged: context
+                          .read<ProfileEditCubit>()
+                          .updateFullName,
                     ),
                     _Label(text: 'Email'),
                     _Field(
@@ -150,11 +163,11 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                           ),
                           elevation: 0,
                         ),
-                          child: isSaving
-                              ? SizedBox(
-                                  height: 18.h,
-                                  width: 18.h,
-                                  child: const CircularProgressIndicator(
+                        child: isSaving
+                            ? SizedBox(
+                                height: 18.h,
+                                width: 18.h,
+                                child: const CircularProgressIndicator(
                                   strokeWidth: 2,
                                   color: Colors.white,
                                 ),
@@ -269,8 +282,9 @@ Future<void> _showOtpSheet(BuildContext context, ProfileEditCubit cubit) {
                     child: ElevatedButton(
                       onPressed: isVerifying
                           ? null
-                          : () =>
-                              context.read<ProfileEditCubit>().verifyPhoneOtp(),
+                          : () => context
+                                .read<ProfileEditCubit>()
+                                .verifyPhoneOtp(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         padding: EdgeInsets.symmetric(vertical: 14.h),

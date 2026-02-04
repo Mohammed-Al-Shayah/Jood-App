@@ -16,6 +16,7 @@ import '../widgets/select_guests/ticket_row.dart';
 import 'package:jood/core/routing/app_router.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 
 class SelectGuestsScreen extends StatelessWidget {
   const SelectGuestsScreen({super.key, required this.restaurantName});
@@ -85,12 +86,10 @@ class SelectGuestsScreen extends StatelessWidget {
                   onPressed: () {
                     if (selectedOffer == null) return;
                     if (selectedTotal > remainingTotal) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Selected tickets are no longer available. Please adjust quantities.',
-                          ),
-                        ),
+                      showAppSnackBar(
+                        context,
+                        'Selected tickets are no longer available. Please adjust quantities.',
+                        type: SnackBarType.error,
                       );
                       return;
                     }

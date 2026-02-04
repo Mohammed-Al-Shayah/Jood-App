@@ -12,6 +12,7 @@ import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/config/thawani_config.dart';
 import 'package:jood/core/utils/extensions.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/core/widgets/bottom_cta_bar.dart';
 import 'package:jood/features/bookings/domain/usecases/create_booking_usecase.dart';
 import 'package:jood/features/payments/domain/entities/payment_entity.dart';
@@ -77,26 +78,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     final offer = state.selectedOffer();
     if (offer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select an offer first.')),
+      showAppSnackBar(
+        context,
+        'Please select an offer first.',
+        type: SnackBarType.error,
       );
       return;
     }
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(
+      showAppSnackBar(
         context,
-      ).showSnackBar(const SnackBar(content: Text('You need to login first.')));
+        'You need to login first.',
+        type: SnackBarType.error,
+      );
       return;
     }
     if (!ThawaniConfig.isConfigured) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Thawani is not configured. Add THAWANI_API_KEY and THAWANI_PUBLISHABLE_KEY.',
-          ),
-        ),
+      showAppSnackBar(
+        context,
+        'Thawani is not configured. Add THAWANI_API_KEY and THAWANI_PUBLISHABLE_KEY.',
+        type: SnackBarType.error,
       );
       return;
     }
@@ -138,17 +141,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
         onCancelled: (_) {
           if (!mounted) return;
           setState(() => _isSubmitting = false);
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Payment cancelled.')));
+          showAppSnackBar(context, 'Payment cancelled.');
         },
         onError: (status) {
           if (!mounted) return;
           setState(() => _isSubmitting = false);
           final message = _extractPaymentErrorMessage(status);
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          showAppSnackBar(context, message, type: SnackBarType.error);
         },
         onPaid: (_) {
           unawaited(
@@ -163,8 +162,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
     } catch (error) {
       if (!context.mounted) return;
       setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to start payment: $error')),
+      showAppSnackBar(
+        context,
+        'Unable to start payment: $error',
+        type: SnackBarType.error,
       );
     }
   }
@@ -197,8 +198,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment completed successfully.')),
+      showAppSnackBar(
+        context,
+        'Payment completed successfully.',
+        type: SnackBarType.success,
       );
       context.pushNamed(
         Routes.bookingConfirmedScreen,
@@ -211,12 +214,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Payment was successful but booking save failed. Please contact support. $error',
-          ),
-        ),
+      showAppSnackBar(
+        context,
+        'Payment was successful but booking save failed. Please contact support. $error',
+        type: SnackBarType.error,
       );
     } finally {
       if (mounted) {

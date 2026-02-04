@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:jood/core/errors/auth_error_mapper.dart';
+import 'package:jood/core/utils/auth_validators.dart';
 
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/get_user_by_phone_usecase.dart';
@@ -15,19 +17,19 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
     required GetUserByPhoneUseCase getUserByPhone,
     required FirebaseAuth auth,
     required UserEntity user,
-  })  : _updateUser = updateUser,
-        _getUserByPhone = getUserByPhone,
-        _auth = auth,
-        _user = user,
-        super(
-          ProfileEditState.initial(
-            fullName: user.fullName,
-            email: user.email,
-            phone: user.phone,
-            country: user.country,
-            city: user.city,
-          ),
-        ) {
+  }) : _updateUser = updateUser,
+       _getUserByPhone = getUserByPhone,
+       _auth = auth,
+       _user = user,
+       super(
+         ProfileEditState.initial(
+           fullName: user.fullName,
+           email: user.email,
+           phone: user.phone,
+           country: user.country,
+           city: user.city,
+         ),
+       ) {
     _initPhoneIso(user.phone);
   }
 
@@ -71,7 +73,13 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         state.status == ProfileEditStatus.otpVerifying) {
       return;
     }
-    emit(state.copyWith(status: ProfileEditStatus.saving, errorMessage: null));
+    emit(
+      state.copyWith(
+        status: ProfileEditStatus.saving,
+        errorMessage: null,
+        successMessage: null,
+      ),
+    );
     try {
       final current = _auth.currentUser;
       if (current == null) {
@@ -84,7 +92,9 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         return;
       }
       final newPhone = state.phone.trim();
-      final phoneChanged = newPhone != _user.phone.trim();
+      final phoneChanged =
+          AuthValidators.normalizePhone(newPhone) !=
+          AuthValidators.normalizePhone(_user.phone.trim());
       if (phoneChanged) {
         final existing = await _getUserByPhone(newPhone);
         if (existing != null && existing.id != _user.id) {
@@ -99,13 +109,39 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         await _sendPhoneOtp(newPhone);
         return;
       }
-      await _applyUpdates(current);
-      emit(state.copyWith(status: ProfileEditStatus.success));
+      final sentVerificationEmail = await _applyUpdates(current);
+      emit(
+        state.copyWith(
+          status: ProfileEditStatus.success,
+          successMessage: sentVerificationEmail
+              ? 'Verification link sent to your new email. Please confirm it.'
+              : null,
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        await _auth.signOut();
+      }
+      emit(
+        state.copyWith(
+          status: ProfileEditStatus.failure,
+          errorMessage: mapFirebaseAuthException(
+            e,
+            operationNotAllowedMessage:
+                'Email/Password sign-in is disabled in Firebase.',
+            requiresRecentLoginMessage:
+                'For security, please sign in again and retry.',
+            fallbackMessage: 'Update failed. Please try again.',
+          ),
+          successMessage: null,
+        ),
+      );
     } catch (error) {
       emit(
         state.copyWith(
           status: ProfileEditStatus.failure,
           errorMessage: error.toString(),
+          successMessage: null,
         ),
       );
     }
@@ -148,13 +184,24 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         smsCode: state.otpCode.trim(),
       );
       await current.updatePhoneNumber(credential);
-      await _applyUpdates(current);
-      emit(state.copyWith(status: ProfileEditStatus.success));
+      final sentVerificationEmail = await _applyUpdates(current);
+      emit(
+        state.copyWith(
+          status: ProfileEditStatus.success,
+          successMessage: sentVerificationEmail
+              ? 'Verification link sent to your new email. Please confirm it.'
+              : null,
+        ),
+      );
     } on FirebaseAuthException catch (e) {
       emit(
         state.copyWith(
           status: ProfileEditStatus.failure,
-          errorMessage: _mapPhoneError(e),
+          errorMessage: mapFirebaseAuthException(
+            e,
+            fallbackMessage: 'Phone verification failed. Please try again.',
+          ),
+          successMessage: null,
         ),
       );
     } catch (error) {
@@ -162,6 +209,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         state.copyWith(
           status: ProfileEditStatus.failure,
           errorMessage: error.toString(),
+          successMessage: null,
         ),
       );
     }
@@ -199,13 +247,21 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
             return;
           }
           await current.updatePhoneNumber(credential);
-          await _applyUpdates(current);
-          emit(state.copyWith(status: ProfileEditStatus.success));
+          final sentVerificationEmail = await _applyUpdates(current);
+          emit(
+            state.copyWith(
+              status: ProfileEditStatus.success,
+              successMessage: sentVerificationEmail
+                  ? 'Verification link sent to your new email. Please confirm it.'
+                  : null,
+            ),
+          );
         } catch (e) {
           emit(
             state.copyWith(
               status: ProfileEditStatus.failure,
               errorMessage: e.toString(),
+              successMessage: null,
             ),
           );
         }
@@ -214,7 +270,11 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         emit(
           state.copyWith(
             status: ProfileEditStatus.failure,
-            errorMessage: _mapPhoneError(e),
+            errorMessage: mapFirebaseAuthException(
+              e,
+              fallbackMessage: 'Phone verification failed. Please try again.',
+            ),
+            successMessage: null,
           ),
         );
       },
@@ -233,23 +293,35 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
     );
   }
 
-  Future<void> _applyUpdates(User current) async {
+  Future<bool> _applyUpdates(User current) async {
     final newEmail = state.email.trim();
-    if (newEmail.isNotEmpty && newEmail != _user.email.trim()) {
-      await current.updateEmail(newEmail);
-      await current.sendEmailVerification();
+    final emailChanged = newEmail.isNotEmpty && newEmail != _user.email.trim();
+    if (emailChanged) {
+      // Require inbox confirmation before applying email change.
+      await current.verifyBeforeUpdateEmail(newEmail);
     }
+    final authEmail = current.email?.trim() ?? '';
+    final persistedEmail = emailChanged
+        ? newEmail
+        : (authEmail.isNotEmpty
+              ? authEmail
+              : (newEmail.isNotEmpty ? newEmail : _user.email));
+    final persistedEmailVerified = emailChanged
+        ? false
+        : (authEmail.isNotEmpty ? current.emailVerified : _user.emailVerified);
     final updated = UserEntity(
       id: _user.id,
       fullName: state.fullName.trim(),
-      email: newEmail.isNotEmpty ? newEmail : _user.email,
-      phone: state.phone.trim(),
+      email: persistedEmail,
+      emailVerified: persistedEmailVerified,
+      phone: AuthValidators.normalizePhone(state.phone),
       country: state.country.trim(),
       city: state.city.trim(),
       role: _user.role,
       restaurantId: _user.restaurantId,
     );
     await _updateUser(updated);
+    return emailChanged;
   }
 
   void _startTimer() {
@@ -263,23 +335,6 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         emit(state.copyWith(secondsLeft: next));
       }
     });
-  }
-
-  String _mapPhoneError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'invalid-phone-number':
-        return 'Invalid phone number.';
-      case 'too-many-requests':
-        return 'Too many attempts. Try again later.';
-      case 'invalid-verification-code':
-        return 'Invalid OTP code.';
-      case 'session-expired':
-        return 'OTP session expired. Please resend the code.';
-      case 'quota-exceeded':
-        return 'SMS quota exceeded. Please try again later.';
-      default:
-        return e.message ?? 'Phone verification failed. Please try again.';
-    }
   }
 
   @override

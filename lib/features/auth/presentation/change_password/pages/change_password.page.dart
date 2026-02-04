@@ -6,6 +6,7 @@ import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import '../logic/change_password_cubit.dart';
 import '../logic/change_password_state.dart';
 
@@ -26,8 +27,27 @@ class ChangePasswordPage extends StatelessWidget {
           foregroundColor: AppColors.textPrimary,
         ),
         body: SafeArea(
-          child: BlocBuilder<ChangePasswordCubit, ChangePasswordState>(
+          child: BlocConsumer<ChangePasswordCubit, ChangePasswordState>(
+            listener: (context, state) {
+              if (state.status == ChangePasswordStatus.failure &&
+                  state.errorMessage != null) {
+                showAppSnackBar(
+                  context,
+                  state.errorMessage!,
+                  type: SnackBarType.error,
+                );
+              }
+              if (state.status == ChangePasswordStatus.success) {
+                showAppSnackBar(
+                  context,
+                  'Password changed successfully.',
+                  type: SnackBarType.success,
+                );
+                context.pushNamedAndRemoveAll(Routes.loginScreen);
+              }
+            },
             builder: (context, state) {
+              final isLoading = state.status == ChangePasswordStatus.loading;
               return Padding(
                 padding: EdgeInsets.all(20.r),
                 child: Column(
@@ -40,13 +60,16 @@ class ChangePasswordPage extends StatelessWidget {
                     SizedBox(height: 24.h),
                     Text(
                       'New Password',
-                      style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
+                      style: AppTextStyles.sectionTitle.copyWith(
+                        fontSize: 14.sp,
+                      ),
                     ),
                     SizedBox(height: 8.h),
                     TextField(
                       obscureText: !state.showPassword,
-                      onChanged:
-                          context.read<ChangePasswordCubit>().updatePassword,
+                      onChanged: context
+                          .read<ChangePasswordCubit>()
+                          .updatePassword,
                       decoration: InputDecoration(
                         hintText: 'Enter new password',
                         suffixIcon: IconButton(
@@ -75,7 +98,9 @@ class ChangePasswordPage extends StatelessWidget {
                     SizedBox(height: 16.h),
                     Text(
                       'Confirm Password',
-                      style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
+                      style: AppTextStyles.sectionTitle.copyWith(
+                        fontSize: 14.sp,
+                      ),
                     ),
                     SizedBox(height: 8.h),
                     TextField(
@@ -110,8 +135,8 @@ class ChangePasswordPage extends StatelessWidget {
                     ),
                     SizedBox(height: 24.h),
                     ElevatedButton(
-                      onPressed: state.isValid
-                          ? () => context.pushNamed(Routes.loginScreen)
+                      onPressed: state.isValid && !isLoading
+                          ? () => context.read<ChangePasswordCubit>().submit()
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -120,7 +145,26 @@ class ChangePasswordPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30.r),
                         ),
                       ),
-                      child: Text('Change Password', style: AppTextStyles.cta),
+                      child: isLoading
+                          ? SizedBox(
+                              height: 18.h,
+                              width: double.infinity,
+                              child: Center(
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            )
+                          : SizedBox(
+                              width: double.infinity,
+                              child: Center(
+                                child: Text(
+                                  'Change Password',
+                                  style: AppTextStyles.cta,
+                                ),
+                              ),
+                            ),
                     ),
                   ],
                 ),

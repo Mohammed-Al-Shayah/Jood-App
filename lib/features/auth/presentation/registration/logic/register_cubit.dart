@@ -1,40 +1,46 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../../core/bloc/safe_cubit.dart';
+import '../../../../../core/constants/app_strings.dart';
+import '../../../../../core/errors/auth_error_mapper.dart';
+import '../../../../../core/utils/auth_validators.dart';
 import '../../../../../features/users/domain/entities/user_entity.dart';
 import '../../../../../features/users/domain/usecases/create_user_usecase.dart';
 import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
-import '../../../../../core/utils/auth_validators.dart';
+import '../../../../../features/users/domain/usecases/sync_auth_user_usecase.dart';
 import 'register_state.dart';
 
-class RegisterCubit extends Cubit<RegisterState> {
+class RegisterCubit extends SafeCubit<RegisterState> {
   RegisterCubit({
     required FirebaseAuth auth,
     required CreateUserUseCase createUser,
     required GetUserByPhoneUseCase getUserByPhone,
+    required SyncAuthUserUseCase syncAuthUser,
   }) : _auth = auth,
        _createUser = createUser,
        _getUserByPhone = getUserByPhone,
+       _syncAuthUser = syncAuthUser,
        super(RegisterState.initial());
 
   final FirebaseAuth _auth;
   final CreateUserUseCase _createUser;
   final GetUserByPhoneUseCase _getUserByPhone;
+  final SyncAuthUserUseCase _syncAuthUser;
 
   void updateFullName(String value) {
-    emit(_update(state.copyWith(fullName: value, fullNameTouched: true)));
+    emitSafe(_update(state.copyWith(fullName: value, fullNameTouched: true)));
   }
 
   void updateEmail(String value) {
-    emit(_update(state.copyWith(email: value, emailTouched: true)));
+    emitSafe(_update(state.copyWith(email: value, emailTouched: true)));
   }
 
   void updatePassword(String value) {
-    emit(_update(state.copyWith(password: value, passwordTouched: true)));
+    emitSafe(_update(state.copyWith(password: value, passwordTouched: true)));
   }
 
   void updateConfirmPassword(String value) {
-    emit(
+    emitSafe(
       _update(
         state.copyWith(confirmPassword: value, confirmPasswordTouched: true),
       ),
@@ -42,27 +48,23 @@ class RegisterCubit extends Cubit<RegisterState> {
   }
 
   void updatePhone(String value) {
-    emit(_update(state.copyWith(phone: value, phoneTouched: true)));
+    emitSafe(_update(state.copyWith(phone: value, phoneTouched: true)));
   }
 
   void updatePhoneIso(String value) {
-    emit(state.copyWith(phoneIso: value));
+    emitSafe(state.copyWith(phoneIso: value));
   }
 
   void updateCountry(String value) {
-    emit(_update(state.copyWith(country: value, countryTouched: true)));
+    emitSafe(_update(state.copyWith(country: value, countryTouched: true)));
   }
 
   void updateCity(String value) {
-    emit(_update(state.copyWith(city: value, cityTouched: true)));
-  }
-
-  void setMethod(RegisterMethod method) {
-    emit(_update(state.copyWith(method: method)));
+    emitSafe(_update(state.copyWith(city: value, cityTouched: true)));
   }
 
   void toggleTerms() {
-    emit(
+    emitSafe(
       _update(
         state.copyWith(termsAccepted: !state.termsAccepted, termsTouched: true),
       ),
@@ -70,24 +72,29 @@ class RegisterCubit extends Cubit<RegisterState> {
   }
 
   void togglePasswordVisibility() {
-    emit(state.copyWith(showPassword: !state.showPassword));
+    emitSafe(state.copyWith(showPassword: !state.showPassword));
   }
 
   void toggleConfirmPasswordVisibility() {
-    emit(state.copyWith(showConfirmPassword: !state.showConfirmPassword));
+    emitSafe(state.copyWith(showConfirmPassword: !state.showConfirmPassword));
   }
 
   Future<void> submit() async {
     if (state.status == RegisterStatus.loading) return;
     if (!state.isValid) {
-      emit(_update(state.copyWith(submitAttempted: true)));
+      emitSafe(_update(state.copyWith(submitAttempted: true)));
       return;
     }
-    emit(state.copyWith(status: RegisterStatus.loading, errorMessage: null));
+
+    emitSafe(
+      state.copyWith(status: RegisterStatus.loading, errorMessage: null),
+    );
+
     try {
-      final existing = await _getUserByPhone(state.phone.trim());
+      final normalizedPhone = AuthValidators.normalizePhone(state.phone);
+      final existing = await _getUserByPhone(normalizedPhone);
       if (existing != null) {
-        emit(
+        emitSafe(
           state.copyWith(
             status: RegisterStatus.failure,
             errorMessage: 'Phone number already in use.',
@@ -95,6 +102,7 @@ class RegisterCubit extends Cubit<RegisterState> {
         );
         return;
       }
+
       await _auth.verifyPhoneNumber(
         phoneNumber: state.phone.trim(),
         timeout: const Duration(seconds: 60),
@@ -104,7 +112,7 @@ class RegisterCubit extends Cubit<RegisterState> {
             final result = await _auth.signInWithCredential(credential);
             final user = result.user;
             if (user == null) {
-              emit(
+              emitSafe(
                 state.copyWith(
                   status: RegisterStatus.failure,
                   errorMessage: 'Unable to verify phone. Please try again.',
@@ -112,44 +120,36 @@ class RegisterCubit extends Cubit<RegisterState> {
               );
               return;
             }
-            final linked = await _linkPasswordCredential(
-              user,
-              state.phone.trim(),
-              state.password.trim(),
-            );
-            if (!linked) return;
-            await user.updateDisplayName(state.fullName.trim());
-            await _createUser(
-              UserEntity(
-                id: user.uid,
-                fullName: state.fullName.trim(),
-                email: state.email.trim(),
-                phone: state.phone.trim(),
-                country: state.country.trim(),
-                city: state.city.trim(),
-                role: 'customer',
+            await _finalizeRegistration(user, normalizedPhone);
+            emitSafe(
+              state.copyWith(
+                status: RegisterStatus.phoneVerified,
+                errorMessage: null,
               ),
             );
-            emit(state.copyWith(status: RegisterStatus.phoneVerified));
           } catch (_) {
-            emit(
+            emitSafe(
               state.copyWith(
                 status: RegisterStatus.failure,
-                errorMessage: 'Something went wrong. Please try again.',
+                errorMessage: AppStrings.somethingWentWrong,
               ),
             );
           }
         },
         verificationFailed: (e) {
-          emit(
+          emitSafe(
             state.copyWith(
               status: RegisterStatus.failure,
-              errorMessage: _mapPhoneError(e),
+              errorMessage: mapFirebaseAuthException(
+                e,
+                operationNotAllowedMessage: 'Phone auth is not enabled.',
+                fallbackMessage: 'Phone verification failed. Please try again.',
+              ),
             ),
           );
         },
         codeSent: (verificationId, resendToken) {
-          emit(
+          emitSafe(
             state.copyWith(
               status: RegisterStatus.phoneOtpSent,
               verificationId: verificationId,
@@ -158,21 +158,75 @@ class RegisterCubit extends Cubit<RegisterState> {
           );
         },
         codeAutoRetrievalTimeout: (verificationId) {
-          emit(state.copyWith(verificationId: verificationId));
+          emitSafe(state.copyWith(verificationId: verificationId));
         },
       );
     } on FirebaseAuthException catch (e) {
-      emit(
+      emitSafe(
         state.copyWith(
           status: RegisterStatus.failure,
-          errorMessage: _mapAuthError(e),
+          errorMessage: mapFirebaseAuthException(
+            e,
+            operationNotAllowedMessage: 'Phone auth is not enabled.',
+            fallbackMessage: 'Sign up failed. Please try again.',
+          ),
         ),
       );
     } catch (_) {
-      emit(
+      emitSafe(
         state.copyWith(
           status: RegisterStatus.failure,
-          errorMessage: 'Something went wrong. Please try again.',
+          errorMessage: AppStrings.somethingWentWrong,
+        ),
+      );
+    }
+  }
+
+  Future<void> _finalizeRegistration(User user, String normalizedPhone) async {
+    final providedEmail = state.email.trim();
+    if (providedEmail.isEmpty) {
+      throw FirebaseAuthException(code: 'invalid-email');
+    }
+
+    await _linkPasswordCredential(user, providedEmail, state.password.trim());
+    await user.updateDisplayName(state.fullName.trim());
+    await user.sendEmailVerification();
+
+    final profile = UserEntity(
+      id: user.uid,
+      fullName: state.fullName.trim(),
+      email: providedEmail,
+      emailVerified: false,
+      phone: normalizedPhone,
+      country: state.country.trim(),
+      city: state.city.trim(),
+      role: 'customer',
+    );
+
+    await _createUser(profile);
+    await _syncAuthUser(user, fallback: profile);
+  }
+
+  Future<void> _linkPasswordCredential(
+    User user,
+    String email,
+    String password,
+  ) async {
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: password,
+      );
+      await user.linkWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'provider-already-linked') return;
+      throw FirebaseAuthException(
+        code: e.code,
+        message: mapFirebaseAuthException(
+          e,
+          operationNotAllowedMessage:
+              'Email/password accounts are not enabled.',
+          fallbackMessage: 'Sign up failed. Please try again.',
         ),
       );
     }
@@ -188,6 +242,7 @@ class RegisterCubit extends Cubit<RegisterState> {
         next.country.trim().isNotEmpty &&
         next.city.trim().isNotEmpty &&
         next.termsAccepted;
+
     final showAll = next.submitAttempted;
     return next.copyWith(
       isValid: isValid,
@@ -209,7 +264,7 @@ class RegisterCubit extends Cubit<RegisterState> {
         _confirmPasswordError(next.password, next.confirmPassword),
       ),
       phoneError: _maybeError(
-        (next.phoneTouched || showAll) && _shouldValidatePhone(next),
+        next.phoneTouched || showAll,
         _phoneError(next.phone),
       ),
       countryError: _maybeError(
@@ -237,7 +292,7 @@ class RegisterCubit extends Cubit<RegisterState> {
   }
 
   String? _emailError(String value) {
-    if (value.trim().isEmpty) return null;
+    if (value.trim().isEmpty) return 'Email is required.';
     if (!AuthValidators.isEmail(value)) {
       return 'Enter a valid email (example@domain.com).';
     }
@@ -274,40 +329,7 @@ class RegisterCubit extends Cubit<RegisterState> {
     return null;
   }
 
-  String _mapAuthError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'invalid-email':
-        return 'Invalid email address.';
-      case 'email-already-in-use':
-        return 'Email already in use.';
-      case 'credential-already-in-use':
-        return 'Phone number already in use.';
-      case 'weak-password':
-        return 'Password is too weak.';
-      case 'operation-not-allowed':
-        return 'Email/password accounts are not enabled.';
-      default:
-        return e.message ?? 'Sign up failed. Please try again.';
-    }
-  }
-
-  String _mapPhoneError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'invalid-phone-number':
-        return 'Invalid phone number.';
-      case 'too-many-requests':
-        return 'Too many attempts. Try again later.';
-      case 'quota-exceeded':
-        return 'SMS quota exceeded. Please try again later.';
-      case 'operation-not-allowed':
-        return 'Phone auth is not enabled.';
-      default:
-        return e.message ?? 'Phone verification failed. Please try again.';
-    }
-  }
-
   bool _isEmailValid(RegisterState next) {
-    if (!_shouldValidateEmail(next)) return true;
     return AuthValidators.isEmail(next.email);
   }
 
@@ -322,54 +344,14 @@ class RegisterCubit extends Cubit<RegisterState> {
   }
 
   bool _isPhoneValid(RegisterState next) {
-    if (!_shouldValidatePhone(next)) return true;
     return AuthValidators.isPhone(next.phone);
   }
 
   bool _shouldValidateEmail(RegisterState next) {
-    return next.email.trim().isNotEmpty;
+    return true;
   }
 
   bool _shouldValidatePassword(RegisterState next) {
     return true;
-  }
-
-  bool _shouldValidatePhone(RegisterState next) {
-    return next.method == RegisterMethod.phone || next.phone.trim().isNotEmpty;
-  }
-
-  Future<bool> _linkPasswordCredential(
-    User user,
-    String phone,
-    String password,
-  ) async {
-    try {
-      final email = AuthValidators.phoneToEmail(phone);
-      final credential = EmailAuthProvider.credential(
-        email: email,
-        password: password,
-      );
-      await user.linkWithCredential(credential);
-      return true;
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'provider-already-linked') {
-        return true;
-      }
-      emit(
-        state.copyWith(
-          status: RegisterStatus.failure,
-          errorMessage: _mapAuthError(e),
-        ),
-      );
-      return false;
-    } catch (_) {
-      emit(
-        state.copyWith(
-          status: RegisterStatus.failure,
-          errorMessage: 'Something went wrong. Please try again.',
-        ),
-      );
-      return false;
-    }
   }
 }

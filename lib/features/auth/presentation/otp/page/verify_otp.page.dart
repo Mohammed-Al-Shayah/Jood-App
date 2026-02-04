@@ -6,7 +6,9 @@ import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import '../../../../users/domain/usecases/create_user_usecase.dart';
+import '../../../../users/domain/usecases/sync_auth_user_usecase.dart';
 import '../logic/otp_cubit.dart';
 import '../logic/otp_state.dart';
 import '../verify_otp_args.dart';
@@ -22,6 +24,7 @@ class VerifyOtpPage extends StatelessWidget {
       create: (_) => OtpCubit(
         auth: getIt(),
         createUser: getIt<CreateUserUseCase>(),
+        syncAuthUser: getIt<SyncAuthUserUseCase>(),
         args: args,
       ),
       child: Scaffold(
@@ -38,12 +41,18 @@ class VerifyOtpPage extends StatelessWidget {
             listener: (context, state) {
               if (state.status == OtpStatus.failure &&
                   state.errorMessage != null) {
-                ScaffoldMessenger.of(
+                showAppSnackBar(
                   context,
-                ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+                  state.errorMessage!,
+                  type: SnackBarType.error,
+                );
               }
               if (state.status == OtpStatus.success) {
-                context.pushNamedAndRemoveAll(Routes.homeScreen);
+                if (args.flow == OtpFlow.resetPassword) {
+                  context.pushReplacementNamed(Routes.changePasswordScreen);
+                } else {
+                  context.pushNamedAndRemoveAll(Routes.homeScreen);
+                }
               }
             },
             builder: (context, state) {
@@ -54,7 +63,11 @@ class VerifyOtpPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Enter the OTP sent to your phone (${args.phone}).',
+                      args.flow == OtpFlow.register
+                          ? 'Enter the OTP sent to your phone (${args.phone}) to complete registration.'
+                          : args.flow == OtpFlow.login
+                          ? 'Enter the OTP sent to your phone (${args.phone}) to log in.'
+                          : 'Enter the OTP sent to your phone (${args.phone}) to reset your password.',
                       style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp),
                     ),
                     SizedBox(height: 20.h),

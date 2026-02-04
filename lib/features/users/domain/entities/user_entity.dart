@@ -5,6 +5,7 @@ class UserEntity extends Equatable {
     required this.id,
     required this.fullName,
     required this.email,
+    this.emailVerified = false,
     required this.phone,
     required this.country,
     required this.city,
@@ -15,6 +16,7 @@ class UserEntity extends Equatable {
   final String id;
   final String fullName;
   final String email;
+  final bool emailVerified;
   final String phone;
   final String country;
   final String city;
@@ -26,6 +28,7 @@ class UserEntity extends Equatable {
     id,
     fullName,
     email,
+    emailVerified,
     phone,
     country,
     city,

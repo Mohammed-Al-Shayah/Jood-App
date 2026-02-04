@@ -22,6 +22,7 @@ import '../../features/users/domain/repositories/user_repository.dart';
 import '../../features/users/domain/usecases/create_user_usecase.dart';
 import '../../features/users/domain/usecases/get_user_by_id_usecase.dart';
 import '../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
+import '../../features/users/domain/usecases/sync_auth_user_usecase.dart';
 import '../../features/users/domain/usecases/update_user_usecase.dart';
 import '../../features/users/presentation/cubit/profile_cubit.dart';
 import '../../features/payments/data/datasources/payment_remote_data_source.dart';
@@ -77,17 +78,24 @@ Future<void> setupServiceLocator() async {
         BookingFlowCubit(getOffersForDate: getIt(), getOffersForRange: getIt()),
   );
   getIt.registerFactory<LoginCubit>(
-    () => LoginCubit(auth: getIt(), getUserByPhone: getIt()),
+    () => LoginCubit(
+      auth: getIt(),
+      getUserByPhone: getIt(),
+      syncAuthUser: getIt(),
+    ),
   );
   getIt.registerFactory<ForgetPasswordCubit>(
-    () => ForgetPasswordCubit(auth: getIt()),
+    () => ForgetPasswordCubit(auth: getIt(), getUserByPhone: getIt()),
   );
-  getIt.registerFactory<ChangePasswordCubit>(() => ChangePasswordCubit());
+  getIt.registerFactory<ChangePasswordCubit>(
+    () => ChangePasswordCubit(auth: getIt()),
+  );
   getIt.registerFactory<RegisterCubit>(
     () => RegisterCubit(
       auth: getIt(),
       createUser: getIt(),
       getUserByPhone: getIt(),
+      syncAuthUser: getIt(),
     ),
   );
   getIt.registerLazySingleton<UserRemoteDataSource>(
@@ -107,6 +115,13 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<UpdateUserUseCase>(
     () => UpdateUserUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<SyncAuthUserUseCase>(
+    () => SyncAuthUserUseCase(
+      getUserById: getIt(),
+      createUser: getIt(),
+      updateUser: getIt(),
+    ),
   );
   getIt.registerLazySingleton<PaymentRemoteDataSource>(
     () => PaymentRemoteDataSource(firestore: getIt()),
@@ -142,6 +157,7 @@ Future<void> setupServiceLocator() async {
     () => RestaurantDetailCubit(getRestaurantDetails: getIt()),
   );
   getIt.registerFactory<ProfileCubit>(
-    () => ProfileCubit(getUserById: getIt(), auth: getIt()),
+    () =>
+        ProfileCubit(getUserById: getIt(), updateUser: getIt(), auth: getIt()),
   );
 }

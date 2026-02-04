@@ -7,6 +7,7 @@ import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import '../../otp/verify_otp_args.dart';
 import '../logic/register_cubit.dart';
 import '../logic/register_state.dart';
@@ -32,22 +33,22 @@ class RegisterPage extends StatelessWidget {
             listener: (context, state) {
               if (state.status == RegisterStatus.failure &&
                   state.errorMessage != null) {
-                ScaffoldMessenger.of(
+                showAppSnackBar(
                   context,
-                ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+                  state.errorMessage!,
+                  type: SnackBarType.error,
+                );
               }
               if (state.status == RegisterStatus.phoneOtpSent &&
                   state.verificationId != null) {
                 context.pushNamed(
                   Routes.verifyOtpScreen,
-                  arguments: VerifyOtpArgs(
+                  arguments: VerifyOtpArgs.registration(
                     verificationId: state.verificationId!,
                     resendToken: state.resendToken,
                     fullName: state.fullName.trim(),
                     password: state.password,
-                    email: state.email.trim().isEmpty
-                        ? null
-                        : state.email.trim(),
+                    email: state.email.trim(),
                     phone: state.phone.trim(),
                     country: state.country.trim(),
                     city: state.city.trim(),
@@ -71,7 +72,7 @@ class RegisterPage extends StatelessWidget {
                       onChanged: context.read<RegisterCubit>().updateFullName,
                       errorText: state.fullNameError,
                     ),
-                    _Label(text: 'Email Address (optional)'),
+                    _Label(text: 'Email Address'),
                     _Field(
                       hintText: 'Enter your email address',
                       keyboardType: TextInputType.emailAddress,

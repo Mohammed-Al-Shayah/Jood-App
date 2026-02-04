@@ -17,6 +17,7 @@ class MainBottomNavBar extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       type: BottomNavigationBarType.fixed,
+      backgroundColor: Colors.white,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.textMuted,
       selectedLabelStyle: AppTextStyles.cardMeta,

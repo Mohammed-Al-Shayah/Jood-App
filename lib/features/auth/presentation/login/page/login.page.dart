@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:jood/core/constants/app_assets.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/di/service_locator.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import '../logic/login_cubit.dart';
 import '../logic/login_state.dart';
 
@@ -31,9 +33,22 @@ class LoginPage extends StatelessWidget {
             listener: (context, state) {
               if (state.status == LoginStatus.failure &&
                   state.errorMessage != null) {
-                ScaffoldMessenger.of(
+                showAppSnackBar(
                   context,
-                ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+                  state.errorMessage!,
+                  type: SnackBarType.error,
+                );
+              }
+              if (state.status == LoginStatus.verificationLinkSent &&
+                  state.errorMessage != null) {
+                showAppSnackBar(context, state.errorMessage!);
+              }
+              if (state.status == LoginStatus.emailNotVerified &&
+                  state.errorMessage != null) {
+                _showEmailVerificationDialog(
+                  context,
+                  message: state.errorMessage!,
+                );
               }
               if (state.status == LoginStatus.success) {
                 context.pushNamedAndRemoveAll(Routes.homeScreen);
@@ -47,17 +62,13 @@ class LoginPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SizedBox(height: 12.h),
-                    Image.asset(
-                      'assets/images/logo1.png',
-                      width: 100.w,
-                      height: 100.h,
-                    ),
+                    Image.asset(AppAssets.logo, width: 100.w, height: 100.h),
                     SizedBox(height: 24.h),
                     _Label(text: 'Email or Phone'),
                     _TextField(
                       hintText: 'Enter your email or phone',
                       keyboardType: TextInputType.emailAddress,
-                      onChanged: context.read<LoginCubit>().updateEmail,
+                      onChanged: context.read<LoginCubit>().updateIdentifier,
                     ),
                     SizedBox(height: 14.h),
                     _Label(text: 'Password'),
@@ -176,6 +187,82 @@ class LoginPage extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _showEmailVerificationDialog(
+  BuildContext context, {
+  required String message,
+}) {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    builder: (dialogContext) {
+      return Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20.r),
+        ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 16.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.mark_email_unread_outlined,
+                color: AppColors.primary,
+                size: 30.sp,
+              ),
+              SizedBox(height: 10.h),
+              Text('Verify your email', style: AppTextStyles.cardTitle),
+              SizedBox(height: 8.h),
+              Text(
+                message,
+                style: AppTextStyles.cardMeta,
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 16.h),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    context.read<LoginCubit>().resendActivationLink();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30.r),
+                    ),
+                  ),
+                  child: Text(
+                    'Resend activation link',
+                    style: AppTextStyles.body,
+                  ),
+                ),
+              ),
+              SizedBox(height: 8.h),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    context.read<LoginCubit>().switchToPhoneLogin();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppColors.textMuted),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30.r),
+                    ),
+                  ),
+                  child: Text('Login with phone', style: AppTextStyles.body),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _Label extends StatelessWidget {

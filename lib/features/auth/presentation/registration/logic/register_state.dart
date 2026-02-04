@@ -1,12 +1,4 @@
-enum RegisterMethod { email, phone }
-
-enum RegisterStatus {
-  initial,
-  loading,
-  phoneOtpSent,
-  phoneVerified,
-  failure,
-}
+enum RegisterStatus { initial, loading, phoneOtpSent, phoneVerified, failure }
 
 class RegisterState {
   const RegisterState({
@@ -40,7 +32,6 @@ class RegisterState {
     required this.countryError,
     required this.cityError,
     required this.termsError,
-    required this.method,
     required this.verificationId,
     required this.resendToken,
     this.errorMessage,
@@ -76,7 +67,6 @@ class RegisterState {
   final String? countryError;
   final String? cityError;
   final String? termsError;
-  final RegisterMethod method;
   final String? verificationId;
   final int? resendToken;
   final String? errorMessage;
@@ -112,7 +102,6 @@ class RegisterState {
     String? countryError,
     String? cityError,
     String? termsError,
-    RegisterMethod? method,
     String? verificationId,
     int? resendToken,
     String? errorMessage,
@@ -149,7 +138,6 @@ class RegisterState {
       countryError: countryError,
       cityError: cityError,
       termsError: termsError,
-      method: method ?? this.method,
       verificationId: verificationId ?? this.verificationId,
       resendToken: resendToken ?? this.resendToken,
       errorMessage: errorMessage,
@@ -188,7 +176,6 @@ class RegisterState {
       countryError: null,
       cityError: null,
       termsError: null,
-      method: RegisterMethod.phone,
       verificationId: null,
       resendToken: null,
       errorMessage: null,

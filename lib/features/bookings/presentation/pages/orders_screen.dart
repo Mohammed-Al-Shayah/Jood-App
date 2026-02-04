@@ -126,8 +126,9 @@ class _OrderCard extends StatelessWidget {
   Color _statusColor(String statusValue) {
     final normalized = statusValue.toLowerCase();
     if (normalized == 'completed') return const Color(0xFF5C7CFA);
-    if (normalized == 'paid' || normalized == 'confirmed')
+    if (normalized == 'paid' || normalized == 'confirmed') {
       return const Color(0xFF20C997);
+    }
     return const Color(0xFFFA5252);
   }
 

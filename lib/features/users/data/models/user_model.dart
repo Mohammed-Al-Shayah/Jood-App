@@ -6,6 +6,7 @@ class UserModel extends UserEntity {
     required super.id,
     required super.fullName,
     required super.email,
+    super.emailVerified = false,
     required super.phone,
     required super.country,
     required super.city,
@@ -18,6 +19,7 @@ class UserModel extends UserEntity {
       id: id,
       fullName: data['fullName'] as String? ?? '',
       email: data['email'] as String? ?? '',
+      emailVerified: data['emailVerified'] as bool? ?? false,
       phone: data['phone'] as String? ?? '',
       country: data['country'] as String? ?? '',
       city: data['city'] as String? ?? '',
@@ -30,6 +32,7 @@ class UserModel extends UserEntity {
     return {
       'fullName': fullName,
       'email': email,
+      'emailVerified': emailVerified,
       'phone': phone,
       'phoneNormalized': AuthValidators.normalizePhone(phone),
       'country': country,

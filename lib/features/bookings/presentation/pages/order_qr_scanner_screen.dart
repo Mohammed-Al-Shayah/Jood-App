@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class OrderQrScannerScreen extends StatefulWidget {
@@ -66,6 +67,7 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
       ]);
       final restaurantName = details[0];
       final offerTitle = details[1];
+      final pricing = _resolvePricing(bookingData);
 
       if (!mounted) return;
       _isSheetOpen = true;
@@ -85,7 +87,9 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
             startTime: bookingData['startTime'] as String? ?? '-',
             adults: (bookingData['adults'] as num?)?.toInt() ?? 0,
             children: (bookingData['children'] as num?)?.toInt() ?? 0,
-            total: (bookingData['total'] as num?)?.toDouble() ?? 0,
+            subtotal: pricing.subtotal,
+            tax: pricing.tax,
+            total: pricing.total,
             status: (bookingData['status'] as String? ?? ''),
             offerTitle: offerTitle,
           ),
@@ -106,16 +110,12 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
       );
       if (!mounted) return;
       setState(() => _statusText = completeText);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(completeText), backgroundColor: Colors.green),
-      );
+      showAppSnackBar(context, completeText, type: SnackBarType.success);
     } catch (e) {
       if (!mounted) return;
       final message = e.toString().replaceFirst('Exception: ', '').trim();
       setState(() => _statusText = message);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
-      );
+      showAppSnackBar(context, message, type: SnackBarType.error);
     } finally {
       if (!mounted) return;
       await Future<void>.delayed(const Duration(milliseconds: 900));
@@ -214,6 +214,41 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
     return cleaned.replaceAll('_', ' ');
   }
 
+  _Pricing _resolvePricing(Map<String, dynamic> bookingData) {
+    final subtotalRaw = (bookingData['subtotal'] as num?)?.toDouble();
+    final totalRaw = (bookingData['total'] as num?)?.toDouble();
+    final taxRaw = (bookingData['tax'] as num?)?.toDouble();
+
+    final subtotal = subtotalRaw ?? totalRaw ?? 0;
+    if (taxRaw != null) {
+      final total = totalRaw ?? (subtotal + taxRaw);
+      return _Pricing(subtotal: subtotal, tax: taxRaw, total: total);
+    }
+
+    if (totalRaw != null) {
+      if (totalRaw > subtotal) {
+        return _Pricing(
+          subtotal: subtotal,
+          tax: totalRaw - subtotal,
+          total: totalRaw,
+        );
+      }
+      final inferredTax = subtotal * 0.05;
+      return _Pricing(
+        subtotal: subtotal,
+        tax: inferredTax,
+        total: subtotal + inferredTax,
+      );
+    }
+
+    final inferredTax = subtotal * 0.05;
+    return _Pricing(
+      subtotal: subtotal,
+      tax: inferredTax,
+      total: subtotal + inferredTax,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -253,6 +288,8 @@ class _BookingReviewSheet extends StatelessWidget {
     required this.startTime,
     required this.adults,
     required this.children,
+    required this.subtotal,
+    required this.tax,
     required this.total,
     required this.status,
     required this.offerTitle,
@@ -264,6 +301,8 @@ class _BookingReviewSheet extends StatelessWidget {
   final String startTime;
   final int adults;
   final int children;
+  final double subtotal;
+  final double tax;
   final double total;
   final String status;
   final String offerTitle;
@@ -289,7 +328,9 @@ class _BookingReviewSheet extends StatelessWidget {
               _line('Date', date),
               _line('Time', startTime),
               _line('Guests', '$adults adult(s), $children child(ren)'),
-              _line('Amount', total.toStringAsFixed(2)),
+              _line('Subtotal', subtotal.toStringAsFixed(2)),
+              _line('Tax', tax.toStringAsFixed(2)),
+              _line('Total', total.toStringAsFixed(2)),
               _line('Coupon/Offer', offerTitle, maxLines: 2),
               _line('Status', status),
               SizedBox(height: 16.h),
@@ -364,4 +405,16 @@ class _BookingReviewSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+class _Pricing {
+  const _Pricing({
+    required this.subtotal,
+    required this.tax,
+    required this.total,
+  });
+
+  final double subtotal;
+  final double tax;
+  final double total;
 }

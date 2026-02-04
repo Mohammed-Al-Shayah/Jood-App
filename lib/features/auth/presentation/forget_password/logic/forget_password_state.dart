@@ -1,37 +1,47 @@
-enum ForgetPasswordStatus { initial, loading, success, failure }
+enum ForgetPasswordStatus { initial, loading, success, phoneOtpSent, failure }
 
 class ForgetPasswordState {
   const ForgetPasswordState({
-    required this.email,
+    required this.input,
     required this.isValid,
     required this.status,
+    this.verificationId,
+    this.resendToken,
     this.errorMessage,
   });
 
-  final String email;
+  final String input;
   final bool isValid;
   final ForgetPasswordStatus status;
+  final String? verificationId;
+  final int? resendToken;
   final String? errorMessage;
 
   ForgetPasswordState copyWith({
-    String? email,
+    String? input,
     bool? isValid,
     ForgetPasswordStatus? status,
+    String? verificationId,
+    int? resendToken,
     String? errorMessage,
   }) {
     return ForgetPasswordState(
-      email: email ?? this.email,
+      input: input ?? this.input,
       isValid: isValid ?? this.isValid,
       status: status ?? this.status,
+      verificationId: verificationId ?? this.verificationId,
+      resendToken: resendToken ?? this.resendToken,
       errorMessage: errorMessage,
     );
   }
 
   static ForgetPasswordState initial() {
     return const ForgetPasswordState(
-      email: '',
+      input: '',
       isValid: false,
       status: ForgetPasswordStatus.initial,
+      verificationId: null,
+      resendToken: null,
       errorMessage: null,
     );
   }

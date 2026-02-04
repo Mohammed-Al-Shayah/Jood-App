@@ -23,6 +23,7 @@ class ProfileEditState {
     required this.resendToken,
     required this.status,
     this.errorMessage,
+    this.successMessage,
   });
 
   final String fullName;
@@ -38,6 +39,7 @@ class ProfileEditState {
   final int? resendToken;
   final ProfileEditStatus status;
   final String? errorMessage;
+  final String? successMessage;
 
   ProfileEditState copyWith({
     String? fullName,
@@ -53,6 +55,7 @@ class ProfileEditState {
     int? resendToken,
     ProfileEditStatus? status,
     String? errorMessage,
+    String? successMessage,
   }) {
     return ProfileEditState(
       fullName: fullName ?? this.fullName,
@@ -68,6 +71,7 @@ class ProfileEditState {
       resendToken: resendToken ?? this.resendToken,
       status: status ?? this.status,
       errorMessage: errorMessage,
+      successMessage: successMessage,
     );
   }
 
@@ -93,6 +97,7 @@ class ProfileEditState {
       resendToken: null,
       status: ProfileEditStatus.idle,
       errorMessage: null,
+      successMessage: null,
     );
   }
 }
