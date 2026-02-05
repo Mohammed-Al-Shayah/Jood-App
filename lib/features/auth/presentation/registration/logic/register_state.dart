@@ -151,7 +151,7 @@ class RegisterState {
       password: '',
       confirmPassword: '',
       phone: '',
-      phoneIso: 'AE',
+      phoneIso: 'OM',
       country: '',
       city: '',
       termsAccepted: false,

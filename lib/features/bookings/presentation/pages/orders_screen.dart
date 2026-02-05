@@ -125,7 +125,7 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (order.restaurantNameSnapshot.isNotEmpty || order.restaurantId.isEmpty) {
+    if (order.restaurantId.isEmpty) {
       return _buildCard(
         context: context,
         restaurantName: order.restaurantNameSnapshot.isEmpty
@@ -145,10 +145,13 @@ class _OrderCard extends StatelessWidget {
           data: snapshot.data?.data(),
           fallbackId: order.restaurantId,
         );
+        final displayName = order.restaurantNameSnapshot.isNotEmpty
+            ? order.restaurantNameSnapshot
+            : restaurant.name;
 
         return _buildCard(
           context: context,
-          restaurantName: restaurant.name,
+          restaurantName: displayName,
           restaurantImageUrl: restaurant.coverImageUrl,
         );
       },

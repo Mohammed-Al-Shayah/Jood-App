@@ -81,7 +81,7 @@ class ProfileEditState {
     required String phone,
     required String country,
     required String city,
-    String phoneIso = 'AE',
+    String phoneIso = 'OM',
   }) {
     return ProfileEditState(
       fullName: fullName,

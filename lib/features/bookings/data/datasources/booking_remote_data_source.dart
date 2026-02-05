@@ -10,6 +10,7 @@ class BookingRemoteDataSource {
   BookingRemoteDataSource(this.firestore);
 
   final FirebaseFirestore firestore;
+  static const double _taxRate = 0.05;
 
   Future<BookingModel> createBookingWithTransaction({
     required String offerId,
@@ -47,8 +48,9 @@ class BookingRemoteDataSource {
       final priceAdult = NumberUtils.toDouble(data['priceAdult']);
       final priceChild = NumberUtils.toDouble(data['priceChild']);
       final subtotal = priceAdult * adults + priceChild * children;
+      final tax = subtotal * _taxRate;
       final discount = 0.0;
-      final total = subtotal - discount;
+      final total = subtotal + tax - discount;
       final bookingCode = _generateCode();
       String restaurantNameSnapshot = '';
       if (restaurantId.isNotEmpty) {
@@ -80,6 +82,7 @@ class BookingRemoteDataSource {
         'unitPriceAdult': priceAdult,
         'unitPriceChild': priceChild,
         'subtotal': subtotal,
+        'tax': tax,
         'discount': discount,
         'total': total,
         'status': 'paid',
@@ -105,6 +108,7 @@ class BookingRemoteDataSource {
         unitPriceAdult: priceAdult,
         unitPriceChild: priceChild,
         subtotal: subtotal,
+        tax: tax,
         discount: discount,
         total: total,
         status: 'paid',

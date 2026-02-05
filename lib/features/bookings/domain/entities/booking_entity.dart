@@ -14,6 +14,7 @@ class BookingEntity extends Equatable {
     required this.unitPriceAdult,
     required this.unitPriceChild,
     required this.subtotal,
+    required this.tax,
     required this.discount,
     required this.total,
     required this.status,
@@ -37,6 +38,7 @@ class BookingEntity extends Equatable {
   final double unitPriceAdult;
   final double unitPriceChild;
   final double subtotal;
+  final double tax;
   final double discount;
   final double total;
   final String status;
@@ -61,6 +63,7 @@ class BookingEntity extends Equatable {
     unitPriceAdult,
     unitPriceChild,
     subtotal,
+    tax,
     discount,
     total,
     status,
