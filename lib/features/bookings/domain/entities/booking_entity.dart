@@ -21,6 +21,8 @@ class BookingEntity extends Equatable {
     required this.qrPayload,
     required this.createdAt,
     this.paidAt,
+    this.restaurantNameSnapshot,
+    this.offerTitleSnapshot,
   });
 
   final String id;
@@ -42,27 +44,31 @@ class BookingEntity extends Equatable {
   final String qrPayload;
   final DateTime createdAt;
   final DateTime? paidAt;
+  final String? restaurantNameSnapshot;
+  final String? offerTitleSnapshot;
 
   @override
   List<Object?> get props => [
-        id,
-        userId,
-        restaurantId,
-        offerId,
-        date,
-        startTime,
-        adults,
-        children,
-        currency,
-        unitPriceAdult,
-        unitPriceChild,
-        subtotal,
-        discount,
-        total,
-        status,
-        bookingCode,
-        qrPayload,
-        createdAt,
-        paidAt,
-      ];
+    id,
+    userId,
+    restaurantId,
+    offerId,
+    date,
+    startTime,
+    adults,
+    children,
+    currency,
+    unitPriceAdult,
+    unitPriceChild,
+    subtotal,
+    discount,
+    total,
+    status,
+    bookingCode,
+    qrPayload,
+    createdAt,
+    paidAt,
+    restaurantNameSnapshot,
+    offerTitleSnapshot,
+  ];
 }

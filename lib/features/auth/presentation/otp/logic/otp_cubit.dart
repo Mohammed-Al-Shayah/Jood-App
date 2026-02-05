@@ -6,6 +6,10 @@ import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
+import '../../../domain/usecases/link_email_password_usecase.dart';
+import '../../../domain/usecases/send_email_verification_usecase.dart';
+import '../../../domain/usecases/send_phone_otp_usecase.dart';
+import '../../../domain/usecases/verify_otp_usecase.dart';
 import '../../../../users/domain/entities/user_entity.dart';
 import '../../../../users/domain/usecases/create_user_usecase.dart';
 import '../../../../users/domain/usecases/sync_auth_user_usecase.dart';
@@ -14,11 +18,17 @@ import '../verify_otp_args.dart';
 
 class OtpCubit extends SafeCubit<OtpState> {
   OtpCubit({
-    required FirebaseAuth auth,
+    required SendPhoneOtpUseCase sendPhoneOtp,
+    required VerifyOtpUseCase verifyOtp,
+    required LinkEmailPasswordUseCase linkEmailPassword,
+    required SendEmailVerificationUseCase sendEmailVerification,
     required CreateUserUseCase createUser,
     required SyncAuthUserUseCase syncAuthUser,
     required VerifyOtpArgs args,
-  }) : _auth = auth,
+  }) : _sendPhoneOtp = sendPhoneOtp,
+       _verifyOtp = verifyOtp,
+       _linkEmailPassword = linkEmailPassword,
+       _sendEmailVerification = sendEmailVerification,
        _createUser = createUser,
        _syncAuthUser = syncAuthUser,
        _args = args,
@@ -28,7 +38,10 @@ class OtpCubit extends SafeCubit<OtpState> {
     _startTimer();
   }
 
-  final FirebaseAuth _auth;
+  final SendPhoneOtpUseCase _sendPhoneOtp;
+  final VerifyOtpUseCase _verifyOtp;
+  final LinkEmailPasswordUseCase _linkEmailPassword;
+  final SendEmailVerificationUseCase _sendEmailVerification;
   final CreateUserUseCase _createUser;
   final SyncAuthUserUseCase _syncAuthUser;
   final VerifyOtpArgs _args;
@@ -45,7 +58,7 @@ class OtpCubit extends SafeCubit<OtpState> {
     emitSafe(state.copyWith(secondsLeft: 60, canResend: false));
     _startTimer();
     try {
-      await _auth.verifyPhoneNumber(
+      await _sendPhoneOtp(
         phoneNumber: _args.phone,
         timeout: const Duration(seconds: 60),
         forceResendingToken: _resendToken,
@@ -95,11 +108,10 @@ class OtpCubit extends SafeCubit<OtpState> {
     if (!state.isValid || state.status == OtpStatus.verifying) return;
     emitSafe(state.copyWith(status: OtpStatus.verifying, errorMessage: null));
     try {
-      final credential = PhoneAuthProvider.credential(
+      final result = await _verifyOtp(
         verificationId: _verificationId,
         smsCode: state.code,
       );
-      final result = await _auth.signInWithCredential(credential);
       final user = result.user;
       if (user == null) {
         emitSafe(
@@ -163,7 +175,7 @@ class OtpCubit extends SafeCubit<OtpState> {
     }
     final password = (_args.password ?? '').trim();
     await _linkPasswordCredential(user, email, password);
-    await user.sendEmailVerification();
+    await _sendEmailVerification(user);
     final profile = UserEntity(
       id: user.uid,
       fullName: (_args.fullName ?? '').trim(),
@@ -184,11 +196,7 @@ class OtpCubit extends SafeCubit<OtpState> {
     String password,
   ) async {
     try {
-      final credential = EmailAuthProvider.credential(
-        email: email,
-        password: password,
-      );
-      await user.linkWithCredential(credential);
+      await _linkEmailPassword(user: user, email: email, password: password);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'provider-already-linked') {
         return;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jood/core/constants/app_assets.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
@@ -64,13 +65,48 @@ class LoginPage extends StatelessWidget {
                     SizedBox(height: 12.h),
                     Image.asset(AppAssets.logo, width: 100.w, height: 100.h),
                     SizedBox(height: 24.h),
-                    _Label(text: 'Email or Phone'),
-                    _TextField(
-                      hintText: 'Enter your email or phone',
-                      keyboardType: TextInputType.emailAddress,
-                      onChanged: context.read<LoginCubit>().updateIdentifier,
+                    _Label(
+                      text: state.loginMethod == LoginMethod.phone
+                          ? 'Phone Number'
+                          : 'Email Address',
                     ),
-                    SizedBox(height: 14.h),
+                    if (state.loginMethod == LoginMethod.phone)
+                      InternationalPhoneNumberInput(
+                        initialValue: PhoneNumber(isoCode: state.phoneIso),
+                        onInputChanged: (number) {
+                          context.read<LoginCubit>().updateIdentifier(
+                            number.phoneNumber ?? '',
+                          );
+                          final iso = number.isoCode;
+                          if (iso != null && iso.isNotEmpty) {
+                            context.read<LoginCubit>().updatePhoneIso(iso);
+                          }
+                        },
+                        selectorConfig: const SelectorConfig(
+                          selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                        ),
+                        keyboardType: TextInputType.phone,
+                        inputDecoration: InputDecoration(
+                          hintText: 'Enter your phone number',
+                          filled: true,
+                          fillColor: const Color(0xFFF6F7FB),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 14.h,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30.r),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      )
+                    else
+                      _TextField(
+                        hintText: 'Enter your email',
+                        keyboardType: TextInputType.emailAddress,
+                        onChanged: context.read<LoginCubit>().updateIdentifier,
+                      ),
+                    SizedBox(height: 5.h),
                     _Label(text: 'Password'),
                     _TextField(
                       hintText: 'Enter your password',
@@ -150,6 +186,40 @@ class LoginPage extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: 14.h),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        context.read<LoginCubit>().setLoginMethod(
+                          state.loginMethod == LoginMethod.phone
+                              ? LoginMethod.email
+                              : LoginMethod.phone,
+                        );
+                      },
+                      // icon: Icon(
+                      //   state.loginMethod == LoginMethod.phone
+                      //       ? Icons.alternate_email
+                      //       : Icons.phone_android,
+                      //   size: 18.sp,
+                      //   color: AppColors.primary,
+                      // ),
+                      label: Text(
+                        state.loginMethod == LoginMethod.phone
+                            ? 'Login via email'
+                            : 'Login via phone',
+                        style: AppTextStyles.cardPrice.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: AppColors.primary, width: 1.4),
+                        backgroundColor: const Color(0xFFF7FFFD),
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
                     OutlinedButton(
                       onPressed: isLoading
                           ? null

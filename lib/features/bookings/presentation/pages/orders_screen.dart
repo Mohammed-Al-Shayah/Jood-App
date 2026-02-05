@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import '../models/order_item_view_model.dart';
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
@@ -77,19 +78,10 @@ class OrdersTab extends StatelessWidget {
                 sliver: SliverList.builder(
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final data = docs[index].data();
+                    final order = OrderItemViewModel.fromDoc(docs[index]);
                     return Padding(
                       padding: EdgeInsets.only(bottom: 14.h),
-                      child: _OrderCard(
-                        bookingCode: (data['bookingCode'] as String?) ?? '',
-                        qrPayload: (data['qrPayload'] as String?) ?? '',
-                        restaurantId: (data['restaurantId'] as String?) ?? '',
-                        date: (data['date'] as String?) ?? '',
-                        startTime: (data['startTime'] as String?) ?? '',
-                        status: (data['status'] as String?) ?? 'paid',
-                        total: (data['total'] as num?)?.toDouble() ?? 0,
-                        createdAt: data['createdAt'],
-                      ),
+                      child: _OrderCard(order: order),
                     );
                   },
                 ),
@@ -103,25 +95,9 @@ class OrdersTab extends StatelessWidget {
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({
-    required this.bookingCode,
-    required this.qrPayload,
-    required this.restaurantId,
-    required this.date,
-    required this.startTime,
-    required this.status,
-    required this.total,
-    required this.createdAt,
-  });
+  const _OrderCard({required this.order});
 
-  final String bookingCode;
-  final String qrPayload;
-  final String restaurantId;
-  final String date;
-  final String startTime;
-  final String status;
-  final double total;
-  final dynamic createdAt;
+  final OrderItemViewModel order;
 
   Color _statusColor(String statusValue) {
     final normalized = statusValue.toLowerCase();
@@ -139,43 +115,41 @@ class _OrderCard extends StatelessWidget {
   }
 
   String _formattedDate() {
-    if (date.isNotEmpty) return date;
-    if (createdAt is Timestamp) {
-      return DateFormat(
-        'MMM d, yyyy',
-      ).format((createdAt as Timestamp).toDate());
+    if (order.date.isNotEmpty) return order.date;
+    final createdAt = order.createdAt;
+    if (createdAt != null) {
+      return DateFormat('MMM d, yyyy').format(createdAt.toDate());
     }
     return '-';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (restaurantId.isEmpty) {
+    if (order.restaurantNameSnapshot.isNotEmpty || order.restaurantId.isEmpty) {
       return _buildCard(
         context: context,
-        restaurantName: 'Restaurant',
+        restaurantName: order.restaurantNameSnapshot.isEmpty
+            ? 'Restaurant'
+            : order.restaurantNameSnapshot,
         restaurantImageUrl: '',
       );
     }
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: FirebaseFirestore.instance
           .collection('restaurants')
-          .doc(restaurantId)
-          .snapshots(),
+          .doc(order.restaurantId)
+          .get(),
       builder: (context, snapshot) {
-        final restaurantData = snapshot.data?.data();
-        final restaurantName =
-            (restaurantData?['name'] as String?)?.trim().isNotEmpty == true
-            ? (restaurantData?['name'] as String)
-            : restaurantId;
-        final restaurantImageUrl =
-            (restaurantData?['coverImageUrl'] as String?) ?? '';
+        final restaurant = RestaurantSummaryViewModel.fromDoc(
+          data: snapshot.data?.data(),
+          fallbackId: order.restaurantId,
+        );
 
         return _buildCard(
           context: context,
-          restaurantName: restaurantName,
-          restaurantImageUrl: restaurantImageUrl,
+          restaurantName: restaurant.name,
+          restaurantImageUrl: restaurant.coverImageUrl,
         );
       },
     );
@@ -186,7 +160,7 @@ class _OrderCard extends StatelessWidget {
     required String restaurantName,
     required String restaurantImageUrl,
   }) {
-    final badgeColor = _statusColor(status);
+    final badgeColor = _statusColor(order.status);
     return Container(
       padding: EdgeInsets.all(12.w),
       decoration: BoxDecoration(
@@ -217,7 +191,10 @@ class _OrderCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 4.h),
-                    Text('Code: $bookingCode', style: AppTextStyles.cardMeta),
+                    Text(
+                      'Code: ${order.bookingCode}',
+                      style: AppTextStyles.cardMeta,
+                    ),
                   ],
                 ),
               ),
@@ -228,7 +205,7 @@ class _OrderCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20.r),
                 ),
                 child: Text(
-                  _statusLabel(status),
+                  _statusLabel(order.status),
                   style: AppTextStyles.bodySmall.copyWith(
                     color: badgeColor,
                     fontWeight: FontWeight.w700,
@@ -239,21 +216,25 @@ class _OrderCard extends StatelessWidget {
           ),
           SizedBox(height: 8.h),
           Text(
-            '${_formattedDate()}  $startTime',
+            '${_formattedDate()}  ${order.startTime}',
             style: AppTextStyles.cardMeta,
           ),
           SizedBox(height: 4.h),
           Text(
-            'Total: ${total.toStringAsFixed(2)}',
+            'Total: ${order.total.toStringAsFixed(2)}',
             style: AppTextStyles.cardPrice,
           ),
           SizedBox(height: 10.h),
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: qrPayload.isEmpty
+              onPressed: order.qrPayload.isEmpty
                   ? null
-                  : () => _showQrSheet(context, qrPayload, bookingCode),
+                  : () => _showQrSheet(
+                      context,
+                      order.qrPayload,
+                      order.bookingCode,
+                    ),
               icon: const Icon(Icons.qr_code),
               label: const Text('View QR'),
             ),

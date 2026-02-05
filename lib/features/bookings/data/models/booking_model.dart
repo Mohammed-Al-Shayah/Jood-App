@@ -24,6 +24,8 @@ class BookingModel extends BookingEntity {
     required super.qrPayload,
     required super.createdAt,
     super.paidAt,
+    super.restaurantNameSnapshot,
+    super.offerTitleSnapshot,
   });
 
   factory BookingModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -48,6 +50,8 @@ class BookingModel extends BookingEntity {
       qrPayload: data['qrPayload'] as String? ?? '',
       createdAt: _toDateTime(data['createdAt']),
       paidAt: _toDateTimeNullable(data['paidAt']),
+      restaurantNameSnapshot: data['restaurantNameSnapshot'] as String?,
+      offerTitleSnapshot: data['offerTitleSnapshot'] as String?,
     );
   }
 

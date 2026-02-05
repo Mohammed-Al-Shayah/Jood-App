@@ -35,45 +35,62 @@ class SelectDateTimeScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           getIt<BookingFlowCubit>()..initialize(restaurantId: restaurantId),
-      child: BlocBuilder<BookingFlowCubit, BookingFlowState>(
-        builder: (context, state) {
-          final selectedLabel = formatOfferDate(state.selectedDate);
-          final selectedIndex = state.selectedOfferIndex;
-          final isLoading = state.status == BookingFlowStatus.loading;
-          final offers = isLoading ? _skeletonOffers() : state.offers;
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        bottomNavigationBar:
+            BlocSelector<BookingFlowCubit, BookingFlowState, int?>(
+              selector: (state) => state.selectedOfferIndex,
+              builder: (context, selectedIndex) {
+                if (selectedIndex == null) return const SizedBox.shrink();
+                return BottomCtaBar(
+                  label: 'Next',
+                  onPressed: () {
+                    context.pushNamed(
+                      Routes.selectGuestsScreen,
+                      arguments: SelectGuestsArgs(
+                        restaurantName: name,
+                        cubit: context.read<BookingFlowCubit>(),
+                      ),
+                    );
+                  },
+                  backgroundColor: Colors.white,
+                  shadowColor: AppColors.shadowColor,
+                  textStyle: AppTextStyles.cta,
+                  buttonColor: AppColors.primary,
+                );
+              },
+            ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              SelectDateHeader(
+                title: AppStrings.selectDateTitle,
+                subtitle: name,
+                onBack: () => Navigator.of(context).pop(),
+              ),
+              SizedBox(height: 12.h),
+              Expanded(
+                child: BlocBuilder<BookingFlowCubit, BookingFlowState>(
+                  buildWhen: (previous, current) {
+                    return previous.status != current.status ||
+                        previous.dates != current.dates ||
+                        previous.selectedDate != current.selectedDate ||
+                        previous.selectedDateIndex !=
+                            current.selectedDateIndex ||
+                        previous.offers != current.offers ||
+                        previous.selectedOfferIndex !=
+                            current.selectedOfferIndex ||
+                        previous.datePrices != current.datePrices ||
+                        previous.currency != current.currency ||
+                        previous.errorMessage != current.errorMessage;
+                  },
+                  builder: (context, state) {
+                    final selectedLabel = formatOfferDate(state.selectedDate);
+                    final selectedIndex = state.selectedOfferIndex;
+                    final isLoading = state.status == BookingFlowStatus.loading;
+                    final offers = isLoading ? _skeletonOffers() : state.offers;
 
-          return Scaffold(
-            backgroundColor: Colors.white,
-            bottomNavigationBar: selectedIndex == null
-                ? null
-                : BottomCtaBar(
-                    label: 'Next',
-                    onPressed: () {
-                      context.pushNamed(
-                        Routes.selectGuestsScreen,
-                        arguments: SelectGuestsArgs(
-                          restaurantName: name,
-                          cubit: context.read<BookingFlowCubit>(),
-                        ),
-                      );
-                    },
-                    backgroundColor: Colors.white,
-                    shadowColor: AppColors.shadowColor,
-                    textStyle: AppTextStyles.cta,
-                    buttonColor: AppColors.primary,
-                  ),
-            body: SafeArea(
-              child: Column(
-                children: [
-                  SelectDateHeader(
-                    title: AppStrings.selectDateTitle,
-                    subtitle: name,
-                    onBack: () => Navigator.of(context).pop(),
-                  ),
-                  SizedBox(height: 12.h),
-
-                  Expanded(
-                    child: Skeletonizer(
+                    return Skeletonizer(
                       enabled: isLoading,
                       child: SingleChildScrollView(
                         padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
@@ -144,13 +161,13 @@ class SelectDateTimeScreen extends StatelessWidget {
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
       ),
     );
   }

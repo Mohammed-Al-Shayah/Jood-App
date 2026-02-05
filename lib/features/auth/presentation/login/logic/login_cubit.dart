@@ -4,21 +4,38 @@ import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
+import '../../../domain/usecases/get_current_user_usecase.dart';
+import '../../../domain/usecases/login_with_email_usecase.dart';
+import '../../../domain/usecases/reload_user_usecase.dart';
+import '../../../domain/usecases/send_email_verification_usecase.dart';
+import '../../../domain/usecases/sign_out_usecase.dart';
 import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
 import '../../../../../features/users/domain/usecases/sync_auth_user_usecase.dart';
 import 'login_state.dart';
 
 class LoginCubit extends SafeCubit<LoginState> {
   LoginCubit({
-    required FirebaseAuth auth,
+    required LoginWithEmailUseCase loginWithEmail,
+    required SendEmailVerificationUseCase sendEmailVerification,
+    required SignOutUseCase signOut,
+    required GetCurrentUserUseCase getCurrentUser,
+    required ReloadUserUseCase reloadUser,
     required GetUserByPhoneUseCase getUserByPhone,
     required SyncAuthUserUseCase syncAuthUser,
-  }) : _auth = auth,
+  }) : _loginWithEmail = loginWithEmail,
+       _sendEmailVerification = sendEmailVerification,
+       _signOut = signOut,
+       _getCurrentUser = getCurrentUser,
+       _reloadUser = reloadUser,
        _getUserByPhone = getUserByPhone,
        _syncAuthUser = syncAuthUser,
        super(LoginState.initial());
 
-  final FirebaseAuth _auth;
+  final LoginWithEmailUseCase _loginWithEmail;
+  final SendEmailVerificationUseCase _sendEmailVerification;
+  final SignOutUseCase _signOut;
+  final GetCurrentUserUseCase _getCurrentUser;
+  final ReloadUserUseCase _reloadUser;
   final GetUserByPhoneUseCase _getUserByPhone;
   final SyncAuthUserUseCase _syncAuthUser;
 
@@ -26,8 +43,27 @@ class LoginCubit extends SafeCubit<LoginState> {
     emitSafe(_update(state.copyWith(identifier: value)));
   }
 
+  void updatePhoneIso(String value) {
+    if (value.trim().isEmpty) return;
+    emitSafe(state.copyWith(phoneIso: value));
+  }
+
   void updatePassword(String value) {
     emitSafe(_update(state.copyWith(password: value)));
+  }
+
+  void setLoginMethod(LoginMethod method) {
+    emitSafe(
+      _update(
+        state.copyWith(
+          loginMethod: method,
+          identifier: '',
+          status: LoginStatus.initial,
+          errorMessage: null,
+          unverifiedEmail: null,
+        ),
+      ),
+    );
   }
 
   void toggleRemember() {
@@ -39,17 +75,7 @@ class LoginCubit extends SafeCubit<LoginState> {
   }
 
   void switchToPhoneLogin() {
-    emitSafe(
-      _update(
-        state.copyWith(
-          identifier: '',
-          password: '',
-          status: LoginStatus.initial,
-          errorMessage: null,
-          unverifiedEmail: null,
-        ),
-      ),
-    );
+    setLoginMethod(LoginMethod.phone);
   }
 
   Future<void> resendActivationLink() async {
@@ -66,12 +92,15 @@ class LoginCubit extends SafeCubit<LoginState> {
 
     emitSafe(state.copyWith(status: LoginStatus.loading, errorMessage: null));
     try {
-      final result = await _auth.signInWithEmailAndPassword(
+      final result = await _loginWithEmail(
         email: email,
         password: state.password,
       );
-      await result.user?.sendEmailVerification();
-      await _auth.signOut();
+      final user = result.user;
+      if (user != null) {
+        await _sendEmailVerification(user);
+      }
+      await _signOut();
       emitSafe(
         state.copyWith(
           status: LoginStatus.verificationLinkSent,
@@ -109,13 +138,13 @@ class LoginCubit extends SafeCubit<LoginState> {
       final input = state.identifier.trim();
       UserCredential credential;
 
-      if (AuthValidators.isPhone(input)) {
+      if (state.loginMethod == LoginMethod.phone) {
         credential = await _signInWithPhoneAndPassword(
           AuthValidators.normalizePhone(input),
           state.password,
         );
       } else {
-        credential = await _auth.signInWithEmailAndPassword(
+        credential = await _loginWithEmail(
           email: input,
           password: state.password,
         );
@@ -132,8 +161,8 @@ class LoginCubit extends SafeCubit<LoginState> {
         return;
       }
 
-      await user.reload();
-      final refreshed = _auth.currentUser;
+      await _reloadUser(user);
+      final refreshed = _getCurrentUser();
       if (refreshed == null) {
         emitSafe(
           state.copyWith(
@@ -146,9 +175,9 @@ class LoginCubit extends SafeCubit<LoginState> {
 
       if (AuthValidators.isEmail(input) && !refreshed.emailVerified) {
         try {
-          await refreshed.sendEmailVerification();
+          await _sendEmailVerification(refreshed);
         } on FirebaseAuthException catch (_) {}
-        await _auth.signOut();
+        await _signOut();
         emitSafe(
           state.copyWith(
             status: LoginStatus.emailNotVerified,
@@ -163,13 +192,13 @@ class LoginCubit extends SafeCubit<LoginState> {
       await _syncAuthUser(refreshed);
       emitSafe(state.copyWith(status: LoginStatus.success));
     } on FirebaseAuthException catch (e) {
-      final input = state.identifier.trim();
+      final isEmailLogin = state.loginMethod == LoginMethod.email;
       emitSafe(
         state.copyWith(
           status: LoginStatus.failure,
           errorMessage: mapFirebaseAuthException(
             e,
-            userNotFoundMessage: AuthValidators.isEmail(input)
+            userNotFoundMessage: isEmailLogin
                 ? 'No user found for this email.'
                 : 'No user found for this phone.',
             operationNotAllowedMessage:
@@ -200,13 +229,14 @@ class LoginCubit extends SafeCubit<LoginState> {
         message: 'No user found for this phone.',
       );
     }
-    return _auth.signInWithEmailAndPassword(email: email, password: password);
+    return _loginWithEmail(email: email, password: password);
   }
 
   LoginState _update(LoginState next) {
     final input = next.identifier.trim();
-    final isIdentifierValid =
-        AuthValidators.isPhone(input) || AuthValidators.isEmail(input);
+    final isIdentifierValid = next.loginMethod == LoginMethod.phone
+        ? AuthValidators.isPhone(input)
+        : AuthValidators.isEmail(input);
     final valid = isIdentifierValid && AuthValidators.isPassword(next.password);
     return next.copyWith(isValid: valid);
   }

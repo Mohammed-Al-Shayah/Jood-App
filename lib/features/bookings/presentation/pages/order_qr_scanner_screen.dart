@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../models/booking_review_view_model.dart';
+import '../models/scanner_models.dart';
 
 class OrderQrScannerScreen extends StatefulWidget {
   const OrderQrScannerScreen({super.key});
@@ -16,7 +18,15 @@ class OrderQrScannerScreen extends StatefulWidget {
 class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
   bool _isProcessing = false;
   bool _isSheetOpen = false;
-  String _statusText = 'Scan order QR';
+  final ValueNotifier<String> _statusTextNotifier = ValueNotifier<String>(
+    'Scan order QR',
+  );
+
+  @override
+  void dispose() {
+    _statusTextNotifier.dispose();
+    super.dispose();
+  }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     if (_isProcessing || _isSheetOpen) return;
@@ -25,10 +35,8 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
         : (capture.barcodes.first.rawValue?.trim() ?? '');
     if (raw.isEmpty) return;
 
-    setState(() {
-      _isProcessing = true;
-      _statusText = 'Verifying order...';
-    });
+    _isProcessing = true;
+    _statusTextNotifier.value = 'Verifying order...';
 
     try {
       final code = raw.startsWith('BOOKING:') ? raw.substring(8).trim() : raw;
@@ -43,31 +51,46 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
 
       final db = FirebaseFirestore.instance;
       final staffDoc = await db.collection('users').doc(authUser.uid).get();
-      final staffData = staffDoc.data() ?? const <String, dynamic>{};
-      final role = (staffData['role'] as String? ?? '').toLowerCase();
-      final staffRestaurantId = (staffData['restaurantId'] as String? ?? '')
-          .trim();
+      final staff = StaffAccessModel.fromDoc(staffDoc);
 
-      final isStaff =
-          role == 'staff' || role == 'restaurant_staff' || role == 'admin';
-      if (!isStaff) {
+      if (!staff.canRedeemOrder) {
         throw Exception('Only restaurant staff can redeem orders.');
       }
-      if (staffRestaurantId.isEmpty) {
+      if (staff.restaurantId.isEmpty) {
         throw Exception('Staff account missing restaurant id.');
       }
 
-      final bookingData = await _loadBookingForStaff(
+      final booking = await _loadBookingForStaff(
         code: code,
-        staffRestaurantId: staffRestaurantId,
+        staffRestaurantId: staff.restaurantId,
       );
-      final details = await Future.wait<String>([
-        _restaurantName(bookingData['restaurantId'] as String? ?? ''),
-        _offerTitle(bookingData['offerId'] as String? ?? ''),
-      ]);
-      final restaurantName = details[0];
-      final offerTitle = details[1];
-      final pricing = _resolvePricing(bookingData);
+      var bookingView = BookingReviewViewModel.fromValues(
+        bookingId: booking.id,
+        bookingCode: booking.bookingCode,
+        restaurantId: booking.restaurantId,
+        offerId: booking.offerId,
+        date: booking.date,
+        startTime: booking.startTime,
+        adults: booking.adults,
+        children: booking.children,
+        status: booking.status,
+        subtotal: booking.subtotal,
+        tax: booking.tax,
+        total: booking.total,
+        restaurantNameSnapshot: booking.restaurantNameSnapshot,
+        offerTitleSnapshot: booking.offerTitleSnapshot,
+        fallbackCode: code,
+      );
+      final restaurantName = bookingView.restaurantName.isNotEmpty
+          ? bookingView.restaurantName
+          : await _restaurantName(bookingView.restaurantId);
+      final offerTitle = bookingView.offerTitle.isNotEmpty
+          ? bookingView.offerTitle
+          : await _offerTitle(bookingView.offerId);
+      bookingView = bookingView.copyWith(
+        restaurantName: restaurantName,
+        offerTitle: offerTitle,
+      );
 
       if (!mounted) return;
       _isSheetOpen = true;
@@ -81,17 +104,17 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
             borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
           ),
           builder: (_) => _BookingReviewSheet(
-            bookingCode: bookingData['bookingCode'] as String? ?? code,
-            restaurantName: restaurantName,
-            date: bookingData['date'] as String? ?? '-',
-            startTime: bookingData['startTime'] as String? ?? '-',
-            adults: (bookingData['adults'] as num?)?.toInt() ?? 0,
-            children: (bookingData['children'] as num?)?.toInt() ?? 0,
-            subtotal: pricing.subtotal,
-            tax: pricing.tax,
-            total: pricing.total,
-            status: (bookingData['status'] as String? ?? ''),
-            offerTitle: offerTitle,
+            bookingCode: bookingView.bookingCode,
+            restaurantName: bookingView.restaurantName,
+            date: bookingView.date,
+            startTime: bookingView.startTime,
+            adults: bookingView.adults,
+            children: bookingView.children,
+            subtotal: bookingView.pricing.subtotal,
+            tax: bookingView.pricing.tax,
+            total: bookingView.pricing.total,
+            status: bookingView.status,
+            offerTitle: bookingView.offerTitle,
           ),
         );
       } finally {
@@ -99,31 +122,30 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
       }
 
       if (confirm != true) {
-        setState(() => _statusText = 'Scan order QR');
+        _statusTextNotifier.value = 'Scan order QR';
         return;
       }
 
       final completeText = await _completeBooking(
-        bookingId: bookingData['id'] as String,
-        staffRestaurantId: staffRestaurantId,
+        bookingId: bookingView.bookingId,
+        staffRestaurantId: staff.restaurantId,
         uid: authUser.uid,
       );
       if (!mounted) return;
-      setState(() => _statusText = completeText);
+      _statusTextNotifier.value = completeText;
       showAppSnackBar(context, completeText, type: SnackBarType.success);
     } catch (e) {
       if (!mounted) return;
       final message = e.toString().replaceFirst('Exception: ', '').trim();
-      setState(() => _statusText = message);
+      _statusTextNotifier.value = message;
       showAppSnackBar(context, message, type: SnackBarType.error);
     } finally {
-      if (!mounted) return;
       await Future<void>.delayed(const Duration(milliseconds: 900));
-      setState(() => _isProcessing = false);
+      _isProcessing = false;
     }
   }
 
-  Future<Map<String, dynamic>> _loadBookingForStaff({
+  Future<ScannedBookingModel> _loadBookingForStaff({
     required String code,
     required String staffRestaurantId,
   }) async {
@@ -136,20 +158,17 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
     if (bookingQuery.docs.isEmpty) {
       throw Exception('Order not found.');
     }
-    final bookingDoc = bookingQuery.docs.first;
-    final booking = bookingDoc.data();
-    final restaurantId = (booking['restaurantId'] as String? ?? '').trim();
-    final status = (booking['status'] as String? ?? '').toLowerCase();
-    if (restaurantId != staffRestaurantId) {
+    final booking = ScannedBookingModel.fromDoc(bookingQuery.docs.first);
+    if (booking.restaurantId != staffRestaurantId) {
       throw Exception('This order belongs to another restaurant.');
     }
-    if (status == 'completed') {
+    if (booking.status == 'completed') {
       throw Exception('Order already completed.');
     }
-    if (status != 'paid' && status != 'confirmed') {
+    if (booking.status != 'paid' && booking.status != 'confirmed') {
       throw Exception('Order is not paid.');
     }
-    return {...booking, 'id': bookingDoc.id};
+    return booking;
   }
 
   Future<String> _completeBooking({
@@ -161,17 +180,15 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
     final bookingRef = db.collection('bookings').doc(bookingId);
     return db.runTransaction((tx) async {
       final bookingSnap = await tx.get(bookingRef);
-      final booking = bookingSnap.data() ?? const <String, dynamic>{};
-      final restaurantId = (booking['restaurantId'] as String? ?? '').trim();
-      final status = (booking['status'] as String? ?? '').toLowerCase();
+      final booking = ScannedBookingModel.fromDoc(bookingSnap);
 
-      if (restaurantId != staffRestaurantId) {
+      if (booking.restaurantId != staffRestaurantId) {
         throw Exception('This order belongs to another restaurant.');
       }
-      if (status == 'completed') {
+      if (booking.status == 'completed') {
         throw Exception('Order already completed.');
       }
-      if (status != 'paid' && status != 'confirmed') {
+      if (booking.status != 'paid' && booking.status != 'confirmed') {
         throw Exception('Order is not paid.');
       }
 
@@ -214,41 +231,6 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
     return cleaned.replaceAll('_', ' ');
   }
 
-  _Pricing _resolvePricing(Map<String, dynamic> bookingData) {
-    final subtotalRaw = (bookingData['subtotal'] as num?)?.toDouble();
-    final totalRaw = (bookingData['total'] as num?)?.toDouble();
-    final taxRaw = (bookingData['tax'] as num?)?.toDouble();
-
-    final subtotal = subtotalRaw ?? totalRaw ?? 0;
-    if (taxRaw != null) {
-      final total = totalRaw ?? (subtotal + taxRaw);
-      return _Pricing(subtotal: subtotal, tax: taxRaw, total: total);
-    }
-
-    if (totalRaw != null) {
-      if (totalRaw > subtotal) {
-        return _Pricing(
-          subtotal: subtotal,
-          tax: totalRaw - subtotal,
-          total: totalRaw,
-        );
-      }
-      final inferredTax = subtotal * 0.05;
-      return _Pricing(
-        subtotal: subtotal,
-        tax: inferredTax,
-        total: subtotal + inferredTax,
-      );
-    }
-
-    final inferredTax = subtotal * 0.05;
-    return _Pricing(
-      subtotal: subtotal,
-      tax: inferredTax,
-      total: subtotal + inferredTax,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -267,10 +249,15 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
                 color: Colors.black.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(12.r),
               ),
-              child: Text(
-                _statusText,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white),
+              child: ValueListenableBuilder<String>(
+                valueListenable: _statusTextNotifier,
+                builder: (context, statusText, _) {
+                  return Text(
+                    statusText,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white),
+                  );
+                },
               ),
             ),
           ),
@@ -405,16 +392,4 @@ class _BookingReviewSheet extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Pricing {
-  const _Pricing({
-    required this.subtotal,
-    required this.tax,
-    required this.total,
-  });
-
-  final double subtotal;
-  final double tax;
-  final double total;
 }

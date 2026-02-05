@@ -60,6 +60,7 @@ class ProfileTab extends StatelessWidget {
             }
 
             final initials = profileInitials(user.fullName);
+            final canScanOrders = _canScanOrders(user.role);
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
               child: Column(
@@ -125,9 +126,7 @@ class ProfileTab extends StatelessWidget {
                   //   ],
                   // ),
                   SizedBox(height: 16.h),
-                  if (user.role.toLowerCase() == 'staff' ||
-                      user.role.toLowerCase() == 'restaurant_staff' ||
-                      user.role.toLowerCase() == 'admin') ...[
+                  if (canScanOrders) ...[
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -180,4 +179,11 @@ class ProfileTab extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _canScanOrders(String role) {
+  final normalized = role.toLowerCase();
+  return normalized == 'staff' ||
+      normalized == 'restaurant_staff' ||
+      normalized == 'admin';
 }

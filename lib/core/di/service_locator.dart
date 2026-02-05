@@ -16,6 +16,19 @@ import '../../features/auth/presentation/login/logic/login_cubit.dart';
 import '../../features/auth/presentation/forget_password/logic/forget_password_cubit.dart';
 import '../../features/auth/presentation/change_password/logic/change_password_cubit.dart';
 import '../../features/auth/presentation/registration/logic/register_cubit.dart';
+import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/domain/usecases/get_current_user_usecase.dart';
+import '../../features/auth/domain/usecases/link_email_password_usecase.dart';
+import '../../features/auth/domain/usecases/login_with_email_usecase.dart';
+import '../../features/auth/domain/usecases/reload_user_usecase.dart';
+import '../../features/auth/domain/usecases/send_email_verification_usecase.dart';
+import '../../features/auth/domain/usecases/send_password_reset_email_usecase.dart';
+import '../../features/auth/domain/usecases/send_phone_otp_usecase.dart';
+import '../../features/auth/domain/usecases/sign_in_with_phone_credential_usecase.dart';
+import '../../features/auth/domain/usecases/sign_out_usecase.dart';
+import '../../features/auth/domain/usecases/update_password_usecase.dart';
+import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/users/data/datasources/user_remote_data_source.dart';
 import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/domain/repositories/user_repository.dart';
@@ -77,22 +90,71 @@ Future<void> setupServiceLocator() async {
     () =>
         BookingFlowCubit(getOffersForDate: getIt(), getOffersForRange: getIt()),
   );
+  getIt.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(getIt()),
+  );
+  getIt.registerLazySingleton<LoginWithEmailUseCase>(
+    () => LoginWithEmailUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<SendPhoneOtpUseCase>(
+    () => SendPhoneOtpUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<VerifyOtpUseCase>(
+    () => VerifyOtpUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<SignInWithPhoneCredentialUseCase>(
+    () => SignInWithPhoneCredentialUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<SendPasswordResetEmailUseCase>(
+    () => SendPasswordResetEmailUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<SendEmailVerificationUseCase>(
+    () => SendEmailVerificationUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<SignOutUseCase>(() => SignOutUseCase(getIt()));
+  getIt.registerLazySingleton<GetCurrentUserUseCase>(
+    () => GetCurrentUserUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<ReloadUserUseCase>(
+    () => ReloadUserUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<LinkEmailPasswordUseCase>(
+    () => LinkEmailPasswordUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<UpdatePasswordUseCase>(
+    () => UpdatePasswordUseCase(getIt()),
+  );
   getIt.registerFactory<LoginCubit>(
     () => LoginCubit(
-      auth: getIt(),
+      loginWithEmail: getIt(),
+      sendEmailVerification: getIt(),
+      signOut: getIt(),
+      getCurrentUser: getIt(),
+      reloadUser: getIt(),
       getUserByPhone: getIt(),
       syncAuthUser: getIt(),
     ),
   );
   getIt.registerFactory<ForgetPasswordCubit>(
-    () => ForgetPasswordCubit(auth: getIt(), getUserByPhone: getIt()),
+    () => ForgetPasswordCubit(
+      sendPhoneOtp: getIt(),
+      sendPasswordResetEmail: getIt(),
+      getUserByPhone: getIt(),
+    ),
   );
   getIt.registerFactory<ChangePasswordCubit>(
-    () => ChangePasswordCubit(auth: getIt()),
+    () => ChangePasswordCubit(
+      getCurrentUser: getIt(),
+      updatePassword: getIt(),
+      signOut: getIt(),
+    ),
   );
   getIt.registerFactory<RegisterCubit>(
     () => RegisterCubit(
-      auth: getIt(),
+      sendPhoneOtp: getIt(),
+      signInWithPhoneCredential: getIt(),
+      linkEmailPassword: getIt(),
+      sendEmailVerification: getIt(),
       createUser: getIt(),
       getUserByPhone: getIt(),
       syncAuthUser: getIt(),

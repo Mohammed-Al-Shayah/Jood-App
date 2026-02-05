@@ -7,9 +7,13 @@ enum LoginStatus {
   failure,
 }
 
+enum LoginMethod { email, phone }
+
 class LoginState {
   const LoginState({
     required this.identifier,
+    required this.loginMethod,
+    required this.phoneIso,
     required this.password,
     required this.rememberMe,
     required this.showPassword,
@@ -20,6 +24,8 @@ class LoginState {
   });
 
   final String identifier;
+  final LoginMethod loginMethod;
+  final String phoneIso;
   final String password;
   final bool rememberMe;
   final bool showPassword;
@@ -30,6 +36,8 @@ class LoginState {
 
   LoginState copyWith({
     String? identifier,
+    LoginMethod? loginMethod,
+    String? phoneIso,
     String? password,
     bool? rememberMe,
     bool? showPassword,
@@ -40,6 +48,8 @@ class LoginState {
   }) {
     return LoginState(
       identifier: identifier ?? this.identifier,
+      loginMethod: loginMethod ?? this.loginMethod,
+      phoneIso: phoneIso ?? this.phoneIso,
       password: password ?? this.password,
       rememberMe: rememberMe ?? this.rememberMe,
       showPassword: showPassword ?? this.showPassword,
@@ -53,6 +63,8 @@ class LoginState {
   static LoginState initial() {
     return const LoginState(
       identifier: '',
+      loginMethod: LoginMethod.phone,
+      phoneIso: 'OM',
       password: '',
       rememberMe: false,
       showPassword: false,

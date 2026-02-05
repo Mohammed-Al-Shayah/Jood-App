@@ -21,6 +21,8 @@ import 'package:thawani_payment/thawani_payment.dart';
 import 'package:thawani_payment/models/products.dart';
 import '../cubit/booking_flow_cubit.dart';
 import '../cubit/booking_flow_state.dart';
+import '../models/booking_amounts_view_model.dart';
+import '../models/payment_error_view_model.dart';
 import '../widgets/date_utils.dart';
 import '../widgets/payment/payment_secure_card.dart';
 import '../widgets/payment/payment_summary_card.dart';
@@ -37,11 +39,20 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   bool _isSubmitting = false;
+  bool _guestRedirectHandled = false;
   final _formKey = GlobalKey<FormState>();
   final _cardholderController = TextEditingController();
   final _cardNumberController = TextEditingController();
   final _expiryController = TextEditingController();
   final _cvvController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _redirectGuestToLoginIfNeeded();
+    });
+  }
 
   @override
   void dispose() {
@@ -52,30 +63,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
     super.dispose();
   }
 
-  String _extractPaymentErrorMessage(Map status) {
-    final data = status['data'];
-    final nestedMessage = data is Map
-        ? (data['message'] ?? data['description'] ?? data['error'])
-        : null;
-    final code = status['code'] ?? status['status'];
-    final directMessage =
-        status['message'] ?? status['error'] ?? status['detail'];
+  void _redirectGuestToLoginIfNeeded() {
+    if (_guestRedirectHandled || !mounted) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) return;
 
-    final message = (nestedMessage ?? directMessage)?.toString().trim();
-    if (message != null && message.isNotEmpty) {
-      return code == null ? message : 'Payment failed ($code): $message';
-    }
-    return code == null
-        ? 'Payment failed. Please check your Thawani keys/settings.'
-        : 'Payment failed ($code). Please check your Thawani keys/settings.';
+    _guestRedirectHandled = true;
+    showAppSnackBar(
+      context,
+      'You need to login first.',
+      type: SnackBarType.error,
+    );
+    context.pushNamed(Routes.loginScreen);
   }
 
-  Future<void> _confirmAndPay(BookingFlowState state) async {
+  Future<void> _confirmAndPay() async {
     if (_isSubmitting) return;
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
+    final state = context.read<BookingFlowCubit>().state;
     final offer = state.selectedOffer();
     if (offer == null) {
       showAppSnackBar(
@@ -93,6 +101,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         'You need to login first.',
         type: SnackBarType.error,
       );
+      context.pushNamed(Routes.loginScreen);
       return;
     }
     if (!ThawaniConfig.isConfigured) {
@@ -104,12 +113,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
-    final subtotal =
-        (offer.priceAdult * state.adultCount) +
-        (offer.priceChild * state.childCount);
-    const taxRate = 0.05;
-    final tax = subtotal * taxRate;
-    final totalPayable = subtotal + tax;
+    final amounts = BookingAmountsViewModel.calculate(
+      adultPrice: offer.priceAdult,
+      childPrice: offer.priceChild,
+      adultOriginalPrice: offer.priceAdultOriginal,
+      adultCount: state.adultCount,
+      childCount: state.childCount,
+    );
+    final totalPayable = amounts.totalPayable;
     final totalAmountInBaisa = _toBaisa(totalPayable);
 
     setState(() => _isSubmitting = true);
@@ -146,7 +157,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         onError: (status) {
           if (!mounted) return;
           setState(() => _isSubmitting = false);
-          final message = _extractPaymentErrorMessage(status);
+          final message = PaymentErrorViewModel.fromStatus(
+            status,
+          ).toDisplayMessage();
           showAppSnackBar(context, message, type: SnackBarType.error);
         },
         onPaid: (_) {
@@ -232,71 +245,114 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BookingFlowCubit, BookingFlowState>(
-      builder: (context, state) {
-        final selectedOffer = state.selectedOffer();
-        final dateLabel = formatOfferDate(state.selectedDate);
-        final summaryTime = selectedOffer == null
-            ? dateLabel
-            : '$dateLabel - ${selectedOffer.startTime}';
-        final currency = selectedOffer?.currency ?? r'$';
-        final adultPrice = selectedOffer?.priceAdult ?? 0;
-        final childPrice = selectedOffer?.priceChild ?? 0;
-        final adultTotal = adultPrice * state.adultCount;
-        final childTotal = childPrice * state.childCount;
-        final subtotal = adultTotal + childTotal;
-        const taxRate = 0.05;
-        final tax = subtotal * taxRate;
-        final totalPayable = subtotal + tax;
-
-        return Scaffold(
-          backgroundColor: Colors.white,
-          bottomNavigationBar: BottomCtaBar(
-            label: _isSubmitting
-                ? 'Processing...'
-                : '${AppStrings.confirmAndPay} ${formatCurrency(currency, totalPayable)}',
-            onPressed: () => _confirmAndPay(state),
-            backgroundColor: Colors.white,
-            shadowColor: AppColors.shadowColor,
-            textStyle: AppTextStyles.cta,
-            buttonColor: AppColors.primary,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      bottomNavigationBar:
+          BlocSelector<
+            BookingFlowCubit,
+            BookingFlowState,
+            ({String currency, double totalPayable})
+          >(
+            selector: (state) {
+              final selectedOffer = state.selectedOffer();
+              final amounts = BookingAmountsViewModel.calculate(
+                adultPrice: selectedOffer?.priceAdult ?? 0,
+                childPrice: selectedOffer?.priceChild ?? 0,
+                adultOriginalPrice: selectedOffer?.priceAdultOriginal ?? 0,
+                adultCount: state.adultCount,
+                childCount: state.childCount,
+              );
+              return (
+                currency: selectedOffer?.currency ?? r'$',
+                totalPayable: amounts.totalPayable,
+              );
+            },
+            builder: (context, vm) {
+              return BottomCtaBar(
+                label: _isSubmitting
+                    ? 'Processing...'
+                    : '${AppStrings.confirmAndPay} ${formatCurrency(vm.currency, vm.totalPayable)}',
+                onPressed: _confirmAndPay,
+                backgroundColor: Colors.white,
+                shadowColor: AppColors.shadowColor,
+                textStyle: AppTextStyles.cta,
+                buttonColor: AppColors.primary,
+              );
+            },
           ),
-          body: SafeArea(
-            child: Column(
-              children: [
-                SelectDateHeader(
-                  title: AppStrings.paymentTitle,
-                  subtitle: AppStrings.paymentSubtitle,
-                  onBack: () => Navigator.of(context).pop(),
-                ),
-                SizedBox(height: 12.h),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          PaymentSummaryCard(
-                            restaurantName: widget.restaurantName,
-                            timeLabel: summaryTime,
-                            totalAmount: formatCurrency(currency, totalPayable),
+      body: SafeArea(
+        child: Column(
+          children: [
+            SelectDateHeader(
+              title: AppStrings.paymentTitle,
+              subtitle: AppStrings.paymentSubtitle,
+              onBack: () => Navigator.of(context).pop(),
+            ),
+            SizedBox(height: 12.h),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      BlocSelector<
+                        BookingFlowCubit,
+                        BookingFlowState,
+                        ({
+                          String summaryTime,
+                          String currency,
+                          double totalPayable,
+                          int adultsCount,
+                          int childrenCount,
+                        })
+                      >(
+                        selector: (state) {
+                          final selectedOffer = state.selectedOffer();
+                          final dateLabel = formatOfferDate(state.selectedDate);
+                          final summaryTime = selectedOffer == null
+                              ? dateLabel
+                              : '$dateLabel - ${selectedOffer.startTime}';
+                          final amounts = BookingAmountsViewModel.calculate(
+                            adultPrice: selectedOffer?.priceAdult ?? 0,
+                            childPrice: selectedOffer?.priceChild ?? 0,
+                            adultOriginalPrice:
+                                selectedOffer?.priceAdultOriginal ?? 0,
+                            adultCount: state.adultCount,
+                            childCount: state.childCount,
+                          );
+                          return (
+                            summaryTime: summaryTime,
+                            currency: selectedOffer?.currency ?? r'$',
+                            totalPayable: amounts.totalPayable,
                             adultsCount: state.adultCount,
                             childrenCount: state.childCount,
-                          ),
-                          SizedBox(height: 18.h),
-                          const PaymentSecureCard(),
-                        ],
+                          );
+                        },
+                        builder: (context, vm) {
+                          return PaymentSummaryCard(
+                            restaurantName: widget.restaurantName,
+                            timeLabel: vm.summaryTime,
+                            totalAmount: formatCurrency(
+                              vm.currency,
+                              vm.totalPayable,
+                            ),
+                            adultsCount: vm.adultsCount,
+                            childrenCount: vm.childrenCount,
+                          );
+                        },
                       ),
-                    ),
+                      SizedBox(height: 18.h),
+                      const PaymentSecureCard(),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

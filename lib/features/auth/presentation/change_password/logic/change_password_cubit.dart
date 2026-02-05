@@ -4,14 +4,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
+import '../../../domain/usecases/get_current_user_usecase.dart';
+import '../../../domain/usecases/sign_out_usecase.dart';
+import '../../../domain/usecases/update_password_usecase.dart';
 import 'change_password_state.dart';
 
 class ChangePasswordCubit extends Cubit<ChangePasswordState> {
-  ChangePasswordCubit({required FirebaseAuth auth})
-    : _auth = auth,
-      super(ChangePasswordState.initial());
+  ChangePasswordCubit({
+    required GetCurrentUserUseCase getCurrentUser,
+    required UpdatePasswordUseCase updatePassword,
+    required SignOutUseCase signOut,
+  }) : _getCurrentUser = getCurrentUser,
+       _updatePassword = updatePassword,
+       _signOut = signOut,
+       super(ChangePasswordState.initial());
 
-  final FirebaseAuth _auth;
+  final GetCurrentUserUseCase _getCurrentUser;
+  final UpdatePasswordUseCase _updatePassword;
+  final SignOutUseCase _signOut;
 
   void updatePassword(String value) {
     emit(_update(state.copyWith(password: value)));
@@ -35,7 +45,7 @@ class ChangePasswordCubit extends Cubit<ChangePasswordState> {
       state.copyWith(status: ChangePasswordStatus.loading, errorMessage: null),
     );
     try {
-      final user = _auth.currentUser;
+      final user = _getCurrentUser();
       if (user == null) {
         emit(
           state.copyWith(
@@ -45,8 +55,8 @@ class ChangePasswordCubit extends Cubit<ChangePasswordState> {
         );
         return;
       }
-      await user.updatePassword(state.password.trim());
-      await _auth.signOut();
+      await _updatePassword(user: user, newPassword: state.password.trim());
+      await _signOut();
       emit(state.copyWith(status: ChangePasswordStatus.success));
     } on FirebaseAuthException catch (e) {
       emit(

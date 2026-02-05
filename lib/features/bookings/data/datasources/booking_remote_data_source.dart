@@ -23,6 +23,8 @@ class BookingRemoteDataSource {
     return firestore.runTransaction((transaction) async {
       final offerSnap = await transaction.get(offerRef);
       final data = offerSnap.data() ?? {};
+      final restaurantId = (data['restaurantId'] as String? ?? '').trim();
+      final offerTitle = (data['title'] as String? ?? '').trim();
 
       final capacityAdult = (data['capacityAdult'] as num?)?.toInt() ?? 0;
       final capacityChild = (data['capacityChild'] as num?)?.toInt() ?? 0;
@@ -48,6 +50,17 @@ class BookingRemoteDataSource {
       final discount = 0.0;
       final total = subtotal - discount;
       final bookingCode = _generateCode();
+      String restaurantNameSnapshot = '';
+      if (restaurantId.isNotEmpty) {
+        final restaurantRef = firestore
+            .collection('restaurants')
+            .doc(restaurantId);
+        final restaurantSnap = await transaction.get(restaurantRef);
+        final restaurantData =
+            restaurantSnap.data() ?? const <String, dynamic>{};
+        restaurantNameSnapshot = (restaurantData['name'] as String? ?? '')
+            .trim();
+      }
 
       transaction.update(offerRef, {
         'bookedAdult': bookedAdult + adults,
@@ -57,7 +70,7 @@ class BookingRemoteDataSource {
 
       transaction.set(bookingRef, {
         'userId': userId,
-        'restaurantId': data['restaurantId'],
+        'restaurantId': restaurantId,
         'offerId': offerId,
         'date': data['date'],
         'startTime': data['startTime'],
@@ -72,6 +85,8 @@ class BookingRemoteDataSource {
         'status': 'paid',
         'bookingCode': bookingCode,
         'qrPayload': bookingCode,
+        'restaurantNameSnapshot': restaurantNameSnapshot,
+        'offerTitleSnapshot': offerTitle,
         'createdAt': FieldValue.serverTimestamp(),
         'paidAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -80,7 +95,7 @@ class BookingRemoteDataSource {
       return BookingModel(
         id: bookingRef.id,
         userId: userId,
-        restaurantId: data['restaurantId'] as String? ?? '',
+        restaurantId: restaurantId,
         offerId: offerId,
         date: data['date'] as String? ?? '',
         startTime: data['startTime'] as String? ?? '',
@@ -97,6 +112,8 @@ class BookingRemoteDataSource {
         qrPayload: bookingCode,
         createdAt: DateTime.now(),
         paidAt: DateTime.now(),
+        restaurantNameSnapshot: restaurantNameSnapshot,
+        offerTitleSnapshot: offerTitle,
       );
     });
   }

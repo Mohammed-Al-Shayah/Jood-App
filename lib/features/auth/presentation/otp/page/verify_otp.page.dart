@@ -7,6 +7,10 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
+import '../../../../auth/domain/usecases/link_email_password_usecase.dart';
+import '../../../../auth/domain/usecases/send_email_verification_usecase.dart';
+import '../../../../auth/domain/usecases/send_phone_otp_usecase.dart';
+import '../../../../auth/domain/usecases/verify_otp_usecase.dart';
 import '../../../../users/domain/usecases/create_user_usecase.dart';
 import '../../../../users/domain/usecases/sync_auth_user_usecase.dart';
 import '../logic/otp_cubit.dart';
@@ -22,7 +26,10 @@ class VerifyOtpPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => OtpCubit(
-        auth: getIt(),
+        sendPhoneOtp: getIt<SendPhoneOtpUseCase>(),
+        verifyOtp: getIt<VerifyOtpUseCase>(),
+        linkEmailPassword: getIt<LinkEmailPasswordUseCase>(),
+        sendEmailVerification: getIt<SendEmailVerificationUseCase>(),
         createUser: getIt<CreateUserUseCase>(),
         syncAuthUser: getIt<SyncAuthUserUseCase>(),
         args: args,

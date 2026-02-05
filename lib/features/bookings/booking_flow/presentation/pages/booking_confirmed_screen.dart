@@ -8,6 +8,7 @@ import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/utils/extensions.dart';
 import '../cubit/booking_flow_cubit.dart';
 import '../cubit/booking_flow_state.dart';
+import '../models/booking_amounts_view_model.dart';
 import '../widgets/booking_confirmed/booking_confirmed_utils.dart';
 import '../widgets/booking_confirmed/booking_details_card.dart';
 import '../widgets/booking_confirmed/booking_important_card.dart';
@@ -30,23 +31,27 @@ class BookingConfirmedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BookingFlowCubit, BookingFlowState>(
-      builder: (context, state) {
+    return BlocSelector<
+      BookingFlowCubit,
+      BookingFlowState,
+      ({
+        String dateLabel,
+        String timeLabel,
+        String currency,
+        double totalAmount,
+        String guestsLabel,
+        String resolvedBookingCode,
+        String resolvedQrData,
+      })
+    >(
+      selector: (state) {
         final selectedOffer = state.selectedOffer();
-        final dateLabel = formatOfferDate(state.selectedDate);
-        final timeLabel = selectedOffer?.startTime ?? '--';
-        final currency = selectedOffer?.currency ?? r'$';
-        final adultPrice = selectedOffer?.priceAdult ?? 0;
-        final childPrice = selectedOffer?.priceChild ?? 0;
-        final adultTotal = adultPrice * state.adultCount;
-        final childTotal = childPrice * state.childCount;
-        final subtotal = adultTotal + childTotal;
-        const taxRate = 0.05;
-        final tax = subtotal * taxRate;
-        final totalAmount = subtotal + tax;
-        final guestsLabel = buildGuestsLabel(
-          state.adultCount,
-          state.childCount,
+        final amounts = BookingAmountsViewModel.calculate(
+          adultPrice: selectedOffer?.priceAdult ?? 0,
+          childPrice: selectedOffer?.priceChild ?? 0,
+          adultOriginalPrice: selectedOffer?.priceAdultOriginal ?? 0,
+          adultCount: state.adultCount,
+          childCount: state.childCount,
         );
         final resolvedBookingCode =
             bookingCode ??
@@ -56,10 +61,19 @@ class BookingConfirmedScreen extends StatelessWidget {
               state.adultCount,
               state.childCount,
             );
-        final resolvedQrData = (qrData != null && qrData!.trim().isNotEmpty)
-            ? qrData!
-            : resolvedBookingCode;
-
+        return (
+          dateLabel: formatOfferDate(state.selectedDate),
+          timeLabel: selectedOffer?.startTime ?? '--',
+          currency: selectedOffer?.currency ?? r'$',
+          totalAmount: amounts.totalPayable,
+          guestsLabel: buildGuestsLabel(state.adultCount, state.childCount),
+          resolvedBookingCode: resolvedBookingCode,
+          resolvedQrData: (qrData != null && qrData!.trim().isNotEmpty)
+              ? qrData!
+              : resolvedBookingCode,
+        );
+      },
+      builder: (context, vm) {
         return Scaffold(
           backgroundColor: Colors.white,
           bottomNavigationBar: SafeArea(
@@ -97,17 +111,17 @@ class BookingConfirmedScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 18.h),
                     BookingQrCard(
-                      key: ValueKey(resolvedBookingCode),
-                      code: resolvedBookingCode,
-                      qrData: resolvedQrData,
+                      key: ValueKey(vm.resolvedBookingCode),
+                      code: vm.resolvedBookingCode,
+                      qrData: vm.resolvedQrData,
                     ),
                     SizedBox(height: 16.h),
                     BookingDetailsCard(
                       restaurantName: restaurantName,
-                      dateLabel: dateLabel,
-                      timeLabel: timeLabel,
-                      guestsLabel: guestsLabel,
-                      totalPaid: formatCurrency(currency, totalAmount),
+                      dateLabel: vm.dateLabel,
+                      timeLabel: vm.timeLabel,
+                      guestsLabel: vm.guestsLabel,
+                      totalPaid: formatCurrency(vm.currency, vm.totalAmount),
                     ),
                     SizedBox(height: 14.h),
                     const BookingImportantCard(),

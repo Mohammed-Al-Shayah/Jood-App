@@ -4,6 +4,10 @@ import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
+import '../../../domain/usecases/link_email_password_usecase.dart';
+import '../../../domain/usecases/send_email_verification_usecase.dart';
+import '../../../domain/usecases/send_phone_otp_usecase.dart';
+import '../../../domain/usecases/sign_in_with_phone_credential_usecase.dart';
 import '../../../../../features/users/domain/entities/user_entity.dart';
 import '../../../../../features/users/domain/usecases/create_user_usecase.dart';
 import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
@@ -12,17 +16,26 @@ import 'register_state.dart';
 
 class RegisterCubit extends SafeCubit<RegisterState> {
   RegisterCubit({
-    required FirebaseAuth auth,
+    required SendPhoneOtpUseCase sendPhoneOtp,
+    required SignInWithPhoneCredentialUseCase signInWithPhoneCredential,
+    required LinkEmailPasswordUseCase linkEmailPassword,
+    required SendEmailVerificationUseCase sendEmailVerification,
     required CreateUserUseCase createUser,
     required GetUserByPhoneUseCase getUserByPhone,
     required SyncAuthUserUseCase syncAuthUser,
-  }) : _auth = auth,
+  }) : _sendPhoneOtp = sendPhoneOtp,
+       _signInWithPhoneCredential = signInWithPhoneCredential,
+       _linkEmailPassword = linkEmailPassword,
+       _sendEmailVerification = sendEmailVerification,
        _createUser = createUser,
        _getUserByPhone = getUserByPhone,
        _syncAuthUser = syncAuthUser,
        super(RegisterState.initial());
 
-  final FirebaseAuth _auth;
+  final SendPhoneOtpUseCase _sendPhoneOtp;
+  final SignInWithPhoneCredentialUseCase _signInWithPhoneCredential;
+  final LinkEmailPasswordUseCase _linkEmailPassword;
+  final SendEmailVerificationUseCase _sendEmailVerification;
   final CreateUserUseCase _createUser;
   final GetUserByPhoneUseCase _getUserByPhone;
   final SyncAuthUserUseCase _syncAuthUser;
@@ -103,13 +116,13 @@ class RegisterCubit extends SafeCubit<RegisterState> {
         return;
       }
 
-      await _auth.verifyPhoneNumber(
+      await _sendPhoneOtp(
         phoneNumber: state.phone.trim(),
         timeout: const Duration(seconds: 60),
         forceResendingToken: state.resendToken,
         verificationCompleted: (credential) async {
           try {
-            final result = await _auth.signInWithCredential(credential);
+            final result = await _signInWithPhoneCredential(credential);
             final user = result.user;
             if (user == null) {
               emitSafe(
@@ -190,7 +203,7 @@ class RegisterCubit extends SafeCubit<RegisterState> {
 
     await _linkPasswordCredential(user, providedEmail, state.password.trim());
     await user.updateDisplayName(state.fullName.trim());
-    await user.sendEmailVerification();
+    await _sendEmailVerification(user);
 
     final profile = UserEntity(
       id: user.uid,
@@ -213,11 +226,7 @@ class RegisterCubit extends SafeCubit<RegisterState> {
     String password,
   ) async {
     try {
-      final credential = EmailAuthProvider.credential(
-        email: email,
-        password: password,
-      );
-      await user.linkWithCredential(credential);
+      await _linkEmailPassword(user: user, email: email, password: password);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'provider-already-linked') return;
       throw FirebaseAuthException(

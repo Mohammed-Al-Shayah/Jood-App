@@ -1,3 +1,1 @@
-abstract class AuthRepository {
-  Future<bool> isSignedIn();
-}
+export 'repositories/auth_repository.dart';

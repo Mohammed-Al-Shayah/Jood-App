@@ -41,6 +41,14 @@ class HomeTab extends StatelessWidget {
         ..fetchUserLocation(),
       child: SafeArea(
         child: BlocBuilder<HomeCubit, HomeState>(
+          buildWhen: (previous, current) {
+            return previous.status != current.status ||
+                previous.errorMessage != current.errorMessage ||
+                previous.filteredRestaurants != current.filteredRestaurants ||
+                previous.restaurants != current.restaurants ||
+                previous.userCity != current.userCity ||
+                previous.userCountry != current.userCountry;
+          },
           builder: (context, state) {
             if (state.status == HomeStatus.failure) {
               return Center(
@@ -240,7 +248,7 @@ String _metaLabel(RestaurantEntity restaurant) {
   if (restaurant.area.isNotEmpty) parts.add(restaurant.area);
   if (restaurant.cityId.isNotEmpty) parts.add(restaurant.cityId);
   if (parts.isNotEmpty) {
-    return parts.join(' • ');
+    return parts.join(' | ');
   }
   return restaurant.address;
 }
@@ -350,91 +358,98 @@ void _showSortSheet(BuildContext context) {
     builder: (sheetContext) {
       return BlocProvider.value(
         value: cubit,
-        child: BlocBuilder<HomeCubit, HomeState>(
-          builder: (context, state) {
-            return Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+        child:
+            BlocSelector<
+              HomeCubit,
+              HomeState,
+              ({SortField? sortField, SortOrder sortOrder})
+            >(
+              selector: (state) =>
+                  (sortField: state.sortField, sortOrder: state.sortOrder),
+              builder: (context, state) {
+                return Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Sort & order',
-                          style: AppTextStyles.sectionTitle,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Sort & order',
+                              style: AppTextStyles.sectionTitle,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              context.read<HomeCubit>().updateSort(field: null);
+                              Navigator.pop(sheetContext);
+                            },
+                            child: Text(
+                              'Reset',
+                              style: AppTextStyles.cardMeta.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: () {
-                          context.read<HomeCubit>().updateSort(field: null);
+                      Text(
+                        'Pick a field and the order you want.',
+                        style: AppTextStyles.cardMeta,
+                      ),
+                      SizedBox(height: 16.h),
+                      _SortGroup(
+                        icon: Icons.attach_money,
+                        title: 'Price',
+                        subtitle: 'From lowest to highest or the opposite',
+                        isSelected: state.sortField == SortField.price,
+                        order: state.sortOrder,
+                        onSelect: (order) {
+                          context.read<HomeCubit>().updateSort(
+                            field: SortField.price,
+                            order: order,
+                          );
                           Navigator.pop(sheetContext);
                         },
-                        child: Text(
-                          'Reset',
-                          style: AppTextStyles.cardMeta.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                      ),
+                      SizedBox(height: 12.h),
+                      _SortGroup(
+                        icon: Icons.percent,
+                        title: 'Discount',
+                        subtitle: 'Based on percent or computed savings',
+                        isSelected: state.sortField == SortField.discount,
+                        order: state.sortOrder,
+                        onSelect: (order) {
+                          context.read<HomeCubit>().updateSort(
+                            field: SortField.discount,
+                            order: order,
+                          );
+                          Navigator.pop(sheetContext);
+                        },
+                      ),
+                      SizedBox(height: 12.h),
+                      _SortGroup(
+                        icon: Icons.star_outline,
+                        title: 'Rating',
+                        subtitle: 'Higher rated restaurants first or last',
+                        isSelected: state.sortField == SortField.rating,
+                        order: state.sortOrder,
+                        onSelect: (order) {
+                          context.read<HomeCubit>().updateSort(
+                            field: SortField.rating,
+                            order: order,
+                          );
+                          Navigator.pop(sheetContext);
+                        },
                       ),
                     ],
                   ),
-                  Text(
-                    'Pick a field and the order you want.',
-                    style: AppTextStyles.cardMeta,
-                  ),
-                  SizedBox(height: 16.h),
-                  _SortGroup(
-                    icon: Icons.attach_money,
-                    title: 'Price',
-                    subtitle: 'From lowest to highest or the opposite',
-                    isSelected: state.sortField == SortField.price,
-                    order: state.sortOrder,
-                    onSelect: (order) {
-                      context.read<HomeCubit>().updateSort(
-                        field: SortField.price,
-                        order: order,
-                      );
-                      Navigator.pop(sheetContext);
-                    },
-                  ),
-                  SizedBox(height: 12.h),
-                  _SortGroup(
-                    icon: Icons.percent,
-                    title: 'Discount',
-                    subtitle: 'Based on percent or computed savings',
-                    isSelected: state.sortField == SortField.discount,
-                    order: state.sortOrder,
-                    onSelect: (order) {
-                      context.read<HomeCubit>().updateSort(
-                        field: SortField.discount,
-                        order: order,
-                      );
-                      Navigator.pop(sheetContext);
-                    },
-                  ),
-                  SizedBox(height: 12.h),
-                  _SortGroup(
-                    icon: Icons.star_outline,
-                    title: 'Rating',
-                    subtitle: 'Higher rated restaurants first or last',
-                    isSelected: state.sortField == SortField.rating,
-                    order: state.sortOrder,
-                    onSelect: (order) {
-                      context.read<HomeCubit>().updateSort(
-                        field: SortField.rating,
-                        order: order,
-                      );
-                      Navigator.pop(sheetContext);
-                    },
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+                );
+              },
+            ),
       );
     },
   );
@@ -493,13 +508,13 @@ class _SortGroup extends StatelessWidget {
                 Row(
                   children: [
                     _SortChip(
-                      label: 'Low → High',
+                      label: 'Low -> High',
                       selected: isSelected && order == SortOrder.asc,
                       onTap: () => onSelect(SortOrder.asc),
                     ),
                     SizedBox(width: 8.w),
                     _SortChip(
-                      label: 'High → Low',
+                      label: 'High -> Low',
                       selected: isSelected && order == SortOrder.desc,
                       onTap: () => onSelect(SortOrder.desc),
                     ),
