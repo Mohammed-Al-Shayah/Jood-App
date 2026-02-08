@@ -92,7 +92,7 @@ class BookingConfirmedScreen extends StatelessWidget {
           body: SafeArea(
             child: PopScope(
               canPop: false,
-              onPopInvoked: (_) {
+              onPopInvokedWithResult: (_, result) {
                 context.pushNamedAndRemoveAll(Routes.homeScreen);
               },
               child: SingleChildScrollView(

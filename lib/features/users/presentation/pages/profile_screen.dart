@@ -61,6 +61,7 @@ class ProfileTab extends StatelessWidget {
 
             final initials = profileInitials(user.fullName);
             final canScanOrders = _canScanOrders(user.role);
+            final isAdmin = _isAdmin(user.role);
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
               child: Column(
@@ -126,6 +127,27 @@ class ProfileTab extends StatelessWidget {
                   //   ],
                   // ),
                   SizedBox(height: 16.h),
+                  if (isAdmin) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          context.pushNamed(Routes.adminDashboardScreen);
+                        },
+                        icon: const Icon(Icons.admin_panel_settings_outlined),
+                        label: const Text('Admin Dashboard'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14.r),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                  ],
                   if (canScanOrders) ...[
                     SizedBox(
                       width: double.infinity,
@@ -186,4 +208,8 @@ bool _canScanOrders(String role) {
   return normalized == 'staff' ||
       normalized == 'restaurant_staff' ||
       normalized == 'admin';
+}
+
+bool _isAdmin(String role) {
+  return role.toLowerCase() == 'admin';
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../features/home/data/datasources/restaurant_remote_data_source.dart';
@@ -12,6 +13,10 @@ import '../../features/offers/data/repositories/offer_repository_impl.dart';
 import '../../features/offers/domain/repositories/offer_repository.dart';
 import '../../features/offers/domain/usecases/get_offers_for_date_usecase.dart';
 import '../../features/offers/domain/usecases/get_offers_for_range_usecase.dart';
+import '../../features/offers/domain/usecases/get_offers_usecase.dart';
+import '../../features/offers/domain/usecases/create_offer_usecase.dart';
+import '../../features/offers/domain/usecases/update_offer_usecase.dart';
+import '../../features/offers/domain/usecases/delete_offer_usecase.dart';
 import '../../features/auth/presentation/login/logic/login_cubit.dart';
 import '../../features/auth/presentation/forget_password/logic/forget_password_cubit.dart';
 import '../../features/auth/presentation/change_password/logic/change_password_cubit.dart';
@@ -32,11 +37,13 @@ import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/users/data/datasources/user_remote_data_source.dart';
 import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/domain/repositories/user_repository.dart';
-import '../../features/users/domain/usecases/create_user_usecase.dart';
 import '../../features/users/domain/usecases/get_user_by_id_usecase.dart';
 import '../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
+import '../../features/users/domain/usecases/create_user_usecase.dart';
 import '../../features/users/domain/usecases/sync_auth_user_usecase.dart';
 import '../../features/users/domain/usecases/update_user_usecase.dart';
+import '../../features/users/domain/usecases/get_users_usecase.dart';
+import '../../features/users/domain/usecases/delete_user_usecase.dart';
 import '../../features/users/presentation/cubit/profile_cubit.dart';
 import '../../features/payments/data/datasources/payment_remote_data_source.dart';
 import '../../features/payments/data/repositories/payment_repository_impl.dart';
@@ -57,6 +64,15 @@ import '../../features/restaurants/data/repositories/restaurant_repository_impl.
 import '../../features/restaurants/domain/repositories/restaurant_repository.dart'
     as restaurants_domain;
 import '../../features/restaurants/domain/usecases/get_restaurant_details_usecase.dart';
+import '../../features/restaurants/domain/usecases/get_all_restaurants_usecase.dart';
+import '../../features/restaurants/domain/usecases/create_restaurant_usecase.dart';
+import '../../features/restaurants/domain/usecases/update_restaurant_usecase.dart';
+import '../../features/restaurants/domain/usecases/delete_restaurant_usecase.dart';
+import '../../features/admin/presentation/cubit/admin_restaurants_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_offers_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_users_cubit.dart';
+import '../../features/admin/data/datasources/admin_storage_remote_data_source.dart';
+import '../../features/admin/domain/usecases/upload_restaurant_image_usecase.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -65,6 +81,12 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<FirebaseFirestore>(
     () => FirebaseFirestore.instance,
   );
+  getIt.registerLazySingleton<FirebaseStorage>(
+    () => FirebaseStorage.instance,
+  );
+  getIt.registerLazySingleton<AdminStorageRemoteDataSource>(
+    () => AdminStorageRemoteDataSource(getIt()),
+  );
   getIt.registerLazySingleton<RestaurantRemoteDataSource>(
     () => RestaurantRemoteDataSourceImpl(firestore: getIt()),
   );
@@ -72,7 +94,12 @@ Future<void> setupServiceLocator() async {
     () => RestaurantRepositoryImpl(remoteDataSource: getIt()),
   );
   getIt.registerFactory<HomeCubit>(
-    () => HomeCubit(repository: getIt(), getUserById: getIt(), auth: getIt()),
+    () => HomeCubit(
+      repository: getIt(),
+      getUserById: getIt(),
+      auth: getIt(),
+      firestore: getIt(),
+    ),
   );
   getIt.registerLazySingleton<OfferRemoteDataSource>(
     () => OfferRemoteDataSource(getIt()),
@@ -85,6 +112,18 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<GetOffersForRangeUseCase>(
     () => GetOffersForRangeUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<GetOffersUseCase>(
+    () => GetOffersUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<CreateOfferUseCase>(
+    () => CreateOfferUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<UpdateOfferUseCase>(
+    () => UpdateOfferUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<DeleteOfferUseCase>(
+    () => DeleteOfferUseCase(getIt()),
   );
   getIt.registerFactory<BookingFlowCubit>(
     () =>
@@ -178,6 +217,12 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<UpdateUserUseCase>(
     () => UpdateUserUseCase(getIt()),
   );
+  getIt.registerLazySingleton<GetUsersUseCase>(
+    () => GetUsersUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<DeleteUserUseCase>(
+    () => DeleteUserUseCase(getIt()),
+  );
   getIt.registerLazySingleton<SyncAuthUserUseCase>(
     () => SyncAuthUserUseCase(
       getUserById: getIt(),
@@ -215,11 +260,49 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<GetRestaurantDetailsUseCase>(
     () => GetRestaurantDetailsUseCase(getIt()),
   );
+  getIt.registerLazySingleton<GetAllRestaurantsUseCase>(
+    () => GetAllRestaurantsUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<CreateRestaurantUseCase>(
+    () => CreateRestaurantUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<UpdateRestaurantUseCase>(
+    () => UpdateRestaurantUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<DeleteRestaurantUseCase>(
+    () => DeleteRestaurantUseCase(getIt()),
+  );
   getIt.registerFactory<RestaurantDetailCubit>(
     () => RestaurantDetailCubit(getRestaurantDetails: getIt()),
   );
   getIt.registerFactory<ProfileCubit>(
     () =>
         ProfileCubit(getUserById: getIt(), updateUser: getIt(), auth: getIt()),
+  );
+  getIt.registerFactory<AdminRestaurantsCubit>(
+    () => AdminRestaurantsCubit(
+      getAllRestaurants: getIt(),
+      createRestaurant: getIt(),
+      updateRestaurant: getIt(),
+      deleteRestaurant: getIt(),
+    ),
+  );
+  getIt.registerFactory<AdminOffersCubit>(
+    () => AdminOffersCubit(
+      getOffers: getIt(),
+      createOffer: getIt(),
+      updateOffer: getIt(),
+      deleteOffer: getIt(),
+    ),
+  );
+  getIt.registerFactory<AdminUsersCubit>(
+    () => AdminUsersCubit(
+      getUsers: getIt(),
+      updateUser: getIt(),
+      deleteUser: getIt(),
+    ),
+  );
+  getIt.registerLazySingleton<UploadRestaurantImageUseCase>(
+    () => UploadRestaurantImageUseCase(getIt()),
   );
 }

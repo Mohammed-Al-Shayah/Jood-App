@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jood/features/home/domain/entities/restaurant.dart';
@@ -12,14 +15,26 @@ class HomeCubit extends Cubit<HomeState> {
     required RestaurantRepository repository,
     required GetUserByIdUseCase getUserById,
     required FirebaseAuth auth,
+    required FirebaseFirestore firestore,
   }) : _repository = repository,
        _getUserById = getUserById,
        _auth = auth,
+       _firestore = firestore,
        super(const HomeState());
 
   final RestaurantRepository _repository;
   final GetUserByIdUseCase _getUserById;
   final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _restaurantsSub;
+
+  void startListening() {
+    _restaurantsSub?.cancel();
+    _restaurantsSub = _firestore
+        .collection('restaurants')
+        .snapshots()
+        .listen((_) => fetchRestaurants());
+  }
 
   Future<void> fetchRestaurants() async {
     emit(state.copyWith(status: HomeStatus.loading));
@@ -184,5 +199,11 @@ class HomeCubit extends Cubit<HomeState> {
       return parts.join(' • ');
     }
     return restaurant.address;
+  }
+
+  @override
+  Future<void> close() {
+    _restaurantsSub?.cancel();
+    return super.close();
   }
 }

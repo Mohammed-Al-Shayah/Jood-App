@@ -16,4 +16,11 @@ class Routes {
   static const String paymentScreen = '/payment';
   static const String bookingConfirmedScreen = '/booking-confirmed';
   static const String orderQrScannerScreen = '/order-qr-scanner';
+  static const String adminDashboardScreen = '/admin-dashboard';
+  static const String adminRestaurantsScreen = '/admin-restaurants';
+  static const String adminRestaurantFormScreen = '/admin-restaurant-form';
+  static const String adminOffersScreen = '/admin-offers';
+  static const String adminOfferFormScreen = '/admin-offer-form';
+  static const String adminUsersScreen = '/admin-users';
+  static const String adminUserFormScreen = '/admin-user-form';
 }

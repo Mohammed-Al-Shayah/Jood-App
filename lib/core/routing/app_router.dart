@@ -14,6 +14,13 @@ import '../../features/auth/presentation/change_password/pages/change_password.p
 import '../../features/auth/presentation/registration/page/request_under_review.page.dart';
 import '../../features/auth/presentation/registration/page/beneficiary_create_story.page.dart';
 import '../../features/restaurants/presentation/pages/detail_screen.dart';
+import '../../features/admin/presentation/pages/admin_dashboard_screen.dart';
+import '../../features/admin/presentation/pages/admin_restaurants_screen.dart';
+import '../../features/admin/presentation/pages/admin_restaurant_form_screen.dart';
+import '../../features/admin/presentation/pages/admin_offers_screen.dart';
+import '../../features/admin/presentation/pages/admin_offer_form_screen.dart';
+import '../../features/admin/presentation/pages/admin_users_screen.dart';
+import '../../features/admin/presentation/pages/admin_user_form_screen.dart';
 import '../../features/bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
 import '../../features/bookings/booking_flow/presentation/pages/booking_confirmed_screen.dart';
 import '../../features/bookings/booking_flow/presentation/pages/payment_screen.dart';
@@ -51,6 +58,35 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const OrderQrScannerScreen());
       case Routes.profileScreen:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
+      case Routes.adminDashboardScreen:
+        return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
+      case Routes.adminRestaurantsScreen:
+        return MaterialPageRoute(builder: (_) => const AdminRestaurantsScreen());
+      case Routes.adminRestaurantFormScreen:
+        final args = settings.arguments as AdminRestaurantFormArgs?;
+        return MaterialPageRoute(
+          builder: (_) => AdminRestaurantFormScreen(
+            restaurant: args?.restaurant,
+          ),
+        );
+      case Routes.adminOffersScreen:
+        return MaterialPageRoute(builder: (_) => const AdminOffersScreen());
+      case Routes.adminOfferFormScreen:
+        final args = settings.arguments as AdminOfferFormArgs?;
+        return MaterialPageRoute(
+          builder: (_) => AdminOfferFormScreen(
+            offer: args?.offer,
+          ),
+        );
+      case Routes.adminUsersScreen:
+        return MaterialPageRoute(builder: (_) => const AdminUsersScreen());
+      case Routes.adminUserFormScreen:
+        final args = settings.arguments as AdminUserFormArgs?;
+        return MaterialPageRoute(
+          builder: (_) => AdminUserFormScreen(
+            user: args?.user,
+          ),
+        );
       case Routes.detailScreen:
         final args = settings.arguments as DetailScreenArgs;
         return MaterialPageRoute(

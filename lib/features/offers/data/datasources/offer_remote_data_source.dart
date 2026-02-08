@@ -72,4 +72,36 @@ class OfferRemoteDataSource {
     final doc = await firestore.collection('offers').doc(id).get();
     return OfferModel.fromDoc(doc);
   }
+
+  Future<List<OfferModel>> getOffers() async {
+    final snapshot = await firestore.collection('offers').get();
+    return snapshot.docs.map(OfferModel.fromDoc).toList();
+  }
+
+  Future<OfferModel> createOffer(OfferModel offer) async {
+    final docRef = offer.id.trim().isEmpty
+        ? firestore.collection('offers').doc()
+        : firestore.collection('offers').doc(offer.id);
+    await docRef.set({
+      ...offer.toMap(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    final created = await docRef.get();
+    return OfferModel.fromDoc(created);
+  }
+
+  Future<OfferModel> updateOffer(OfferModel offer) async {
+    final docRef = firestore.collection('offers').doc(offer.id);
+    await docRef.set({
+      ...offer.toMap(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    final updated = await docRef.get();
+    return OfferModel.fromDoc(updated);
+  }
+
+  Future<void> deleteOffer(String id) async {
+    await firestore.collection('offers').doc(id).delete();
+  }
 }

@@ -38,7 +38,8 @@ class HomeTab extends StatelessWidget {
     return BlocProvider(
       create: (_) => getIt<HomeCubit>()
         ..fetchRestaurants()
-        ..fetchUserLocation(),
+        ..fetchUserLocation()
+        ..startListening(),
       child: SafeArea(
         child: BlocBuilder<HomeCubit, HomeState>(
           buildWhen: (previous, current) {

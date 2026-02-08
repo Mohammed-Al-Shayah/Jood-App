@@ -76,6 +76,34 @@ class RestaurantModel extends RestaurantEntity {
     );
   }
 
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'cityId': cityId,
+      'area': area,
+      'rating': rating,
+      'reviewsCount': reviewsCount,
+      'coverImageUrl': coverImageUrl,
+      'about': about,
+      'phone': phone,
+      'address': address,
+      'geo': {'lat': geoLat, 'lng': geoLng},
+      'openHours': {'from': openFrom, 'to': openTo},
+      'highlights': highlights,
+      'inclusions': inclusions,
+      'exclusions': exclusions,
+      'cancellationPolicy': cancellationPolicy,
+      'knowBeforeYouGo': knowBeforeYouGo,
+      'isActive': isActive,
+      'badge': badge,
+      'priceFrom': priceFrom,
+      'discount': discount,
+      'slotsLeft': slotsLeft,
+      'priceFromValue': priceFromValue,
+      'discountValue': discountValue,
+    };
+  }
+
   static List<String> _stringList(dynamic value) {
     if (value is List) {
       return value.map((item) => item.toString()).toList();

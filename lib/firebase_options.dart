@@ -41,46 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDTEoF5UyLy8ByKVdJONVExoSdwDvxv9tU',
-    appId: '1:65140272990:web:b5aea465e2e41c743729cf',
-    messagingSenderId: '65140272990',
-    projectId: 'jood-project-01',
-    authDomain: 'jood-project-01.firebaseapp.com',
-    storageBucket: 'jood-project-01.firebasestorage.app',
+    apiKey: 'AIzaSyCkdDomSxA2w9mM45VmApjtgp1ZElgrur8',
+    appId: '1:1062420615326:web:0dba1e67acd84096c02b8f',
+    messagingSenderId: '1062420615326',
+    projectId: 'joodapp-3051e',
+    authDomain: 'joodapp-3051e.firebaseapp.com',
+    storageBucket: 'joodapp-3051e.firebasestorage.app',
+    measurementId: 'G-ZSD1JZDXWX',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBjcsDYhVa9WizLECWqBwdv0zuZwVW04JM',
-    appId: '1:65140272990:android:86a697f6d950c2123729cf',
-    messagingSenderId: '65140272990',
-    projectId: 'jood-project-01',
-    storageBucket: 'jood-project-01.firebasestorage.app',
+    apiKey: 'AIzaSyCv-_TTbFpZ3SQMiqjHhxvTs9LBe-laNjs',
+    appId: '1:1062420615326:android:4bab19e5c9b20aefc02b8f',
+    messagingSenderId: '1062420615326',
+    projectId: 'joodapp-3051e',
+    storageBucket: 'joodapp-3051e.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBUp1P7MyazKew0pRHGU0O9eEt71u9CC84',
-    appId: '1:65140272990:ios:39c7aaa5a8ecb0433729cf',
-    messagingSenderId: '65140272990',
-    projectId: 'jood-project-01',
-    storageBucket: 'jood-project-01.firebasestorage.app',
+    apiKey: 'AIzaSyAtInlt77LsWRi1cIE-_1AGSXOVLIeXM5A',
+    appId: '1:1062420615326:ios:ff299e7341cd965cc02b8f',
+    messagingSenderId: '1062420615326',
+    projectId: 'joodapp-3051e',
+    storageBucket: 'joodapp-3051e.firebasestorage.app',
     iosBundleId: 'com.example.jood',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBUp1P7MyazKew0pRHGU0O9eEt71u9CC84',
-    appId: '1:65140272990:ios:39c7aaa5a8ecb0433729cf',
-    messagingSenderId: '65140272990',
-    projectId: 'jood-project-01',
-    storageBucket: 'jood-project-01.firebasestorage.app',
+    apiKey: 'AIzaSyAtInlt77LsWRi1cIE-_1AGSXOVLIeXM5A',
+    appId: '1:1062420615326:ios:ff299e7341cd965cc02b8f',
+    messagingSenderId: '1062420615326',
+    projectId: 'joodapp-3051e',
+    storageBucket: 'joodapp-3051e.firebasestorage.app',
     iosBundleId: 'com.example.jood',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDTEoF5UyLy8ByKVdJONVExoSdwDvxv9tU',
-    appId: '1:65140272990:web:fda536160cc2fa923729cf',
-    messagingSenderId: '65140272990',
-    projectId: 'jood-project-01',
-    authDomain: 'jood-project-01.firebaseapp.com',
-    storageBucket: 'jood-project-01.firebasestorage.app',
+    apiKey: 'AIzaSyCkdDomSxA2w9mM45VmApjtgp1ZElgrur8',
+    appId: '1:1062420615326:web:243cee107d695972c02b8f',
+    messagingSenderId: '1062420615326',
+    projectId: 'joodapp-3051e',
+    authDomain: 'joodapp-3051e.firebaseapp.com',
+    storageBucket: 'joodapp-3051e.firebasestorage.app',
+    measurementId: 'G-9Z0MZR78BC',
   );
+
 }

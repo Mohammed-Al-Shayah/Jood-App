@@ -5,4 +5,6 @@ abstract class UserRepository {
   Future<UserEntity?> getUserByPhone(String phone);
   Future<void> createUser(UserEntity user);
   Future<void> updateUser(UserEntity user);
+  Future<List<UserEntity>> getUsers();
+  Future<void> deleteUser(String id);
 }

@@ -31,7 +31,7 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      onPopInvoked: (_) {
+      onPopInvokedWithResult: (_, result) {
         SystemNavigator.pop();
       },
       child: Scaffold(

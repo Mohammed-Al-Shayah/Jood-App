@@ -50,6 +50,26 @@ class OfferModel extends OfferEntity {
     );
   }
 
+  Map<String, dynamic> toMap() {
+    return {
+      'restaurantId': restaurantId,
+      'date': date,
+      'startTime': startTime,
+      'endTime': endTime,
+      'currency': currency,
+      'priceAdult': priceAdult,
+      'priceAdultOriginal': priceAdultOriginal,
+      'priceChild': priceChild,
+      'capacityAdult': capacityAdult,
+      'capacityChild': capacityChild,
+      'bookedAdult': bookedAdult,
+      'bookedChild': bookedChild,
+      'status': status,
+      'title': title,
+      'entryConditions': entryConditions,
+    };
+  }
+
   static List<String> _stringList(dynamic value) {
     final list = value as List<dynamic>? ?? [];
     return list.map((item) => item.toString()).toList();

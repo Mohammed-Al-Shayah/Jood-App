@@ -49,4 +49,14 @@ class UserRepositoryImpl implements UserRepository {
     );
     return remoteDataSource.updateUser(model);
   }
+
+  @override
+  Future<List<UserEntity>> getUsers() {
+    return remoteDataSource.getUsers();
+  }
+
+  @override
+  Future<void> deleteUser(String id) {
+    return remoteDataSource.deleteUser(id);
+  }
 }

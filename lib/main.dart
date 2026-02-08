@@ -16,6 +16,12 @@ void main() async {
   if (!kReleaseMode) {
     await SeedFirestore.ensureSeeded();
   }
+  if (!kReleaseMode) {
+  await FirebaseAuth.instance.setSettings(
+    appVerificationDisabledForTesting: true,
+  );
+}
+
   await ScreenUtil.ensureScreenSize();
   await setupServiceLocator();
   final authUser = getIt<FirebaseAuth>().currentUser;

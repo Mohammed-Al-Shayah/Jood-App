@@ -11,4 +11,8 @@ abstract class OfferRepository {
     String endDate,
   );
   Future<OfferEntity> getOfferById(String id);
+  Future<List<OfferEntity>> getOffers();
+  Future<OfferEntity> createOffer(OfferEntity offer);
+  Future<OfferEntity> updateOffer(OfferEntity offer);
+  Future<void> deleteOffer(String id);
 }

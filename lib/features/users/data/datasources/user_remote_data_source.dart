@@ -48,4 +48,13 @@ class UserRemoteDataSource {
           SetOptions(merge: true),
         );
   }
+
+  Future<List<UserModel>> getUsers() async {
+    final snapshot = await firestore.collection('users').get();
+    return snapshot.docs.map((doc) => UserModel.fromMap(doc.id, doc.data())).toList();
+  }
+
+  Future<void> deleteUser(String id) {
+    return firestore.collection('users').doc(id).delete();
+  }
 }
