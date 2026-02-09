@@ -19,4 +19,10 @@ class AdminStorageRemoteDataSource {
     final task = await ref.putFile(File(file.path));
     return task.ref.getDownloadURL();
   }
+
+  Future<void> deleteByUrl(String url) async {
+    if (url.trim().isEmpty) return;
+    final ref = storage.refFromURL(url);
+    await ref.delete();
+  }
 }

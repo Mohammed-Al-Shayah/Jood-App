@@ -20,6 +20,7 @@ class JoodApp extends StatelessWidget {
           title: 'Jood',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
+            useMaterial3: true,
             fontFamily: 'Cairo',
             textTheme: Typography.material2021().black.apply(
               fontFamilyFallback: const ['Cairo'],
@@ -30,6 +31,12 @@ class JoodApp extends StatelessWidget {
               backgroundColor: Colors.white,
               foregroundColor: AppColors.textPrimary,
               elevation: 0,
+              scrolledUnderElevation: 0,
+              surfaceTintColor: Colors.white,
+            ),
+            bottomSheetTheme: const BottomSheetThemeData(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.white,
             ),
           ),
           initialRoute: Routes.loginScreen,

@@ -17,7 +17,10 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
 
   @override
   Future<List<RestaurantEntity>> fetchRestaurants() async {
-    final snapshot = await _firestore.collection('restaurants').get();
+    final snapshot = await _firestore
+        .collection('restaurants')
+        .where('isActive', isEqualTo: true)
+        .get();
     final today = AppDateUtils.formatDate(DateTime.now());
     final offersSnapshot = await _firestore
         .collection('offers')

@@ -22,7 +22,11 @@ class RestaurantRemoteDataSource {
 
   Future<RestaurantModel> getRestaurantById(String id) async {
     final doc = await firestore.collection('restaurants').doc(id).get();
-    return RestaurantModel.fromDoc(doc);
+    final restaurant = RestaurantModel.fromDoc(doc);
+    if (!restaurant.isActive) {
+      throw StateError('Restaurant is inactive.');
+    }
+    return restaurant;
   }
 
   Future<RestaurantModel> createRestaurant(RestaurantModel restaurant) async {

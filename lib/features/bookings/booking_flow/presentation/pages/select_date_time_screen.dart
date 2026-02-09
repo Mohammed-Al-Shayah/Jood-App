@@ -150,7 +150,7 @@ class SelectDateTimeScreen extends StatelessWidget {
                                       !isLoading && selectedIndex == index,
                                   statusLabel: _statusLabel(offer),
                                   statusColor: _statusColor(offer),
-                                  onTap: isLoading || _isSoldOut(offer)
+                                  onTap: isLoading || _isUnavailable(offer)
                                       ? null
                                       : () => context
                                             .read<BookingFlowCubit>()
@@ -210,6 +210,8 @@ String _statusLabel(OfferEntity offer) {
       return '${AppStrings.onlyTicketsLeft} $remaining ${AppStrings.ticketsAvailable}';
     case _OfferAvailability.soldOut:
       return AppStrings.soldOut;
+    case _OfferAvailability.expired:
+      return AppStrings.offerEnded;
   }
 }
 
@@ -221,14 +223,19 @@ Color _statusColor(OfferEntity offer) {
       return const Color(0xFFE28B25);
     case _OfferAvailability.soldOut:
       return const Color(0xFFDD5A5A);
+    case _OfferAvailability.expired:
+      return const Color(0xFF9E9E9E);
   }
 }
 
-bool _isSoldOut(OfferEntity offer) {
-  return _availabilityFor(offer) == _OfferAvailability.soldOut;
+bool _isUnavailable(OfferEntity offer) {
+  final availability = _availabilityFor(offer);
+  return availability == _OfferAvailability.soldOut ||
+      availability == _OfferAvailability.expired;
 }
 
 _OfferAvailability _availabilityFor(OfferEntity offer) {
+  if (_isExpired(offer)) return _OfferAvailability.expired;
   final status = offer.status.toLowerCase().replaceAll(' ', '');
   final remaining = _remainingTotal(offer);
   if (remaining <= 0) return _OfferAvailability.soldOut;
@@ -242,13 +249,61 @@ _OfferAvailability _availabilityFor(OfferEntity offer) {
   return _OfferAvailability.available;
 }
 
-enum _OfferAvailability { available, low, soldOut }
+enum _OfferAvailability { available, low, soldOut, expired }
 
 int _remainingTotal(OfferEntity offer) {
   final totalCapacity = offer.capacityAdult + offer.capacityChild;
   final totalBooked = offer.bookedAdult + offer.bookedChild;
   final remaining = totalCapacity - totalBooked;
   return remaining < 0 ? 0 : remaining;
+}
+
+bool _isExpired(OfferEntity offer) {
+  final date = _parseOfferDate(offer.date);
+  if (date == null) return false;
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  if (date.isBefore(today)) return true;
+  if (date.isAfter(today)) return false;
+  final endMinutes =
+      _parseTimeToMinutes(offer.endTime) ??
+      _parseTimeToMinutes(offer.startTime);
+  if (endMinutes == null) return false;
+  final nowMinutes = now.hour * 60 + now.minute;
+  return nowMinutes >= endMinutes;
+}
+
+DateTime? _parseOfferDate(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return null;
+  final parsed = DateTime.tryParse(trimmed);
+  if (parsed == null) return null;
+  return DateTime(parsed.year, parsed.month, parsed.day);
+}
+
+int? _parseTimeToMinutes(String value) {
+  final trimmed = value.trim().toLowerCase();
+  if (trimmed.isEmpty) return null;
+  final amPmMatch = RegExp(
+    r'^(\d{1,2})(?::(\d{2}))?\s*([ap]m)$',
+  ).firstMatch(trimmed);
+  if (amPmMatch != null) {
+    final hour = int.tryParse(amPmMatch.group(1) ?? '');
+    final minute = int.tryParse(amPmMatch.group(2) ?? '0') ?? 0;
+    final period = amPmMatch.group(3);
+    if (hour == null) return null;
+    var h = hour % 12;
+    if (period == 'pm') h += 12;
+    return h * 60 + minute;
+  }
+  final match24 = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(trimmed);
+  if (match24 != null) {
+    final hour = int.tryParse(match24.group(1) ?? '');
+    final minute = int.tryParse(match24.group(2) ?? '');
+    if (hour == null || minute == null) return null;
+    return hour * 60 + minute;
+  }
+  return null;
 }
 
 List<OfferEntity> _skeletonOffers() {

@@ -72,6 +72,7 @@ class AppStrings {
   static const String securePaymentTitle = 'Secure Payment';
   static const String securePaymentDescription =
       'Your payment information is encrypted and secure. We never store your card details.';
+  static const String offerEnded = 'Offer ended';
   static const String confirmAndPay = 'Confirm & Pay';
   static const String bookingConfirmedTitle = 'Booking Confirmed!';
   static const String bookingConfirmedSubtitle = 'Your table has been reserved';

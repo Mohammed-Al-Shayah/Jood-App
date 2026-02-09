@@ -183,7 +183,7 @@ class LoginCubit extends SafeCubit<LoginState> {
             status: LoginStatus.emailNotVerified,
             unverifiedEmail: input,
             errorMessage:
-                'Please verify your email first. We sent you a verification link.',
+                'Please verify your email first. We sent you a verification link. If you did not receive it, check your spam folder.',
           ),
         );
         return;

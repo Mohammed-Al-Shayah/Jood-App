@@ -19,6 +19,11 @@ class UserRepositoryImpl implements UserRepository {
   }
 
   @override
+  Future<UserEntity?> getUserByEmail(String email) {
+    return remoteDataSource.getUserByEmail(email);
+  }
+
+  @override
   Future<void> createUser(UserEntity user) {
     final model = UserModel(
       id: user.id,

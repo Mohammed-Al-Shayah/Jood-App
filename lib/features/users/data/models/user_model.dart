@@ -29,9 +29,11 @@ class UserModel extends UserEntity {
   }
 
   Map<String, dynamic> toMap() {
+    final emailLower = email.trim().toLowerCase();
     return {
       'fullName': fullName,
       'email': email,
+      'emailLower': emailLower,
       'emailVerified': emailVerified,
       'phone': phone,
       'phoneNormalized': AuthValidators.normalizePhone(phone),

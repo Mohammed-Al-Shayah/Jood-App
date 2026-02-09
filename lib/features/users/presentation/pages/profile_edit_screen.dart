@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:country_picker/country_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 
 import 'package:jood/core/di/service_locator.dart';
@@ -139,9 +140,15 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                       ),
                     ),
                     _Label(text: 'Country'),
-                    _Field(
-                      initialValue: state.country,
-                      onChanged: context.read<ProfileEditCubit>().updateCountry,
+                    _PickerField(
+                      hintText: 'Select country',
+                      value: state.country,
+                      onTap: () => _showCountryPicker(
+                        context,
+                        (country) => context
+                            .read<ProfileEditCubit>()
+                            .updateCountry(country.name),
+                      ),
                     ),
                     _Label(text: 'City'),
                     _Field(
@@ -359,4 +366,77 @@ class _Field extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PickerField extends StatelessWidget {
+  const _PickerField({
+    required this.hintText,
+    required this.value,
+    required this.onTap,
+  });
+
+  final String hintText;
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEmpty = value.trim().isEmpty;
+    return InkWell(
+      borderRadius: BorderRadius.circular(30.r),
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F7FB),
+          borderRadius: BorderRadius.circular(30.r),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                isEmpty ? hintText : value,
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: isEmpty
+                      ? AppColors.textMuted
+                      : AppColors.textPrimary,
+                  fontSize: 14.sp,
+                ),
+              ),
+            ),
+            Icon(Icons.keyboard_arrow_down, color: AppColors.textMuted),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void _showCountryPicker(
+  BuildContext context,
+  ValueChanged<Country> onSelect,
+) {
+  showCountryPicker(
+    context: context,
+    showPhoneCode: false,
+    showSearch: true,
+    countryListTheme: CountryListThemeData(
+      backgroundColor: Colors.white,
+      textStyle: AppTextStyles.cardMeta.copyWith(
+        fontSize: 15.sp,
+        color: AppColors.textPrimary,
+      ),
+      inputDecoration: InputDecoration(
+        hintText: 'Search country',
+        filled: true,
+        fillColor: const Color(0xFFF6F7FB),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.r),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    ),
+    onSelect: onSelect,
+  );
 }

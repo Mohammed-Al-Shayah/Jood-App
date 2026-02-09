@@ -50,6 +50,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<List<String>> fetchSignInMethodsForEmail(String email) {
+    return _auth.fetchSignInMethodsForEmail(email);
+  }
+
+  @override
   Future<void> sendEmailVerification(User user) {
     return user.sendEmailVerification();
   }

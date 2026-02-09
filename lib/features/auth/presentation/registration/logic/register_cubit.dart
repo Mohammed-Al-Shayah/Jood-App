@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:jood/features/auth/domain/usecases/check_email_in_use_usecase.dart';
 
 import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
@@ -10,6 +11,7 @@ import '../../../domain/usecases/send_phone_otp_usecase.dart';
 import '../../../domain/usecases/sign_in_with_phone_credential_usecase.dart';
 import '../../../../../features/users/domain/entities/user_entity.dart';
 import '../../../../../features/users/domain/usecases/create_user_usecase.dart';
+import '../../../../../features/users/domain/usecases/get_user_by_email_usecase.dart';
 import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
 import '../../../../../features/users/domain/usecases/sync_auth_user_usecase.dart';
 import 'register_state.dart';
@@ -21,15 +23,19 @@ class RegisterCubit extends SafeCubit<RegisterState> {
     required LinkEmailPasswordUseCase linkEmailPassword,
     required SendEmailVerificationUseCase sendEmailVerification,
     required CreateUserUseCase createUser,
+    required GetUserByEmailUseCase getUserByEmail,
     required GetUserByPhoneUseCase getUserByPhone,
     required SyncAuthUserUseCase syncAuthUser,
+    required CheckEmailInUseUseCase checkEmailInUse,
   }) : _sendPhoneOtp = sendPhoneOtp,
        _signInWithPhoneCredential = signInWithPhoneCredential,
        _linkEmailPassword = linkEmailPassword,
        _sendEmailVerification = sendEmailVerification,
        _createUser = createUser,
+       _getUserByEmail = getUserByEmail,
        _getUserByPhone = getUserByPhone,
        _syncAuthUser = syncAuthUser,
+       _checkEmailInUse = checkEmailInUse,
        super(RegisterState.initial());
 
   final SendPhoneOtpUseCase _sendPhoneOtp;
@@ -37,8 +43,10 @@ class RegisterCubit extends SafeCubit<RegisterState> {
   final LinkEmailPasswordUseCase _linkEmailPassword;
   final SendEmailVerificationUseCase _sendEmailVerification;
   final CreateUserUseCase _createUser;
+  final GetUserByEmailUseCase _getUserByEmail;
   final GetUserByPhoneUseCase _getUserByPhone;
   final SyncAuthUserUseCase _syncAuthUser;
+  final CheckEmailInUseUseCase _checkEmailInUse;
 
   void updateFullName(String value) {
     emitSafe(_update(state.copyWith(fullName: value, fullNameTouched: true)));
@@ -104,6 +112,33 @@ class RegisterCubit extends SafeCubit<RegisterState> {
     );
 
     try {
+      final providedEmail = state.email.trim();
+      final existingEmailUser = await _getUserByEmail(providedEmail);
+      if (existingEmailUser != null) {
+        emitSafe(
+          state.copyWith(
+            status: RegisterStatus.failure,
+            errorMessage:
+                'This email address is already registered and a new account cannot be created with it.',
+            emailError:
+                'This email address is already registered and a new account cannot be created with it.',
+          ),
+        );
+        return;
+      }
+      final emailInUse = await _checkEmailInUse(providedEmail);
+      if (emailInUse) {
+        emitSafe(
+          state.copyWith(
+            status: RegisterStatus.failure,
+            errorMessage:
+                'This email address is already registered and a new account cannot be created with it.',
+            emailError:
+                'This email address is already registered and a new account cannot be created with it.',
+          ),
+        );
+        return;
+      }
       final normalizedPhone = AuthValidators.normalizePhone(state.phone);
       final existing = await _getUserByPhone(normalizedPhone);
       if (existing != null) {
@@ -229,6 +264,14 @@ class RegisterCubit extends SafeCubit<RegisterState> {
       await _linkEmailPassword(user: user, email: email, password: password);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'provider-already-linked') return;
+      if (e.code == 'email-already-in-use' ||
+          e.code == 'credential-already-in-use') {
+        throw FirebaseAuthException(
+          code: e.code,
+          message:
+              'This email is already registered. Please use a different email or log in.',
+        );
+      }
       throw FirebaseAuthException(
         code: e.code,
         message: mapFirebaseAuthException(

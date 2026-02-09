@@ -201,6 +201,14 @@ class OtpCubit extends SafeCubit<OtpState> {
       if (e.code == 'provider-already-linked') {
         return;
       }
+      if (e.code == 'email-already-in-use' ||
+          e.code == 'credential-already-in-use') {
+        throw FirebaseAuthException(
+          code: e.code,
+          message:
+              'This email is already registered. Please use a different email or log in.',
+        );
+      }
       throw FirebaseAuthException(
         code: e.code,
         message: mapFirebaseAuthException(

@@ -49,6 +49,7 @@ dependencies:
   cached_network_image: ^3.4.1
   image_picker: ^1.1.2
   intl_phone_number_input: 0.7.5
+  country_picker: ^2.0.26
   thawani_payment: ^1.2.4+1
   share_plus: ^10.1.4
   image_gallery_saver_plus: ^4.0.1

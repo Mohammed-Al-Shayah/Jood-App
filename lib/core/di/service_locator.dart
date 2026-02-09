@@ -23,6 +23,7 @@ import '../../features/auth/presentation/change_password/logic/change_password_c
 import '../../features/auth/presentation/registration/logic/register_cubit.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/domain/usecases/check_email_in_use_usecase.dart';
 import '../../features/auth/domain/usecases/get_current_user_usecase.dart';
 import '../../features/auth/domain/usecases/link_email_password_usecase.dart';
 import '../../features/auth/domain/usecases/login_with_email_usecase.dart';
@@ -38,6 +39,7 @@ import '../../features/users/data/datasources/user_remote_data_source.dart';
 import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/domain/repositories/user_repository.dart';
 import '../../features/users/domain/usecases/get_user_by_id_usecase.dart';
+import '../../features/users/domain/usecases/get_user_by_email_usecase.dart';
 import '../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
 import '../../features/users/domain/usecases/create_user_usecase.dart';
 import '../../features/users/domain/usecases/sync_auth_user_usecase.dart';
@@ -72,6 +74,7 @@ import '../../features/admin/presentation/cubit/admin_restaurants_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_offers_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_users_cubit.dart';
 import '../../features/admin/data/datasources/admin_storage_remote_data_source.dart';
+import '../../features/admin/domain/usecases/delete_storage_file_usecase.dart';
 import '../../features/admin/domain/usecases/upload_restaurant_image_usecase.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -81,9 +84,7 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<FirebaseFirestore>(
     () => FirebaseFirestore.instance,
   );
-  getIt.registerLazySingleton<FirebaseStorage>(
-    () => FirebaseStorage.instance,
-  );
+  getIt.registerLazySingleton<FirebaseStorage>(() => FirebaseStorage.instance);
   getIt.registerLazySingleton<AdminStorageRemoteDataSource>(
     () => AdminStorageRemoteDataSource(getIt()),
   );
@@ -134,6 +135,9 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<LoginWithEmailUseCase>(
     () => LoginWithEmailUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<CheckEmailInUseUseCase>(
+    () => CheckEmailInUseUseCase(getIt()),
   );
   getIt.registerLazySingleton<SendPhoneOtpUseCase>(
     () => SendPhoneOtpUseCase(getIt()),
@@ -190,11 +194,13 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<RegisterCubit>(
     () => RegisterCubit(
+      checkEmailInUse: getIt(),
       sendPhoneOtp: getIt(),
       signInWithPhoneCredential: getIt(),
       linkEmailPassword: getIt(),
       sendEmailVerification: getIt(),
       createUser: getIt(),
+      getUserByEmail: getIt(),
       getUserByPhone: getIt(),
       syncAuthUser: getIt(),
     ),
@@ -208,6 +214,9 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<GetUserByIdUseCase>(
     () => GetUserByIdUseCase(getIt()),
   );
+  getIt.registerLazySingleton<GetUserByEmailUseCase>(
+    () => GetUserByEmailUseCase(getIt()),
+  );
   getIt.registerLazySingleton<GetUserByPhoneUseCase>(
     () => GetUserByPhoneUseCase(getIt()),
   );
@@ -217,9 +226,7 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<UpdateUserUseCase>(
     () => UpdateUserUseCase(getIt()),
   );
-  getIt.registerLazySingleton<GetUsersUseCase>(
-    () => GetUsersUseCase(getIt()),
-  );
+  getIt.registerLazySingleton<GetUsersUseCase>(() => GetUsersUseCase(getIt()));
   getIt.registerLazySingleton<DeleteUserUseCase>(
     () => DeleteUserUseCase(getIt()),
   );
@@ -304,5 +311,8 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<UploadRestaurantImageUseCase>(
     () => UploadRestaurantImageUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<DeleteStorageFileUseCase>(
+    () => DeleteStorageFileUseCase(getIt()),
   );
 }

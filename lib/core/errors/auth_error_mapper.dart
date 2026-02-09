@@ -25,7 +25,7 @@ String mapFirebaseAuthException(
       return 'Password is too weak.';
     case 'email-already-in-use':
     case 'credential-already-in-use':
-      return 'Email already in use.';
+      return e.message ?? 'Email already in use.';
     case 'invalid-verification-code':
       return 'Invalid OTP code.';
     case 'session-expired':

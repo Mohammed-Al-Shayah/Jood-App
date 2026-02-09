@@ -59,20 +59,14 @@ class HomeTab extends StatelessWidget {
                 ),
               );
             }
-            if (state.status == HomeStatus.empty) {
-              return Center(
-                child: Text(
-                  'No restaurants available.',
-                  style: AppTextStyles.cardMeta,
-                ),
-              );
-            }
             final isLoading = state.status == HomeStatus.loading;
             final items = isLoading
                 ? _skeletonRestaurants()
                 : state.filteredRestaurants;
             final showEmptyFilter =
                 !isLoading && state.restaurants.isNotEmpty && items.isEmpty;
+            final showEmptyState =
+                !isLoading && state.status == HomeStatus.empty;
             return Skeletonizer(
               enabled: isLoading,
               child: CustomScrollView(
@@ -118,6 +112,16 @@ class HomeTab extends StatelessWidget {
                               child: Text(
                                 'No restaurants match your search.',
                                 style: AppTextStyles.cardMeta,
+                              ),
+                            ),
+                          if (showEmptyState)
+                            Padding(
+                              padding: EdgeInsets.only(top: 12.h),
+                              child: Center(
+                                child: Text(
+                                  'No restaurants available.',
+                                  style: AppTextStyles.cardMeta,
+                                ),
                               ),
                             ),
                         ],

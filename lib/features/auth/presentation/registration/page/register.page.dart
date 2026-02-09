@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:country_picker/country_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
@@ -131,6 +132,7 @@ class RegisterPage extends StatelessWidget {
                       },
                       selectorConfig: const SelectorConfig(
                         selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                
                       ),
                       keyboardType: TextInputType.phone,
                       inputDecoration: InputDecoration(
@@ -152,7 +154,12 @@ class RegisterPage extends StatelessWidget {
                     _PickerField(
                       hintText: 'Select country',
                       value: state.country,
-                      onTap: () => _showCountryPicker(context),
+                      onTap: () => _showCountryPicker(
+                        context,
+                        (country) => context
+                            .read<RegisterCubit>()
+                            .updateCountry(country.name),
+                      ),
                       errorText: state.countryError,
                     ),
                     _Label(text: 'City'),
@@ -344,56 +351,28 @@ class _PickerField extends StatelessWidget {
   }
 }
 
-void _showCountryPicker(BuildContext context) {
-  const countries = [
-    'United Arab Emirates',
-    'Saudi Arabia',
-    'Qatar',
-    'Kuwait',
-    'Bahrain',
-    'Oman',
-    'Egypt',
-    'Jordan',
-    'Lebanon',
-    'Palestine',
-    'Iraq',
-    'Syria',
-    'Morocco',
-    'Algeria',
-    'Tunisia',
-    'Yemen',
-  ];
-
-  showModalBottomSheet(
+void _showCountryPicker(BuildContext context, ValueChanged<Country> onSelect) {
+  showCountryPicker(
     context: context,
-    backgroundColor: Colors.white,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-    ),
-    builder: (sheetContext) {
-      return SafeArea(
-        child: ListView.separated(
-          padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
-          itemCount: countries.length,
-          separatorBuilder: (_, _) => Divider(color: AppColors.shadowColor),
-          itemBuilder: (_, index) {
-            final country = countries[index];
-            return ListTile(
-              title: Text(
-                country,
-                style: AppTextStyles.cardMeta.copyWith(
-                  fontSize: 15.sp,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              onTap: () {
-                context.read<RegisterCubit>().updateCountry(country);
-                Navigator.pop(sheetContext);
-              },
-            );
-          },
+    showPhoneCode: false,
+    showSearch: true,
+    countryListTheme: CountryListThemeData(
+      backgroundColor: Colors.white,
+      textStyle: AppTextStyles.cardMeta.copyWith(
+        fontSize: 15.sp,
+        color: AppColors.textPrimary,
+      ),
+      inputDecoration: InputDecoration(
+        hintText: 'Search country',
+        filled: true,
+        fillColor: const Color(0xFFF6F7FB),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16.r),
+          borderSide: BorderSide.none,
         ),
-      );
-    },
+      ),
+    ),
+    onSelect: onSelect,
   );
 }

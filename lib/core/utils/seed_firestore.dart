@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'date_utils.dart';
 
 class SeedFirestore {
@@ -7,6 +8,7 @@ class SeedFirestore {
   static const String _seedDocId = 'demo_v5_omr';
 
   static Future<void> ensureSeeded() async {
+    if (!kDebugMode) return;
     final firestore = FirebaseFirestore.instance;
     final metaRef = firestore.collection('seed_meta').doc(_seedDocId);
     final metaSnap = await metaRef.get();

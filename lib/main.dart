@@ -16,11 +16,7 @@ void main() async {
   if (!kReleaseMode) {
     await SeedFirestore.ensureSeeded();
   }
-  if (!kReleaseMode) {
-  await FirebaseAuth.instance.setSettings(
-    appVerificationDisabledForTesting: true,
-  );
-}
+  // ThawaniConfig.validate();
 
   await ScreenUtil.ensureScreenSize();
   await setupServiceLocator();

@@ -35,6 +35,41 @@ class UserRemoteDataSource {
     return UserModel.fromMap(doc.id, doc.data());
   }
 
+  Future<UserModel?> getUserByEmail(String email) async {
+    final normalized = email.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    final byLower = await firestore
+        .collection('users')
+        .where('emailLower', isEqualTo: normalized)
+        .limit(1)
+        .get();
+    if (byLower.docs.isNotEmpty) {
+      final doc = byLower.docs.first;
+      return UserModel.fromMap(doc.id, doc.data());
+    }
+    final byExact = await firestore
+        .collection('users')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+    if (byExact.docs.isNotEmpty) {
+      final doc = byExact.docs.first;
+      return UserModel.fromMap(doc.id, doc.data());
+    }
+    if (email != normalized) {
+      final byNormalizedExact = await firestore
+          .collection('users')
+          .where('email', isEqualTo: normalized)
+          .limit(1)
+          .get();
+      if (byNormalizedExact.docs.isNotEmpty) {
+        final doc = byNormalizedExact.docs.first;
+        return UserModel.fromMap(doc.id, doc.data());
+      }
+    }
+    return null;
+  }
+
   Future<void> createUser(UserModel user) {
     return firestore.collection('users').doc(user.id).set(
           user.toMap(),

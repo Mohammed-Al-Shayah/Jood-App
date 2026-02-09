@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
-import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
-import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
+import 'package:jood/features/admin/domain/usecases/delete_storage_file_usecase.dart';
+import 'package:jood/features/admin/domain/usecases/upload_restaurant_image_usecase.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_input_decoration.dart';
+import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
+import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
 import 'package:jood/features/restaurants/data/models/restaurant_model.dart';
 import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
 
@@ -46,6 +51,8 @@ class _AdminRestaurantFormScreenState extends State<AdminRestaurantFormScreen> {
   late final TextEditingController _discountValueController;
 
   bool _isActive = true;
+  bool _isUploadingImage = false;
+  String? _imageError;
 
   @override
   void initState() {
@@ -206,7 +213,69 @@ class _AdminRestaurantFormScreenState extends State<AdminRestaurantFormScreen> {
             SizedBox(height: 14.h),
             AdminSectionCard(
               title: 'Cover Image',
-              child: _textField(_coverImageUrlController, 'Cover Image URL'),
+              child: Column(
+                children: [
+                  _imagePreview(),
+                  SizedBox(height: 10.h),
+                  _textField(_coverImageUrlController, 'Cover Image URL'),
+                  SizedBox(height: 10.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed:
+                              _isUploadingImage ? null : _pickAndUploadImage,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                          ),
+                          child: _isUploadingImage
+                              ? SizedBox(
+                                  height: 16.h,
+                                  width: 16.h,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Upload Image'),
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed:
+                              _isUploadingImage ? null : _deleteImage,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.redAccent,
+                            side: const BorderSide(color: Colors.redAccent),
+                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                          ),
+                          child: const Text('Delete Image'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_imageError != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: 8.h),
+                      child: Text(
+                        _imageError!,
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
             SizedBox(height: 14.h),
             AdminSectionCard(
@@ -366,5 +435,105 @@ class _AdminRestaurantFormScreenState extends State<AdminRestaurantFormScreen> {
       discountValue: double.parse(_discountValueController.text.trim()),
     );
     Navigator.of(context).pop(restaurant);
+  }
+
+  Widget _imagePreview() {
+    final url = _coverImageUrlController.text.trim();
+    if (url.isEmpty) {
+      return Container(
+        height: 140.h,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F7FB),
+          borderRadius: BorderRadius.circular(12.r),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'No image selected',
+          style: TextStyle(fontSize: 12.sp, color: AppColors.textMuted),
+        ),
+      );
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12.r),
+      child: Image.network(
+        url,
+        height: 140.h,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          height: 140.h,
+          width: double.infinity,
+          color: const Color(0xFFF6F7FB),
+          alignment: Alignment.center,
+          child: Text(
+            'Invalid image URL',
+            style: TextStyle(fontSize: 12.sp, color: Colors.redAccent),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    setState(() => _imageError = null);
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+    setState(() => _isUploadingImage = true);
+    try {
+      final url = await getIt<UploadRestaurantImageUseCase>()(
+        restaurantId: widget.restaurant?.id ?? '',
+        file: picked,
+      );
+      _coverImageUrlController.text = url;
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        'Image uploaded successfully.',
+        type: SnackBarType.success,
+      );
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _imageError = 'Failed to upload image.');
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+      }
+    }
+  }
+
+  Future<void> _deleteImage() async {
+    final url = _coverImageUrlController.text.trim();
+    if (url.isEmpty) {
+      setState(() => _imageError = 'No image to delete.');
+      return;
+    }
+    setState(() {
+      _isUploadingImage = true;
+      _imageError = null;
+    });
+    try {
+      await getIt<DeleteStorageFileUseCase>()(url);
+      _coverImageUrlController.text = '';
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        'Image deleted successfully.',
+        type: SnackBarType.success,
+      );
+      setState(() {});
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _imageError = 'Failed to delete image.');
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+      }
+    }
   }
 }
