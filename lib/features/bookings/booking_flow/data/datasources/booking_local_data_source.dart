@@ -8,22 +8,22 @@ class BookingLocalDataSource {
     return const [
       BookingOfferModel(
         time: '07:00 AM',
-        price: r'$499',
+        price: 499.0,
         status: BookingOfferStatus.available,
       ),
       BookingOfferModel(
         time: '09:00 AM',
-        price: r'$599',
+        price: 599.0,
         status: BookingOfferStatus.low,
       ),
       BookingOfferModel(
         time: '12:00 PM',
-        price: r'$699',
+        price: 699.0,
         status: BookingOfferStatus.soldOut,
       ),
       BookingOfferModel(
         time: '02:30 PM',
-        price: r'$599',
+        price: 599.0,
         status: BookingOfferStatus.available,
       ),
     ];

@@ -1,3 +1,4 @@
+import 'package:jood/core/utils/number_utils.dart';
 import '../../domain/entities/booking_offer.dart';
 
 class BookingOfferModel extends BookingOffer {
@@ -10,7 +11,7 @@ class BookingOfferModel extends BookingOffer {
   factory BookingOfferModel.fromMap(Map<String, dynamic> data) {
     return BookingOfferModel(
       time: data['time'] as String? ?? '',
-      price: data['price'] as String? ?? '',
+      price: NumberUtils.parseNumber(data['price']),
       status: _parseStatus(data['status'] as String?),
     );
   }

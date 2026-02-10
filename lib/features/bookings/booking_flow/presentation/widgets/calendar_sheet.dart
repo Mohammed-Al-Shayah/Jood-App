@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/date_utils.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 
 class CalendarSheet extends StatefulWidget {
   const CalendarSheet({
@@ -291,7 +292,7 @@ class _DayCell extends StatelessWidget {
           : AppColors.textPrimary,
     );
     final priceStyle = AppTextStyles.cardMeta.copyWith(
-      fontSize: 10.sp,
+      fontSize: 9.sp,
       color: isDisabled ? AppColors.textMuted : const Color(0xFF17B26A),
     );
     return InkWell(
@@ -308,9 +309,14 @@ class _DayCell extends StatelessWidget {
           children: [
             Text('$day', style: dayStyle),
             if (price != null)
-              Text(
-                '${currency.isEmpty ? '' : currency} ${price!.round()}',
-                style: priceStyle,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  formatCurrency(currency, price!),
+                  style: priceStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
           ],
         ),

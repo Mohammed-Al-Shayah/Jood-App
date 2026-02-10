@@ -237,8 +237,9 @@ class SeedFirestore {
                 ),
               );
 
-          final baseAdult = 70 + (rIndex * 15) + (tIndex * 8) + (dIndex * 6);
-          final baseChild = (baseAdult * 0.5).round();
+          final baseAdult =
+              70.0 + (rIndex * 15) + (tIndex * 8) + (dIndex * 6);
+          final baseChild = baseAdult * 0.5;
           final capacityAdult = 20 + (rIndex * 5);
           final capacityChild = 10 + (tIndex * 3);
           final bookedAdult = (dIndex % 3 == 0)
@@ -272,7 +273,7 @@ class SeedFirestore {
             'priceAdultOriginal': baseAdult + 25,
             'priceChild': baseChild,
             'time': time['start'],
-            'price': 'OMR $baseAdult',
+            'price': 'OMR ${baseAdult.toStringAsFixed(2)}',
             'status': status,
             'capacityAdult': capacityAdult,
             'capacityChild': capacityChild,
@@ -424,4 +425,3 @@ class SeedFirestore {
     return 'offer_${restaurantId}_${AppDateUtils.formatDate(date)}_$safeTime';
   }
 }
-

@@ -6,7 +6,7 @@ class BookingOffer {
   });
 
   final String time;
-  final String price;
+  final double price;
   final BookingOfferStatus status;
 }
 
