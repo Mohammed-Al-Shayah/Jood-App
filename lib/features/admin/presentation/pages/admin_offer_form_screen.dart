@@ -45,6 +45,7 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
 
   final _statusOptions = const ['active', 'low', 'sold_out'];
   DateTimeRange? _selectedRange;
+  bool _syncingChildPrice = false;
 
   @override
   void initState() {
@@ -82,11 +83,13 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     _entryConditionsController = TextEditingController(
       text: _joinList(offer?.entryConditions),
     );
+    _priceAdultController.addListener(_syncChildPriceFromAdult);
     _loadRestaurants();
   }
 
   @override
   void dispose() {
+    _priceAdultController.removeListener(_syncChildPriceFromAdult);
     _dateController.dispose();
     _dateRangeController.dispose();
     _startTimeController.dispose();
@@ -398,6 +401,31 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+
+  void _syncChildPriceFromAdult() {
+    if (_syncingChildPrice) return;
+    final raw = _priceAdultController.text.trim();
+    if (raw.isEmpty) {
+      _syncingChildPrice = true;
+      _priceChildController.text = '';
+      _syncingChildPrice = false;
+      return;
+    }
+    final parsed = double.tryParse(raw);
+    if (parsed == null) return;
+    final child = parsed / 2;
+    final formatted = _formatNumber(child);
+    _syncingChildPrice = true;
+    _priceChildController.text = formatted;
+    _syncingChildPrice = false;
+  }
+
+  String _formatNumber(double value) {
+    var text = value.toStringAsFixed(3);
+    text = text.replaceAll(RegExp(r'0+$'), '');
+    text = text.replaceAll(RegExp(r'\.$'), '');
+    return text;
   }
 
   void _submit() {
