@@ -25,12 +25,30 @@ class ForgetPasswordCubit extends SafeCubit<ForgetPasswordState> {
 
   void updateIdentifier(String value) {
     final input = value.trim();
-    final isValid =
-        AuthValidators.isEmail(input) || AuthValidators.isPhone(input);
+    final isValid = state.method == ForgetPasswordMethod.email
+        ? AuthValidators.isEmail(input)
+        : AuthValidators.isPhone(input);
     emitSafe(state.copyWith(input: value, isValid: isValid));
   }
 
   void updateEmail(String value) => updateIdentifier(value);
+
+  void updatePhoneIso(String value) {
+    if (value.trim().isEmpty) return;
+    emitSafe(state.copyWith(phoneIso: value));
+  }
+
+  void setMethod(ForgetPasswordMethod method) {
+    emitSafe(
+      state.copyWith(
+        method: method,
+        input: '',
+        isValid: false,
+        status: ForgetPasswordStatus.initial,
+        errorMessage: null,
+      ),
+    );
+  }
 
   Future<void> submit() async {
     if (!state.isValid || state.status == ForgetPasswordStatus.loading) return;
@@ -44,7 +62,7 @@ class ForgetPasswordCubit extends SafeCubit<ForgetPasswordState> {
     );
     try {
       final input = state.input.trim();
-      if (AuthValidators.isPhone(input)) {
+      if (state.method == ForgetPasswordMethod.phone) {
         final normalizedPhone = AuthValidators.normalizePhone(input);
         final user = await _getUserByPhone(normalizedPhone);
         if (user == null) {
