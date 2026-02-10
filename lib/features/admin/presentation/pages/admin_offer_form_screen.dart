@@ -28,6 +28,7 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
 
   String? _restaurantId;
   late final TextEditingController _dateController;
+  late final TextEditingController _dateRangeController;
   late final TextEditingController _startTimeController;
   late final TextEditingController _endTimeController;
   late final TextEditingController _currencyController;
@@ -43,6 +44,8 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
   late final TextEditingController _entryConditionsController;
 
   final _statusOptions = const ['active', 'low', 'sold_out'];
+  DateTimeRange? _selectedRange;
+  bool _syncingChildPrice = false;
 
   @override
   void initState() {
@@ -50,6 +53,7 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     final offer = widget.offer;
     _restaurantId = offer?.restaurantId;
     _dateController = TextEditingController(text: offer?.date ?? '');
+    _dateRangeController = TextEditingController();
     _startTimeController = TextEditingController(text: offer?.startTime ?? '');
     _endTimeController = TextEditingController(text: offer?.endTime ?? '');
     _currencyController = TextEditingController(text: offer?.currency ?? 'OMR');
@@ -79,12 +83,15 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     _entryConditionsController = TextEditingController(
       text: _joinList(offer?.entryConditions),
     );
+    _priceAdultController.addListener(_syncChildPriceFromAdult);
     _loadRestaurants();
   }
 
   @override
   void dispose() {
+    _priceAdultController.removeListener(_syncChildPriceFromAdult);
     _dateController.dispose();
+    _dateRangeController.dispose();
     _startTimeController.dispose();
     _endTimeController.dispose();
     _currencyController.dispose();
@@ -119,7 +126,7 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
                       children: [
                         _restaurantDropdown(),
                         _textField(_titleController, 'Title'),
-                        _dateField(),
+                        if (isEdit) _dateField() else _dateRangeField(),
                         _timeField(_startTimeController, 'Start Time'),
                         _timeField(_endTimeController, 'End Time'),
                         _textField(_currencyController, 'Currency'),
@@ -258,6 +265,25 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     );
   }
 
+  Widget _dateRangeField() {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 18.h),
+      child: TextFormField(
+        controller: _dateRangeController,
+        decoration: adminInputDecoration(
+          'Date Range (YYYY-MM-DD to YYYY-MM-DD)',
+        ),
+        readOnly: true,
+        onTap: _pickDateRange,
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) return 'Required';
+          if (_selectedRange == null) return 'Invalid date range';
+          return null;
+        },
+      ),
+    );
+  }
+
   Widget _timeField(TextEditingController controller, String label) {
     return _textField(
       controller,
@@ -346,6 +372,22 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     _dateController.text = AppDateUtils.formatDate(picked);
   }
 
+  Future<void> _pickDateRange() async {
+    final now = DateTime.now();
+    final initialRange = _selectedRange ?? DateTimeRange(start: now, end: now);
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: initialRange,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+    );
+    if (picked == null) return;
+    _selectedRange = picked;
+    final start = AppDateUtils.formatDate(picked.start);
+    final end = AppDateUtils.formatDate(picked.end);
+    _dateRangeController.text = '$start to $end';
+  }
+
   Future<void> _pickTime(TextEditingController controller) async {
     final picked = await showTimePicker(
       context: context,
@@ -361,38 +403,168 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     return '$hour:$minute';
   }
 
+  void _syncChildPriceFromAdult() {
+    if (_syncingChildPrice) return;
+    final raw = _priceAdultController.text.trim();
+    if (raw.isEmpty) {
+      _syncingChildPrice = true;
+      _priceChildController.text = '';
+      _syncingChildPrice = false;
+      return;
+    }
+    final parsed = double.tryParse(raw);
+    if (parsed == null) return;
+    final child = parsed / 2;
+    final formatted = _formatNumber(child);
+    _syncingChildPrice = true;
+    _priceChildController.text = formatted;
+    _syncingChildPrice = false;
+  }
+
+  String _formatNumber(double value) {
+    var text = value.toStringAsFixed(3);
+    text = text.replaceAll(RegExp(r'0+$'), '');
+    text = text.replaceAll(RegExp(r'\.$'), '');
+    return text;
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     final now = DateTime.now();
-    final parsedDate = DateTime.tryParse(_dateController.text.trim());
-    if (parsedDate == null) {
+    final isEdit = widget.offer != null;
+    final offerId = widget.offer?.id ?? '';
+    final createdAt = widget.offer?.createdAt ?? now;
+    final restaurantId = _restaurantId ?? '';
+    final startTime = _startTimeController.text.trim();
+    final endTime = _endTimeController.text.trim();
+    final currency = _currencyController.text.trim();
+    final priceAdult = double.parse(_priceAdultController.text.trim());
+    final priceAdultOriginal = double.parse(
+      _priceAdultOriginalController.text.trim(),
+    );
+    final priceChild = double.parse(_priceChildController.text.trim());
+    final capacityAdult = int.parse(_capacityAdultController.text.trim());
+    final capacityChild = int.parse(_capacityChildController.text.trim());
+    final bookedAdult = int.parse(_bookedAdultController.text.trim());
+    final bookedChild = int.parse(_bookedChildController.text.trim());
+    final status = _statusController.text.trim();
+    final title = _titleController.text.trim();
+    final entryConditions = _splitList(_entryConditionsController.text);
+
+    if (isEdit) {
+      final parsedDate = DateTime.tryParse(_dateController.text.trim());
+      if (parsedDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid date format. Use YYYY-MM-DD.')),
+        );
+        return;
+      }
+      final offer = OfferModel(
+        id: offerId,
+        restaurantId: restaurantId,
+        date: AppDateUtils.formatDate(parsedDate),
+        startTime: startTime,
+        endTime: endTime,
+        currency: currency,
+        priceAdult: priceAdult,
+        priceAdultOriginal: priceAdultOriginal,
+        priceChild: priceChild,
+        capacityAdult: capacityAdult,
+        capacityChild: capacityChild,
+        bookedAdult: bookedAdult,
+        bookedChild: bookedChild,
+        status: status,
+        title: title,
+        entryConditions: entryConditions,
+        createdAt: createdAt,
+        updatedAt: now,
+      );
+      Navigator.of(context).pop(offer);
+      return;
+    }
+
+    final range = _selectedRange;
+    if (range == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid date format. Use YYYY-MM-DD.')),
+        const SnackBar(content: Text('Please select a date range.')),
       );
       return;
     }
-    final offer = OfferModel(
-      id: widget.offer?.id ?? '',
-      restaurantId: _restaurantId ?? '',
-      date: AppDateUtils.formatDate(parsedDate),
-      startTime: _startTimeController.text.trim(),
-      endTime: _endTimeController.text.trim(),
-      currency: _currencyController.text.trim(),
-      priceAdult: double.parse(_priceAdultController.text.trim()),
-      priceAdultOriginal: double.parse(
-        _priceAdultOriginalController.text.trim(),
-      ),
-      priceChild: double.parse(_priceChildController.text.trim()),
-      capacityAdult: int.parse(_capacityAdultController.text.trim()),
-      capacityChild: int.parse(_capacityChildController.text.trim()),
-      bookedAdult: int.parse(_bookedAdultController.text.trim()),
-      bookedChild: int.parse(_bookedChildController.text.trim()),
-      status: _statusController.text.trim(),
-      title: _titleController.text.trim(),
-      entryConditions: _splitList(_entryConditionsController.text),
-      createdAt: widget.offer?.createdAt ?? now,
+    final offers = _offersForRange(
+      restaurantId: restaurantId,
+      range: range,
+      startTime: startTime,
+      endTime: endTime,
+      currency: currency,
+      priceAdult: priceAdult,
+      priceAdultOriginal: priceAdultOriginal,
+      priceChild: priceChild,
+      capacityAdult: capacityAdult,
+      capacityChild: capacityChild,
+      bookedAdult: bookedAdult,
+      bookedChild: bookedChild,
+      status: status,
+      title: title,
+      entryConditions: entryConditions,
+      createdAt: now,
       updatedAt: now,
     );
-    Navigator.of(context).pop(offer);
+    Navigator.of(context).pop(offers);
+  }
+
+  List<OfferEntity> _offersForRange({
+    required String restaurantId,
+    required DateTimeRange range,
+    required String startTime,
+    required String endTime,
+    required String currency,
+    required double priceAdult,
+    required double priceAdultOriginal,
+    required double priceChild,
+    required int capacityAdult,
+    required int capacityChild,
+    required int bookedAdult,
+    required int bookedChild,
+    required String status,
+    required String title,
+    required List<String> entryConditions,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+  }) {
+    final start = DateTime(
+      range.start.year,
+      range.start.month,
+      range.start.day,
+    );
+    final end = DateTime(range.end.year, range.end.month, range.end.day);
+    final days = end.difference(start).inDays;
+    if (days < 0) return [];
+    final offers = <OfferEntity>[];
+    for (var index = 0; index <= days; index++) {
+      final date = start.add(Duration(days: index));
+      offers.add(
+        OfferModel(
+          id: '',
+          restaurantId: restaurantId,
+          date: AppDateUtils.formatDate(date),
+          startTime: startTime,
+          endTime: endTime,
+          currency: currency,
+          priceAdult: priceAdult,
+          priceAdultOriginal: priceAdultOriginal,
+          priceChild: priceChild,
+          capacityAdult: capacityAdult,
+          capacityChild: capacityChild,
+          bookedAdult: bookedAdult,
+          bookedChild: bookedChild,
+          status: status,
+          title: title,
+          entryConditions: entryConditions,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+        ),
+      );
+    }
+    return offers;
   }
 }

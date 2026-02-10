@@ -58,8 +58,11 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
                   Routes.adminOfferFormScreen,
                   arguments: const AdminOfferFormArgs(),
                 );
-                if (result is OfferEntity && context.mounted) {
+                if (!context.mounted) return;
+                if (result is OfferEntity) {
                   context.read<AdminOffersCubit>().create(result);
+                } else if (result is List<OfferEntity>) {
+                  context.read<AdminOffersCubit>().createMany(result);
                 }
               },
               backgroundColor: AppColors.primary,
