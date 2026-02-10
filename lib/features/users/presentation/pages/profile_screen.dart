@@ -41,11 +41,49 @@ class ProfileTab extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
             if (state.status == ProfileStatus.failure) {
+              final message = state.errorMessage ?? 'Failed to load profile.';
+              if (message.toLowerCase().contains('no signed-in user')) {
+                return Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Please log in to view your profile.',
+                          style: AppTextStyles.cardMeta,
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              context.pushNamedAndRemoveAll(
+                                Routes.loginScreen,
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: 14.h),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14.r),
+                              ),
+                            ),
+                            child: const Text('Log in'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
               return Center(
                 child: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24.w),
                   child: Text(
-                    state.errorMessage ?? 'Failed to load profile.',
+                    message,
                     style: AppTextStyles.cardMeta,
                     textAlign: TextAlign.center,
                   ),

@@ -87,13 +87,13 @@ class ForgetPasswordPage extends StatelessWidget {
                         initialValue: PhoneNumber(isoCode: state.phoneIso),
                         onInputChanged: (number) {
                           context.read<ForgetPasswordCubit>().updateIdentifier(
-                                number.phoneNumber ?? '',
-                              );
+                            number.phoneNumber ?? '',
+                          );
                           final iso = number.isoCode;
                           if (iso != null && iso.isNotEmpty) {
                             context.read<ForgetPasswordCubit>().updatePhoneIso(
-                                  iso,
-                                );
+                              iso,
+                            );
                           }
                         },
                         selectorConfig: const SelectorConfig(
@@ -180,31 +180,38 @@ class ForgetPasswordPage extends StatelessWidget {
                       ],
                     ),
                     SizedBox(height: 14.h),
-                    OutlinedButton.icon(
-                      onPressed: isLoading
-                          ? null
-                          : () {
-                              context.read<ForgetPasswordCubit>().setMethod(
-                                    state.method == ForgetPasswordMethod.phone
-                                        ? ForgetPasswordMethod.email
-                                        : ForgetPasswordMethod.phone,
-                                  );
-                            },
-                      label: Text(
-                        state.method == ForgetPasswordMethod.phone
-                            ? 'Use email instead'
-                            : 'Use phone instead',
-                        style: AppTextStyles.cardPrice.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: isLoading
+                            ? null
+                            : () {
+                                context.read<ForgetPasswordCubit>().setMethod(
+                                  state.method == ForgetPasswordMethod.phone
+                                      ? ForgetPasswordMethod.email
+                                      : ForgetPasswordMethod.phone,
+                                );
+                              },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: AppColors.primary,
+                            width: 1.6,
+                          ),
+                          backgroundColor: const Color(0xFFF7FFFD),
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30.r),
+                          ),
                         ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.primary, width: 1.4),
-                        backgroundColor: const Color(0xFFF7FFFD),
-                        padding: EdgeInsets.symmetric(vertical: 12.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30.r),
+                        child: Text(
+                          state.method == ForgetPasswordMethod.phone
+                              ? 'Use email instead'
+                              : 'Use phone instead',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.cardTitle.copyWith(
+                            color: AppColors.primary,
+                            // fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),

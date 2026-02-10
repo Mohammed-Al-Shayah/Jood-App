@@ -148,7 +148,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
         ],
         clintID: user.uid,
-        testMode: ThawaniConfig.isTestMode,
+        // testMode: ThawaniConfig.isTestMode,
         onCreate: (_) {},
         onCancelled: (_) {
           if (!mounted) return;
