@@ -40,6 +40,7 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   bool _isSubmitting = false;
   bool _guestRedirectHandled = false;
+  bool _paymentSuccessHandled = false;
   final _formKey = GlobalKey<FormState>();
   final _cardholderController = TextEditingController();
   final _cardNumberController = TextEditingController();
@@ -147,7 +148,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
         ],
         clintID: user.uid,
-        // testMode: ThawaniConfig.isTestMode,
+        testMode: ThawaniConfig.isTestMode,
         onCreate: (_) {},
         onCancelled: (_) {
           if (!mounted) return;
@@ -163,6 +164,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           showAppSnackBar(context, message, type: SnackBarType.error);
         },
         onPaid: (_) {
+          if (_paymentSuccessHandled) return;
+          _paymentSuccessHandled = true;
           unawaited(
             _handlePaymentSuccess(
               state: state,
@@ -216,7 +219,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         'Payment completed successfully.',
         type: SnackBarType.success,
       );
-      context.pushNamed(
+      context.pushReplacementNamed(
         Routes.bookingConfirmedScreen,
         arguments: BookingConfirmedArgs(
           restaurantName: widget.restaurantName,

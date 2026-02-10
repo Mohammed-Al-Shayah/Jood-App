@@ -196,8 +196,25 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
       child: DropdownButtonFormField<String>(
         initialValue: _restaurantId,
         decoration: adminInputDecoration('Restaurant'),
+        isExpanded: true,
         items: _restaurants
-            .map((r) => DropdownMenuItem(value: r.id, child: Text(r.name)))
+            .map(
+              (r) => DropdownMenuItem(
+                value: r.id,
+                child: Text(
+                  r.name,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+            .toList(),
+        selectedItemBuilder: (context) => _restaurants
+            .map(
+              (r) => Text(
+                r.name,
+                overflow: TextOverflow.ellipsis,
+              ),
+            )
             .toList(),
         onChanged: (value) => setState(() => _restaurantId = value),
         validator: (value) =>

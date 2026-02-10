@@ -21,7 +21,7 @@ String formatCurrency(String currency, num value) {
   final amount = value.toDouble().toStringAsFixed(2);
   final trimmed = currency.trim();
   if (trimmed.isEmpty) {
-    return '\$${amount}';
+    return '\$$amount';
   }
   final isSymbol = trimmed.length == 1 || RegExp(r'[$â‚¬Â£Â¥]').hasMatch(trimmed);
   return isSymbol ? '$trimmed$amount' : '$trimmed $amount';

@@ -80,7 +80,7 @@ class AdminUsersScreen extends StatelessWidget {
                             : () => _confirmDelete(context, user),
                       );
                     },
-                    separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                    separatorBuilder: (_, _) => SizedBox(height: 12.h),
                     itemCount: items.length,
                   ),
                 );

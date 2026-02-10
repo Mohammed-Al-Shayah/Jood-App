@@ -461,7 +461,7 @@ class _AdminRestaurantFormScreenState extends State<AdminRestaurantFormScreen> {
         height: 140.h,
         width: double.infinity,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
+        errorBuilder: (_, _, _) => Container(
           height: 140.h,
           width: double.infinity,
           color: const Color(0xFFF6F7FB),

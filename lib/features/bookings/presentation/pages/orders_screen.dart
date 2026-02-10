@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 import '../models/order_item_view_model.dart';
 
 class OrdersScreen extends StatelessWidget {
@@ -164,86 +165,246 @@ class _OrderCard extends StatelessWidget {
     required String restaurantImageUrl,
   }) {
     final badgeColor = _statusColor(order.status);
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18.r),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowColor,
-            blurRadius: 16.r,
-            offset: const Offset(0, 6),
-          ),
-        ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(18.r),
+      onTap: () => _showDetailsSheet(
+        context,
+        restaurantName: restaurantName,
+        restaurantImageUrl: restaurantImageUrl,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: Container(
+        padding: EdgeInsets.all(12.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18.r),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowColor,
+              blurRadius: 16.r,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _RestaurantImage(url: restaurantImageUrl),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        restaurantName,
+                        style: AppTextStyles.sectionTitle,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        'Code: ${order.bookingCode}',
+                        style: AppTextStyles.cardMeta,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Text(
+                    _statusLabel(order.status),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: badgeColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              '${_formattedDate()}  ${order.startTime}',
+              style: AppTextStyles.cardMeta,
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              'Total: ${formatCurrency(order.currency, order.total)}',
+              style: AppTextStyles.cardPrice,
+            ),
+            SizedBox(height: 10.h),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: order.qrPayload.isEmpty
+                    ? null
+                    : () => _showQrSheet(
+                        context,
+                        order.qrPayload,
+                        order.bookingCode,
+                      ),
+                icon: const Icon(Icons.qr_code),
+                label: const Text('View QR'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDetailsSheet(
+    BuildContext context, {
+    required String restaurantName,
+    required String restaurantImageUrl,
+  }) {
+    final badgeColor = _statusColor(order.status);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _RestaurantImage(url: restaurantImageUrl),
-              SizedBox(width: 10.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Center(
+                child: Container(
+                  width: 40.w,
+                  height: 4.h,
+                  margin: EdgeInsets.only(bottom: 12.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.grey,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  _RestaurantImage(url: restaurantImageUrl),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: Text(
                       restaurantName,
                       style: AppTextStyles.sectionTitle,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      'Code: ${order.bookingCode}',
-                      style: AppTextStyles.cardMeta,
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 4.h,
                     ),
-                  ],
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                    child: Text(
+                      _statusLabel(order.status),
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: badgeColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              if (order.offerTitleSnapshot.isNotEmpty)
+                Text(
+                  order.offerTitleSnapshot,
+                  style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
+                ),
+              if (order.offerTitleSnapshot.isNotEmpty) SizedBox(height: 6.h),
+              Text(
+                'Code: ${order.bookingCode}',
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: badgeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20.r),
+              SizedBox(height: 6.h),
+              Text(
+                '${_formattedDate()}  ${order.startTime}',
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: AppColors.textMuted,
                 ),
-                child: Text(
-                  _statusLabel(order.status),
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: badgeColor,
-                    fontWeight: FontWeight.w700,
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                'Total: ${formatCurrency(order.currency, order.total)}',
+                style: AppTextStyles.cardPrice.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                'Status: ${_statusLabel(order.status)}',
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: badgeColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 10.h),
+              _DetailRow(
+                label: 'Adults',
+                value:
+                    '${order.adults} × ${formatCurrency(order.currency, order.unitPriceAdult)}',
+              ),
+              _DetailRow(
+                label: 'Children',
+                value:
+                    '${order.children} × ${formatCurrency(order.currency, order.unitPriceChild)}',
+              ),
+              _DetailRow(
+                label: 'Subtotal',
+                value: formatCurrency(order.currency, order.subtotal),
+              ),
+              _DetailRow(
+                label: 'Discount',
+                value: formatCurrency(order.currency, order.discount),
+              ),
+              _DetailRow(
+                label: 'VAT',
+                value: formatCurrency(order.currency, order.tax),
+              ),
+              SizedBox(height: 14.h),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: order.qrPayload.isEmpty
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                          _showQrSheet(
+                            context,
+                            order.qrPayload,
+                            order.bookingCode,
+                          );
+                        },
+                  icon: const Icon(Icons.qr_code),
+                  label: const Text('View QR'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14.r),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-          SizedBox(height: 8.h),
-          Text(
-            '${_formattedDate()}  ${order.startTime}',
-            style: AppTextStyles.cardMeta,
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            'Total: ${order.total.toStringAsFixed(2)}',
-            style: AppTextStyles.cardPrice,
-          ),
-          SizedBox(height: 10.h),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: order.qrPayload.isEmpty
-                  ? null
-                  : () => _showQrSheet(
-                      context,
-                      order.qrPayload,
-                      order.bookingCode,
-                    ),
-              icon: const Icon(Icons.qr_code),
-              label: const Text('View QR'),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -311,6 +472,39 @@ class _RestaurantImage extends StatelessWidget {
             child: const Icon(Icons.broken_image, color: AppColors.textMuted),
           );
         },
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 2.h),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.cardMeta.copyWith(
+                color: AppColors.textMuted,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
