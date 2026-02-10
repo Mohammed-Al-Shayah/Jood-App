@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 
 class OfferCard extends StatelessWidget {
@@ -170,24 +171,13 @@ class OfferCard extends StatelessWidget {
 }
 
 String _formatPrice(OfferEntity offer) {
-  final value = offer.priceAdult.round();
-  final currency = offer.currency.trim();
-  if (currency.isEmpty) {
-    return '\$$value';
-  }
-  final isSymbol = currency.length == 1;
-  return isSymbol ? '$currency$value' : '$currency $value';
+  return formatCurrency(offer.currency, offer.priceAdult);
 }
 
 String _formatOriginalPrice(OfferEntity offer) {
-  final original = offer.priceAdultOriginal.round();
+  final original = offer.priceAdultOriginal;
   if (original <= 0 || original <= offer.priceAdult) return '';
-  final currency = offer.currency.trim();
-  if (currency.isEmpty) {
-    return '\$$original';
-  }
-  final isSymbol = currency.length == 1;
-  return isSymbol ? '$currency$original' : '$currency $original';
+  return formatCurrency(offer.currency, original);
 }
 
 String _formatDiscountPercent(OfferEntity offer) {

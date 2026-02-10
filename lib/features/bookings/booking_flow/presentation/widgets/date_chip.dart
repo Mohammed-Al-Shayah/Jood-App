@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'date_utils.dart';
 
 class DateChip extends StatelessWidget {
@@ -90,10 +91,7 @@ class DateChip extends StatelessWidget {
 }
 
 String _formatPrice(double value, String currency) {
-  final rounded = value.round();
-  if (currency.trim().isEmpty) return '$rounded';
-  final isSymbol = currency.trim().length == 1;
-  return isSymbol ? '$currency$rounded' : '$currency $rounded';
+  return formatCurrency(currency, value);
 }
 
 

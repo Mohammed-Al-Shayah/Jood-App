@@ -12,9 +12,37 @@ import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.da
 import 'package:jood/features/admin/presentation/widgets/admin_list_tile.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
+import 'package:jood/features/restaurants/domain/usecases/get_all_restaurants_usecase.dart';
 
-class AdminOffersScreen extends StatelessWidget {
+class AdminOffersScreen extends StatefulWidget {
   const AdminOffersScreen({super.key});
+
+  @override
+  State<AdminOffersScreen> createState() => _AdminOffersScreenState();
+}
+
+class _AdminOffersScreenState extends State<AdminOffersScreen> {
+  Map<String, String> _restaurantNames = const {};
+  final Set<String> _expandedRestaurants = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRestaurants();
+  }
+
+  Future<void> _loadRestaurants() async {
+    try {
+      final usecase = getIt<GetAllRestaurantsUseCase>();
+      final restaurants = await usecase();
+      if (!mounted) return;
+      setState(() {
+        _restaurantNames = {for (final r in restaurants) r.id: r.name};
+      });
+    } catch (_) {
+      // Ignore; we'll fallback to restaurantId in the UI.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,49 +83,99 @@ class AdminOffersScreen extends StatelessWidget {
                 final items = isLoading ? _skeletonOffers() : state.offers;
                 if (!isLoading && items.isEmpty) {
                   return Center(
-                    child: Text('No offers yet.', style: AppTextStyles.cardMeta),
+                    child: Text(
+                      'No offers yet.',
+                      style: AppTextStyles.cardMeta,
+                    ),
                   );
                 }
+                final groupedItems = _groupByRestaurant(
+                  items,
+                  _restaurantNames,
+                );
                 return Skeletonizer(
                   enabled: isLoading,
-                  child: ListView.separated(
+                  child: ListView.builder(
                     padding: EdgeInsets.fromLTRB(0, 12.h, 0, 80.h),
+                    itemCount: groupedItems.length,
                     itemBuilder: (context, index) {
-                      final offer = items[index];
-                      return AdminListTile(
-                        leading: _OfferIcon(),
-                        title: offer.title,
-                        subtitles: [
-                          SizedBox(height: 4.h),
-                          Text(
-                            '${offer.restaurantId} - ${offer.date}',
-                            style: AppTextStyles.cardMeta,
+                      final group = groupedItems[index];
+                      final isExpanded = _expandedRestaurants.contains(
+                        group.restaurantId,
+                      );
+                      return ExpansionTile(
+                        key: PageStorageKey(group.restaurantId),
+                        initiallyExpanded: isExpanded,
+                        tilePadding: EdgeInsets.symmetric(
+                          horizontal: 16.w,
+                          vertical: 4.h,
+                        ),
+                        title: Text(
+                          group.restaurantName,
+                          style: AppTextStyles.cardTitle.copyWith(
+                            fontSize: 14.sp,
                           ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            '${offer.startTime} - ${offer.endTime}',
-                            style: AppTextStyles.cardMeta,
-                          ),
-                        ],
-                        onTap: isLoading
-                            ? null
-                            : () async {
-                                final result =
-                                    await Navigator.of(context).pushNamed(
-                                  Routes.adminOfferFormScreen,
-                                  arguments: AdminOfferFormArgs(offer: offer),
-                                );
-                                if (result is OfferEntity && context.mounted) {
-                                  context.read<AdminOffersCubit>().update(result);
-                                }
-                              },
-                        onDelete: isLoading
-                            ? null
-                            : () => _confirmDelete(context, offer),
+                        ),
+                        onExpansionChanged: (expanded) {
+                          setState(() {
+                            if (expanded) {
+                              _expandedRestaurants.add(group.restaurantId);
+                            } else {
+                              _expandedRestaurants.remove(group.restaurantId);
+                            }
+                          });
+                        },
+                        children: group.offers
+                            .map(
+                              (offer) => Padding(
+                                padding: EdgeInsets.only(
+                                  left: 6.w,
+                                  right: 6.w,
+                                  bottom: 12.h,
+                                ),
+                                child: AdminListTile(
+                                  leading: _OfferIcon(),
+                                  title: offer.title,
+                                  subtitles: [
+                                    SizedBox(height: 4.h),
+                                    Text(
+                                      offer.date,
+                                      style: AppTextStyles.cardMeta,
+                                    ),
+                                    SizedBox(height: 4.h),
+                                    Text(
+                                      '${offer.startTime} - ${offer.endTime}',
+                                      style: AppTextStyles.cardMeta,
+                                    ),
+                                  ],
+                                  onTap: isLoading
+                                      ? null
+                                      : () async {
+                                          final result =
+                                              await Navigator.of(
+                                                context,
+                                              ).pushNamed(
+                                                Routes.adminOfferFormScreen,
+                                                arguments: AdminOfferFormArgs(
+                                                  offer: offer,
+                                                ),
+                                              );
+                                          if (result is OfferEntity &&
+                                              context.mounted) {
+                                            context
+                                                .read<AdminOffersCubit>()
+                                                .update(result);
+                                          }
+                                        },
+                                  onDelete: isLoading
+                                      ? null
+                                      : () => _confirmDelete(context, offer),
+                                ),
+                              ),
+                            )
+                            .toList(),
                       );
                     },
-                    separatorBuilder: (_, __) => SizedBox(height: 12.h),
-                    itemCount: items.length,
                   ),
                 );
               },
@@ -133,6 +211,50 @@ class _OfferIcon extends StatelessWidget {
       child: Icon(Icons.local_offer_outlined, color: AppColors.primary),
     );
   }
+}
+
+class _OfferGroup {
+  const _OfferGroup({
+    required this.restaurantId,
+    required this.restaurantName,
+    required this.offers,
+  });
+
+  final String restaurantId;
+  final String restaurantName;
+  final List<OfferEntity> offers;
+}
+
+List<_OfferGroup> _groupByRestaurant(
+  List<OfferEntity> items,
+  Map<String, String> restaurantNames,
+) {
+  final groups = <String, List<OfferEntity>>{};
+  for (final offer in items) {
+    groups.putIfAbsent(offer.restaurantId, () => []).add(offer);
+  }
+
+  final result = <_OfferGroup>[];
+  for (final entry in groups.entries) {
+    final offers = entry.value
+      ..sort((a, b) {
+        final byDate = a.date.compareTo(b.date);
+        if (byDate != 0) return byDate;
+        return a.startTime.compareTo(b.startTime);
+      });
+
+    final name = restaurantNames[entry.key] ?? entry.key;
+    result.add(
+      _OfferGroup(
+        restaurantId: entry.key,
+        restaurantName: name,
+        offers: offers,
+      ),
+    );
+  }
+
+  result.sort((a, b) => a.restaurantName.compareTo(b.restaurantName));
+  return result;
 }
 
 List<OfferEntity> _skeletonOffers() {
