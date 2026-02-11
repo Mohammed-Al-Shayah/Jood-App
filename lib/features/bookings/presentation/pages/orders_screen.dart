@@ -368,10 +368,6 @@ class _OrderCard extends StatelessWidget {
                 value: formatCurrency(order.currency, order.subtotal),
               ),
               _DetailRow(
-                label: 'Discount',
-                value: formatCurrency(order.currency, order.discount),
-              ),
-              _DetailRow(
                 label: 'VAT',
                 value: formatCurrency(order.currency, order.tax),
               ),
