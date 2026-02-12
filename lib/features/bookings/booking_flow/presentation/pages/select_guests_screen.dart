@@ -19,11 +19,46 @@ import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 import '../models/booking_amounts_view_model.dart';
+import 'package:jood/core/payments/payment_verification_service.dart';
 
-class SelectGuestsScreen extends StatelessWidget {
+class SelectGuestsScreen extends StatefulWidget {
   const SelectGuestsScreen({super.key, required this.restaurantName});
 
   final String restaurantName;
+
+  @override
+  State<SelectGuestsScreen> createState() => _SelectGuestsScreenState();
+}
+
+class _SelectGuestsScreenState extends State<SelectGuestsScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PaymentVerificationService.checkAndHandlePendingPayment(
+        context,
+        cubit: context.read<BookingFlowCubit>(),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      PaymentVerificationService.checkAndHandlePendingPayment(
+        context,
+        cubit: context.read<BookingFlowCubit>(),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +138,7 @@ class SelectGuestsScreen extends StatelessWidget {
                     context.pushNamed(
                       Routes.paymentScreen,
                       arguments: PaymentArgs(
-                        restaurantName: restaurantName,
+                        restaurantName: widget.restaurantName,
                         cubit: context.read<BookingFlowCubit>(),
                       ),
                     );
@@ -129,7 +164,7 @@ class SelectGuestsScreen extends StatelessWidget {
               children: [
                 SelectDateHeader(
                   title: AppStrings.selectGuestsTitle,
-                  subtitle: restaurantName,
+                  subtitle: widget.restaurantName,
                   onBack: () => Navigator.of(context).pop(),
                 ),
                 SizedBox(height: 12.h),
@@ -217,7 +252,7 @@ class SelectGuestsScreen extends StatelessWidget {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          restaurantName,
+                                          widget.restaurantName,
                                           style: AppTextStyles.sectionTitle
                                               .copyWith(fontSize: 15.sp),
                                         ),

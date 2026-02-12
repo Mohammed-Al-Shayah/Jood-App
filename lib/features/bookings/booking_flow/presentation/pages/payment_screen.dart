@@ -13,6 +13,7 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/config/thawani_config.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
+import 'package:jood/core/payments/payment_verification_service.dart';
 import 'package:jood/core/widgets/bottom_cta_bar.dart';
 import 'package:jood/features/bookings/domain/usecases/create_booking_usecase.dart';
 import 'package:jood/features/payments/domain/entities/payment_entity.dart';
@@ -37,7 +38,8 @@ class PaymentScreen extends StatefulWidget {
   State<PaymentScreen> createState() => _PaymentScreenState();
 }
 
-class _PaymentScreenState extends State<PaymentScreen> {
+class _PaymentScreenState extends State<PaymentScreen>
+    with WidgetsBindingObserver {
   bool _isSubmitting = false;
   bool _guestRedirectHandled = false;
   bool _paymentSuccessHandled = false;
@@ -50,18 +52,34 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _redirectGuestToLoginIfNeeded();
+      PaymentVerificationService.checkAndHandlePendingPayment(
+        context,
+        cubit: context.read<BookingFlowCubit>(),
+      );
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _cardholderController.dispose();
     _cardNumberController.dispose();
     _expiryController.dispose();
     _cvvController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      PaymentVerificationService.checkAndHandlePendingPayment(
+        context,
+        cubit: context.read<BookingFlowCubit>(),
+      );
+    }
   }
 
   void _redirectGuestToLoginIfNeeded() {
@@ -142,18 +160,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
           Product(
             name: offer.title.trim().isEmpty
                 ? 'Restaurant booking'
-                : offer.title,
+                 : offer.title,
             quantity: 1,
             unitAmount: totalAmountInBaisa,
           ),
         ],
         clintID: user.uid,
         // testMode: ThawaniConfig.isTestMode,
-        onCreate: (_) {},
+        onCreate: (session) async {
+          final sessionId = _extractSessionId(session);
+          if (sessionId == null || sessionId.isEmpty) return;
+          await PaymentVerificationService.savePending(
+            PendingPayment(
+              sessionId: sessionId,
+              offerId: offer.id,
+              userId: user.uid,
+              adults: state.adultCount,
+              children: state.childCount,
+              totalAmount: totalPayable,
+              restaurantName: widget.restaurantName,
+            ),
+          );
+        },
         onCancelled: (_) {
           if (!mounted) return;
           setState(() => _isSubmitting = false);
           showAppSnackBar(context, 'Payment cancelled.');
+          PaymentVerificationService.clearPending();
         },
         onError: (status) {
           if (!mounted) return;
@@ -162,10 +195,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
             status,
           ).toDisplayMessage();
           showAppSnackBar(context, message, type: SnackBarType.error);
+          PaymentVerificationService.clearPending();
         },
         onPaid: (_) {
           if (_paymentSuccessHandled) return;
           _paymentSuccessHandled = true;
+          PaymentVerificationService.clearPending();
           unawaited(
             _handlePaymentSuccess(
               state: state,
@@ -240,6 +275,28 @@ class _PaymentScreenState extends State<PaymentScreen> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  String? _extractSessionId(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    if (value is Map) {
+      final map = Map<String, dynamic>.from(value);
+      return (map['session_id'] ??
+              map['sessionId'] ??
+              map['id'] ??
+              map['data']?['session_id'] ??
+              map['data']?['id'])
+          ?.toString();
+    }
+    try {
+      final json = value.toJson();
+      if (json is Map) {
+        final map = Map<String, dynamic>.from(json);
+        return (map['session_id'] ?? map['sessionId'] ?? map['id'])?.toString();
+      }
+    } catch (_) {}
+    return null;
   }
 
   int _toBaisa(double amount) {

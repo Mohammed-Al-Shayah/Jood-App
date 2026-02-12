@@ -60,11 +60,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAtInlt77LsWRi1cIE-_1AGSXOVLIeXM5A',
-    appId: '1:1062420615326:ios:ff299e7341cd965cc02b8f',
+    appId: '1:1062420615326:ios:f70d527ac8281c8bc02b8f',
     messagingSenderId: '1062420615326',
     projectId: 'joodapp-3051e',
     storageBucket: 'joodapp-3051e.firebasestorage.app',
-    iosBundleId: 'com.example.jood',
+    iosBundleId: 'com.jood.offers',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
