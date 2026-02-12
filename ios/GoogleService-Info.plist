@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>1062420615326-5ug5n36r3fv1tcvocjbpkgj6mk4fdfh0.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.1062420615326-5ug5n36r3fv1tcvocjbpkgj6mk4fdfh0</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>1062420615326-3u7rmivmvl44cldr62q7qetq3sh1ehgn.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyAtInlt77LsWRi1cIE-_1AGSXOVLIeXM5A</string>
 	<key>GCM_SENDER_ID</key>
@@ -9,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.jood</string>
+	<string>com.joodOffers</string>
 	<key>PROJECT_ID</key>
 	<string>joodapp-3051e</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1062420615326:ios:ff299e7341cd965cc02b8f</string>
+	<string>1:1062420615326:ios:30aab72e70cf042ac02b8f</string>
 </dict>
 </plist>

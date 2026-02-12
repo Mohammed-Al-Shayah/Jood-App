@@ -1,4 +1,4 @@
-package com.example.jood
+package com.jood.offers
 
 import io.flutter.embedding.android.FlutterActivity
 
