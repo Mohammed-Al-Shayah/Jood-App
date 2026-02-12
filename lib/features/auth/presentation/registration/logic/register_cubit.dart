@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/rendering.dart';
 import 'package:jood/features/auth/domain/usecases/check_email_in_use_usecase.dart';
 
 import '../../../../../core/bloc/safe_cubit.dart';
@@ -113,32 +114,22 @@ class RegisterCubit extends SafeCubit<RegisterState> {
 
     try {
       final providedEmail = state.email.trim();
-      final existingEmailUser = await _getUserByEmail(providedEmail);
-      if (existingEmailUser != null) {
+      final emailExistsInAuth = await _checkEmailInUse(providedEmail);
+      final emailExistsInDb = (await _getUserByEmail(providedEmail)) != null;
+
+      if (emailExistsInAuth || emailExistsInDb) {
+        const errorMessage =
+            'This email address is already registered and a new account cannot be created with it.';
         emitSafe(
           state.copyWith(
             status: RegisterStatus.failure,
-            errorMessage:
-                'This email address is already registered and a new account cannot be created with it.',
-            emailError:
-                'This email address is already registered and a new account cannot be created with it.',
+            errorMessage: errorMessage,
+            emailError: errorMessage,
           ),
         );
         return;
       }
-      final emailInUse = await _checkEmailInUse(providedEmail);
-      if (emailInUse) {
-        emitSafe(
-          state.copyWith(
-            status: RegisterStatus.failure,
-            errorMessage:
-                'This email address is already registered and a new account cannot be created with it.',
-            emailError:
-                'This email address is already registered and a new account cannot be created with it.',
-          ),
-        );
-        return;
-      }
+
       final normalizedPhone = AuthValidators.normalizePhone(state.phone);
       final existing = await _getUserByPhone(normalizedPhone);
       if (existing != null) {
@@ -146,6 +137,7 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           state.copyWith(
             status: RegisterStatus.failure,
             errorMessage: 'Phone number already in use.',
+            phoneError: 'This phone number is already registered.',
           ),
         );
         return;
@@ -185,6 +177,7 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           }
         },
         verificationFailed: (e) {
+          debugPrint(e.message);
           emitSafe(
             state.copyWith(
               status: RegisterStatus.failure,

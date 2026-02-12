@@ -22,6 +22,22 @@
 		<string>$(FLUTTER_BUILD_NAME)</string>
 		<key>CFBundleSignature</key>
 		<string>????</string>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLName</key>
+				<string>REVERSED_CLIENT_ID</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>
+						com.googleusercontent.apps.1062420615326-5ug5n36r3fv1tcvocjbpkgj6mk4fdfh0</string>
+
+					<string>app-1-1062420615326-ios-ff299e7341cd965cc02b8f</string>
+				</array>
+			</dict>
+		</array>
 		<key>CFBundleVersion</key>
 		<string>$(FLUTTER_BUILD_NUMBER)</string>
 		<key>CFBundleURLTypes</key>
@@ -39,10 +55,10 @@
 		<true />
 		<key>NSCameraUsageDescription</key>
 		<string>We use the camera to scan order QR codes at the restaurant.</string>
-		<key>NSPhotoLibraryUsageDescription</key>
-		<string>We need access to your photo library to select images.</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>We need permission to save images to your photo library.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>We need access to your photo library to select images.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true />
 		<key>UILaunchStoryboardName</key>
@@ -64,5 +80,7 @@
 			<string>UIInterfaceOrientationLandscapeLeft</string>
 			<string>UIInterfaceOrientationLandscapeRight</string>
 		</array>
+		<key>RecaptchaKey</key>
+		<string>6Ldj6WcsAAAAAKFKF33S4qdwweJs29brN0tVaifq</string>
 	</dict>
 </plist>
