@@ -19,7 +19,7 @@ import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 import '../models/booking_amounts_view_model.dart';
-import 'package:jood/core/payments/payment_verification_service.dart';
+// import 'package:jood/core/payments/payment_verification_service.dart';
 
 class SelectGuestsScreen extends StatefulWidget {
   const SelectGuestsScreen({super.key, required this.restaurantName});
@@ -31,34 +31,36 @@ class SelectGuestsScreen extends StatefulWidget {
 }
 
 class _SelectGuestsScreenState extends State<SelectGuestsScreen>
-    with WidgetsBindingObserver {
+    {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      PaymentVerificationService.checkAndHandlePendingPayment(
-        context,
-        cubit: context.read<BookingFlowCubit>(),
-      );
-    });
+    // WidgetsBinding.instance.addObserver(this);
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   PaymentVerificationService.checkAndHandlePendingPayment(
+    //     context,
+    //     cubit: context.read<BookingFlowCubit>(),
+    //     showDialog: false,
+    //   );
+    // });
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    // WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && mounted) {
-      PaymentVerificationService.checkAndHandlePendingPayment(
-        context,
-        cubit: context.read<BookingFlowCubit>(),
-      );
-    }
-  }
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   // if (state == AppLifecycleState.resumed && mounted) {
+  //   //   PaymentVerificationService.checkAndHandlePendingPayment(
+  //   //     context,
+  //   //     cubit: context.read<BookingFlowCubit>(),
+  //   //     showDialog: false,
+  //   //   );
+  //   // }
+  // }
 
   @override
   Widget build(BuildContext context) {

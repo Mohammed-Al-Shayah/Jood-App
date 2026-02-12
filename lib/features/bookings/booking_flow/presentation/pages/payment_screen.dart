@@ -28,6 +28,7 @@ import '../widgets/date_utils.dart';
 import '../widgets/payment/payment_secure_card.dart';
 import '../widgets/payment/payment_summary_card.dart';
 import '../widgets/select_date_header.dart';
+import 'dart:convert';
 
 class PaymentScreen extends StatefulWidget {
   const PaymentScreen({super.key, required this.restaurantName});
@@ -39,7 +40,7 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, RouteAware {
   bool _isSubmitting = false;
   bool _guestRedirectHandled = false;
   bool _paymentSuccessHandled = false;
@@ -63,13 +64,48 @@ class _PaymentScreenState extends State<PaymentScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // نقوم بتسجيل هذه الصفحة لكي يراقبها الـ RouteObserver
+    final modalRoute = ModalRoute.of(context);
+    if (modalRoute is PageRoute) {
+      routeObserver.subscribe(this, modalRoute);
+    }
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     _cardholderController.dispose();
     _cardNumberController.dispose();
     _expiryController.dispose();
     _cvvController.dispose();
+
+    // 🔥 إضافة جديدة وهامة:
+    // تنظيف أي عملية دفع معلقة بمجرد تدمير هذه الصفحة
+    // هذا يضمن أنه لو عاد المستخدم لصفحة الضيوف ثم دخل للدفع مرة أخرى، يبدأ من الصفر نظيفاً
+    PaymentVerificationService.clearPending();
+
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    print(
+      "🔄 User returned to Payment Screen (Webview closed via Back button)",
+    );
+
+    // إذا كان الزر ما زال معلقاً (Processing)، نقوم بإعادته للوضع الطبيعي
+    if (_isSubmitting) {
+      setState(() => _isSubmitting = false);
+
+      // ونقوم فوراً بالتحقق من السيرفر، ربما دفع المستخدم ثم ضغط رجوع بسرعة
+      PaymentVerificationService.checkAndHandlePendingPayment(
+        context,
+        cubit: context.read<BookingFlowCubit>(),
+      );
+    }
   }
 
   @override
@@ -143,13 +179,23 @@ class _PaymentScreenState extends State<PaymentScreen>
     final totalAmountInBaisa = _toBaisa(totalPayable);
 
     setState(() => _isSubmitting = true);
+    print("🧹 START: Clearing any stale payment data...");
+    await PaymentVerificationService.clearPending();
+
+    // تأخير بسيط جداً لضمان انتهاء عملية المسح
+    await Future.delayed(const Duration(milliseconds: 100));
+    // 🔥🔥🔥 انتهى التعديل 🔥🔥🔥
     try {
-      Thawani.pay(
+      await Thawani.pay(
         context,
         api: ThawaniConfig.apiKey,
         // api: 'rRQ26GcsZzoEhbrP2HZvLYDbn9C9et',
         // pKey: 'HGvTMLDssJghr9tlN9gr4DVYt0qyBy',
         pKey: ThawaniConfig.publishableApiKey,
+        testMode: false,
+        successUrl: "joodapp://success",
+        cancelUrl: "joodapp://cancel",
+
         metadata: {
           'userId': user.uid,
           'restaurant': widget.restaurantName,
@@ -160,7 +206,7 @@ class _PaymentScreenState extends State<PaymentScreen>
           Product(
             name: offer.title.trim().isEmpty
                 ? 'Restaurant booking'
-                 : offer.title,
+                : offer.title,
             quantity: 1,
             unitAmount: totalAmountInBaisa,
           ),
@@ -169,7 +215,11 @@ class _PaymentScreenState extends State<PaymentScreen>
         // testMode: ThawaniConfig.isTestMode,
         onCreate: (session) async {
           final sessionId = _extractSessionId(session);
-          if (sessionId == null || sessionId.isEmpty) return;
+          print("🔥🔥🔥 EXTRACTED SESSION ID: $sessionId");
+          if (sessionId == null || sessionId.isEmpty) {
+            print("❌ Error: Session ID is null or empty!");
+            return;
+          }
           await PaymentVerificationService.savePending(
             PendingPayment(
               sessionId: sessionId,
@@ -182,20 +232,44 @@ class _PaymentScreenState extends State<PaymentScreen>
             ),
           );
         },
-        onCancelled: (_) {
+        onCancelled: (_) async {
+          // if (!mounted) return;
+          // setState(() => _isSubmitting = false);
+          // showAppSnackBar(context, 'Payment cancelled.');
+          // PaymentVerificationService.clearPending();
+          print("⚠️ Debug: تم استدعاء onCancelled - المستخدم أغلق الصفحة");
+
+          // تأكد أن هذا السطر موجود
+          print("⚠️ Debug: جاري التحقق من السيرفر قبل الإلغاء...");
           if (!mounted) return;
           setState(() => _isSubmitting = false);
           showAppSnackBar(context, 'Payment cancelled.');
-          PaymentVerificationService.clearPending();
+
+          await PaymentVerificationService.checkAndHandlePendingPayment(
+            context,
+            cubit: context.read<BookingFlowCubit>(),
+          );
+          print("⚠️ Debug: انتهى التحقق.");
         },
-        onError: (status) {
+        onError: (status) async {
+          // if (!mounted) return;
+          // setState(() => _isSubmitting = false);
+          // final message = PaymentErrorViewModel.fromStatus(
+          //   status,
+          // ).toDisplayMessage();
+          // showAppSnackBar(context, message, type: SnackBarType.error);
+          // PaymentVerificationService.clearPending();
           if (!mounted) return;
+
           setState(() => _isSubmitting = false);
           final message = PaymentErrorViewModel.fromStatus(
             status,
           ).toDisplayMessage();
           showAppSnackBar(context, message, type: SnackBarType.error);
-          PaymentVerificationService.clearPending();
+          await PaymentVerificationService.checkAndHandlePendingPayment(
+            context,
+            cubit: context.read<BookingFlowCubit>(),
+          );
         },
         onPaid: (_) {
           if (_paymentSuccessHandled) return;
@@ -279,25 +353,165 @@ class _PaymentScreenState extends State<PaymentScreen>
 
   String? _extractSessionId(dynamic value) {
     if (value == null) return null;
-    if (value is String) return value;
-    if (value is Map) {
-      final map = Map<String, dynamic>.from(value);
-      return (map['session_id'] ??
-              map['sessionId'] ??
-              map['id'] ??
-              map['data']?['session_id'] ??
-              map['data']?['id'])
-          ?.toString();
-    }
+
+    // طباعة نوع الكائن للمساعدة في التشخيص
+    print("⚠️ Debug: Type of session object: ${value.runtimeType}");
+
+    // محاولة 1: الوصول المباشر عبر dynamic (للكائنات مثل Instance of 'Create')
     try {
-      final json = value.toJson();
-      if (json is Map) {
-        final map = Map<String, dynamic>.from(json);
-        return (map['session_id'] ?? map['sessionId'] ?? map['id'])?.toString();
+      // نفترض أن الكائن لديه خاصية data وبداخلها sessionId (هيكلية ثواني المعتادة)
+      // نستخدم dynamic لتجاوز فحص النوع أثناء التجميع
+      final dynamic data = (value as dynamic).data;
+      if (data != null) {
+        // قد يكون data كائناً أيضاً أو Map
+        if (data is Map) {
+          return data['session_id']?.toString() ??
+              data['sessionId']?.toString();
+        } else {
+          // محاولة الوصول لخاصية داخل كائن data
+          try {
+            final id = (data as dynamic).sessionId; // أو session_id
+            if (id != null) return id.toString();
+          } catch (_) {}
+
+          try {
+            final id = (data as dynamic).session_id;
+            if (id != null) return id.toString();
+          } catch (_) {}
+        }
       }
-    } catch (_) {}
+    } catch (e) {
+      print("⚠️ Debug: Failed to access properties dynamically: $e");
+    }
+
+    // محاولة 2: البحث داخل Map (إذا كان خريطة أصلاً)
+    if (value is Map) {
+      return _searchInMap(value);
+    }
+
+    // محاولة 3: تحويل الكائن بالكامل إلى JSON نصي ثم البحث فيه
+    // هذه أقوى طريقة إذا كان الكائن يدعم التسلسل (Serialization)
+    try {
+      // نستخدم jsonEncode لرؤية الهيكلية كاملة
+      final jsonString = jsonEncode(value);
+      print("⚠️ Debug: Full JSON dump: $jsonString"); // <--- هذا السطر سينقذنا
+      final decoded = jsonDecode(jsonString);
+      if (decoded is Map) {
+        return _searchInMap(decoded);
+      }
+    } catch (e) {
+      print("⚠️ Debug: Failed to encode/decode JSON: $e");
+    }
+
     return null;
   }
+
+  // دالة المساعدة (تأكد أنها موجودة)
+  String? _searchInMap(dynamic map) {
+    if (map is! Map) return null;
+    final castedMap = Map<String, dynamic>.from(map);
+
+    // بحث مباشر
+    String? id =
+        castedMap['session_id']?.toString() ??
+        castedMap['sessionId']?.toString() ??
+        castedMap['id']?.toString();
+    if (id != null) return id;
+
+    // بحث داخل data
+    final data = castedMap['data'];
+    if (data is Map) {
+      final dataMap = Map<String, dynamic>.from(data);
+      return dataMap['session_id']?.toString() ??
+          dataMap['sessionId']?.toString() ??
+          dataMap['id']?.toString();
+    }
+    return null;
+  }
+  // String? _extractSessionId(dynamic value) {
+  //   if (value == null) return null;
+  //   if (value is String) return value;
+  //   if (value is Map) {
+  //     final map = Map<String, dynamic>.from(value);
+  //     return (map['session_id'] ??
+  //             map['sessionId'] ??
+  //             map['id'] ??
+  //             map['data']?['session_id'] ??
+  //             map['data']?['id'])
+  //         ?.toString();
+  //   }
+  //   try {
+  //     final json = value.toJson();
+  //     if (json is Map) {
+  //       final map = Map<String, dynamic>.from(json);
+  //       return (map['session_id'] ?? map['sessionId'] ?? map['id'])?.toString();
+  //     }
+  //   } catch (_) {}
+  //   return null;
+  // }
+
+  // String? _extractSessionId(dynamic value) {
+  //   print("⚠️ Debug: Raw Session Value: $value"); // طباعة القيمة الخام
+
+  //   if (value == null) return null;
+
+  //   // 1. إذا كان مصفوفة أو خريطة، ابحث داخله
+  //   if (value is Map) {
+  //     return _searchInMap(value);
+  //   }
+
+  //   // 2. إذا كان نصًا، حاول تحويله إلى Map أولاً
+  //   if (value is String) {
+  //     try {
+  //       // هل هو نص JSON؟ حاول تحويله
+  //       final decoded = jsonDecode(value);
+  //       if (decoded is Map) {
+  //         return _searchInMap(decoded);
+  //       }
+  //     } catch (e) {
+  //       // ليس JSON، قد يكون هو الـ ID مباشرة (احتمال ضعيف لكن وارد)
+  //       print("⚠️ Debug: Value is string but not JSON: $value");
+  //       return value.length < 50 ? value : null; // تجاهل النصوص الطويلة جدًا
+  //     }
+  //   }
+
+  //   // 3. محاولة استخدام toJson (للكائنات)
+  //   try {
+  //     // ignore: avoid_dynamic_calls
+  //     final json = value.toJson();
+  //     if (json is Map) {
+  //       return _searchInMap(json);
+  //     }
+  //   } catch (_) {}
+
+  //   return null;
+  // }
+
+  // // دالة مساعدة للبحث داخل الـ Map لتجنب التكرار
+  // String? _searchInMap(dynamic map) {
+  //   if (map is! Map) return null;
+
+  //   final castedMap = Map<String, dynamic>.from(map);
+
+  //   // ابحث في الجذر
+  //   String? id =
+  //       castedMap['session_id']?.toString() ??
+  //       castedMap['sessionId']?.toString() ??
+  //       castedMap['id']?.toString();
+
+  //   if (id != null) return id;
+
+  //   // ابحث داخل data (هيكلية ثواني المعتادة)
+  //   final data = castedMap['data'];
+  //   if (data is Map) {
+  //     final dataMap = Map<String, dynamic>.from(data);
+  //     return dataMap['session_id']?.toString() ??
+  //         dataMap['sessionId']?.toString() ??
+  //         dataMap['id']?.toString();
+  //   }
+
+  //   return null;
+  // }
 
   int _toBaisa(double amount) {
     return (amount * 1000).round();

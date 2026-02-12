@@ -9,7 +9,6 @@ import 'core/routing/app_router.dart';
 import 'core/utils/seed_firestore.dart';
 import 'features/users/domain/usecases/sync_auth_user_usecase.dart';
 import 'jood_app.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeFirebase();
@@ -17,7 +16,6 @@ void main() async {
     await SeedFirestore.ensureSeeded();
   }
   // ThawaniConfig.validate();
-
   await ScreenUtil.ensureScreenSize();
   await setupServiceLocator();
   final authUser = getIt<FirebaseAuth>().currentUser;
