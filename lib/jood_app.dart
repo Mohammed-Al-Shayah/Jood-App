@@ -20,6 +20,7 @@ class JoodApp extends StatelessWidget {
         return MaterialApp(
           title: 'Jood',
           debugShowCheckedModeBanner: false,
+          navigatorObservers: [routeObserver],
           theme: ThemeData(
             useMaterial3: true,
             fontFamily: 'Cairo',

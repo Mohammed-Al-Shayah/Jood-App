@@ -6,7 +6,9 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../cubit/profile_cubit.dart';
 import '../cubit/profile_state.dart';
 import '../widgets/profile_header.dart';
@@ -59,9 +61,7 @@ class ProfileTab extends StatelessWidget {
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              context.pushNamedAndRemoveAll(
-                                Routes.loginScreen,
-                              );
+                              context.pushNamedAndRemoveAll(Routes.loginScreen);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
@@ -210,6 +210,26 @@ class ProfileTab extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
+                      onPressed: () => _handleDeleteAccount(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14.r),
+                        ),
+                      ),
+                      icon: const Icon(Icons.delete_forever),
+                      label: Text(
+                        'Delete account',
+                        style: AppTextStyles.cta.copyWith(color: Colors.red),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
                       onPressed: () async {
                         await FirebaseAuth.instance.signOut();
                         if (context.mounted) {
@@ -239,6 +259,177 @@ class ProfileTab extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _handleDeleteAccount(BuildContext context) async {
+  final step1 = await _showDeleteConfirmDialog(
+    context,
+    title: 'Delete account?',
+    message:
+        'This will permanently remove your account and all related data. You will not be able to recover it.',
+    confirmLabel: 'Continue',
+  );
+  if (step1 != true || !context.mounted) return;
+
+  final step2 = await _showDeleteConfirmDialog(
+    context,
+    title: 'Final confirmation',
+    message: 'Are you absolutely sure? This action is irreversible.',
+    confirmLabel: 'Delete account',
+    isDestructive: true,
+  );
+  if (step2 != true || !context.mounted) return;
+
+  _showBlockingLoading(context, 'Deleting your account...');
+  try {
+    final callable = FirebaseFunctions.instance.httpsCallable('deleteAccount');
+    await callable.call();
+    await FirebaseAuth.instance.signOut();
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    showAppSnackBar(
+      context,
+      'Your account has been deleted.',
+      type: SnackBarType.success,
+    );
+    context.pushNamedAndRemoveAll(Routes.loginScreen);
+  } on FirebaseFunctionsException catch (e) {
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+    if (_isReauthRequired(e)) {
+      if (!context.mounted) return;
+      await _showDeleteConfirmDialog(
+        context,
+        title: 'Re-authentication required',
+        message:
+            'Please log in again to confirm your identity, then retry deleting your account.',
+        confirmLabel: 'Go to login',
+        isDestructive: true,
+      );
+      await FirebaseAuth.instance.signOut();
+      if (context.mounted) {
+        context.pushNamedAndRemoveAll(Routes.loginScreen);
+      }
+      return;
+    }
+    if (context.mounted) {
+      showAppSnackBar(
+        context,
+        e.message ?? 'Unable to delete account. Please try again.',
+        type: SnackBarType.error,
+      );
+    }
+  } catch (_) {
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+      showAppSnackBar(
+        context,
+        'Unable to delete account. Please try again.',
+        type: SnackBarType.error,
+      );
+    }
+  }
+}
+
+bool _isReauthRequired(FirebaseFunctionsException e) {
+  final msg = (e.message ?? '').toLowerCase();
+  return e.code == 'unauthenticated' ||
+      e.code == 'failed-precondition' ||
+      e.code == 'permission-denied' ||
+      msg.contains('recent') ||
+      msg.contains('reauth');
+}
+
+Future<bool?> _showDeleteConfirmDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String confirmLabel,
+  bool isDestructive = false,
+}) {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        titlePadding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 8.h),
+        contentPadding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 16.h),
+        actionsPadding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 16.h),
+        title: Text(title, style: AppTextStyles.sectionTitle),
+        content: Text(message, style: AppTextStyles.bodySmall),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textPrimary,
+                    side: BorderSide(color: AppColors.shadowColor),
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                  child: Text('Cancel', style: AppTextStyles.cta.copyWith(color: AppColors.textPrimary)),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDestructive ? Colors.red : AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                  child: Text(confirmLabel, style: AppTextStyles.cta),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _showBlockingLoading(BuildContext context, String message) {
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) {
+      return AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        contentPadding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 18.h),
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Text(message, style: AppTextStyles.body),
+            ),
+          ],
+        ),
+      );
+    },
+  );
 }
 
 bool _canScanOrders(String role) {

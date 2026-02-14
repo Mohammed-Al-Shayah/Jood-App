@@ -88,6 +88,7 @@ class PaymentVerificationService {
   static Future<void> checkAndHandlePendingPayment(
     BuildContext context, {
     BookingFlowCubit? cubit,
+    bool showDialog = true,
   }) async {
     if (_checking) return;
     _checking = true;
@@ -95,7 +96,9 @@ class PaymentVerificationService {
       final pending = await _readPending();
       if (pending == null) return;
 
-      _showCheckingDialog(context);
+      if (showDialog) {
+        _showCheckingDialog(context);
+      }
 
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null || currentUser.uid != pending.userId) return;
@@ -103,7 +106,9 @@ class PaymentVerificationService {
       final callable = FirebaseFunctions.instance.httpsCallable(
         'checkThawaniPayment',
       );
-      final result = await callable.call({'sessionId': pending.sessionId});
+      final result = await callable
+          .call({'sessionId': pending.sessionId})
+          .timeout(const Duration(seconds: 20));
       final data = result.data is Map
           ? Map<String, dynamic>.from(result.data as Map)
           : <String, dynamic>{};
@@ -162,7 +167,9 @@ class PaymentVerificationService {
     } catch (_) {
       // Keep pending for a later retry on resume.
     } finally {
-      _hideCheckingDialog(context);
+      if (showDialog) {
+        _hideCheckingDialog(context);
+      }
       _checking = false;
     }
   }

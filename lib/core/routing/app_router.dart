@@ -27,7 +27,7 @@ import '../../features/bookings/booking_flow/presentation/pages/payment_screen.d
 import '../../features/bookings/booking_flow/presentation/pages/select_date_time_screen.dart';
 import '../../features/bookings/booking_flow/presentation/pages/select_guests_screen.dart';
 import 'routes.dart';
-
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 class AppRouter {
   Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {

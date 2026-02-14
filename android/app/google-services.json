@@ -12,7 +12,20 @@
           "package_name": "com.example.jood"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1062420615326-g1b1vmi0skdjrnrrk1rcl4p7r33cvrer.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.jood",
+            "certificate_hash": "9e6342d6472975e20a2c35cff272776e11bb40a6"
+          }
+        },
+        {
+          "client_id": "1062420615326-6jie31854ri9jiingokune45aiimenfm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCv-_TTbFpZ3SQMiqjHhxvTs9LBe-laNjs"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062420615326-6jie31854ri9jiingokune45aiimenfm.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1062420615326-5ug5n36r3fv1tcvocjbpkgj6mk4fdfh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.joodOffers"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +56,20 @@
           "package_name": "com.jood.offers"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1062420615326-3u7rmivmvl44cldr62q7qetq3sh1ehgn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jood.offers",
+            "certificate_hash": "9e6342d6472975e20a2c35cff272776e11bb40a6"
+          }
+        },
+        {
+          "client_id": "1062420615326-6jie31854ri9jiingokune45aiimenfm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCv-_TTbFpZ3SQMiqjHhxvTs9LBe-laNjs"
@@ -39,7 +77,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062420615326-6jie31854ri9jiingokune45aiimenfm.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1062420615326-5ug5n36r3fv1tcvocjbpkgj6mk4fdfh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.joodOffers"
+              }
+            }
+          ]
         }
       }
     }
