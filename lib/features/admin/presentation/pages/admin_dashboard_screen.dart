@@ -40,6 +40,13 @@ class AdminDashboardScreen extends StatelessWidget {
             subtitle: 'Assign access and roles',
             onTap: () => context.pushNamed(Routes.adminUsersScreen),
           ),
+          SizedBox(height: 12.h),
+          _AdminActionCard(
+            icon: Icons.cancel_outlined,
+            title: 'Cancelled Orders',
+            subtitle: 'Review and refund cancelled bookings',
+            onTap: () => context.pushNamed(Routes.adminCancelledOrdersScreen),
+          ),
         ],
       ),
     );

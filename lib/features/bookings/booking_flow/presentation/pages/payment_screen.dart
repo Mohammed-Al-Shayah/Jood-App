@@ -546,7 +546,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                 label: _isSubmitting
                     ? 'Processing...'
                     : '${AppStrings.confirmAndPay} ${formatCurrency(vm.currency, vm.totalPayable)}',
-                onPressed: _confirmAndPay,
+                onPressed: _isSubmitting ? null : _confirmAndPay,
                 backgroundColor: Colors.white,
                 shadowColor: AppColors.shadowColor,
                 textStyle: AppTextStyles.cta,

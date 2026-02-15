@@ -46,10 +46,12 @@ class JoodApp extends StatelessWidget {
               : Routes.homeScreen,
           onGenerateRoute: appRouter.generateRoute,
           builder: (context, widget) {
+            final mediaQuery = MediaQuery.maybeOf(context);
+            if (mediaQuery == null) {
+              return widget ?? const SizedBox.shrink();
+            }
             return MediaQuery(
-              data: MediaQuery.of(
-                context,
-              ).copyWith(textScaler: TextScaler.noScaling),
+              data: mediaQuery.copyWith(textScaler: TextScaler.noScaling),
               child: widget ?? const SizedBox.shrink(),
             );
           },

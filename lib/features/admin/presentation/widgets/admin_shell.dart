@@ -8,11 +8,15 @@ class AdminShell extends StatelessWidget {
     required this.title,
     required this.body,
     this.floatingActionButton,
+    this.actions,
+    this.leading,
   });
 
   final String title;
   final Widget body;
   final Widget? floatingActionButton;
+  final List<Widget>? actions;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +26,8 @@ class AdminShell extends StatelessWidget {
       floatingActionButton: floatingActionButton,
       appBar: AppBar(
         title: Text(title),
+        leading: leading,
+        actions: actions,
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,

@@ -2,11 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderItemViewModel {
   const OrderItemViewModel({
+    required this.id,
     required this.bookingCode,
     required this.qrPayload,
     required this.restaurantId,
+    required this.offerId,
     required this.date,
     required this.startTime,
+    required this.endTime,
     required this.adults,
     required this.children,
     required this.currency,
@@ -22,11 +25,14 @@ class OrderItemViewModel {
     required this.offerTitleSnapshot,
   });
 
+  final String id;
   final String bookingCode;
   final String qrPayload;
   final String restaurantId;
+  final String offerId;
   final String date;
   final String startTime;
+  final String endTime;
   final int adults;
   final int children;
   final String currency;
@@ -46,11 +52,14 @@ class OrderItemViewModel {
   ) {
     final data = doc.data() ?? const <String, dynamic>{};
     return OrderItemViewModel(
+      id: doc.id,
       bookingCode: (data['bookingCode'] as String?) ?? '',
       qrPayload: (data['qrPayload'] as String?) ?? '',
       restaurantId: (data['restaurantId'] as String?) ?? '',
+      offerId: (data['offerId'] as String?) ?? '',
       date: (data['date'] as String?) ?? '',
       startTime: (data['startTime'] as String?) ?? '',
+      endTime: (data['endTime'] as String?) ?? '',
       adults: (data['adults'] as num?)?.toInt() ?? 0,
       children: (data['children'] as num?)?.toInt() ?? 0,
       currency: (data['currency'] as String?) ?? 'USD',

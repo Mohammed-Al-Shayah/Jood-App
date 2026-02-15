@@ -23,4 +23,5 @@ class Routes {
   static const String adminOfferFormScreen = '/admin-offer-form';
   static const String adminUsersScreen = '/admin-users';
   static const String adminUserFormScreen = '/admin-user-form';
+  static const String adminCancelledOrdersScreen = '/admin-cancelled-orders';
 }

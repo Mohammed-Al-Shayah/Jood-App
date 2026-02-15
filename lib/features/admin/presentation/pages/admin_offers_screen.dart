@@ -24,6 +24,9 @@ class AdminOffersScreen extends StatefulWidget {
 class _AdminOffersScreenState extends State<AdminOffersScreen> {
   Map<String, String> _restaurantNames = const {};
   final Set<String> _expandedRestaurants = {};
+  final Set<String> _selectedOfferIds = {};
+
+  bool get _selectionMode => _selectedOfferIds.isNotEmpty;
 
   @override
   void initState() {
@@ -51,23 +54,39 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
       child: Builder(
         builder: (context) {
           return AdminShell(
-            title: 'Offers',
-            floatingActionButton: FloatingActionButton(
-              onPressed: () async {
-                final result = await Navigator.of(context).pushNamed(
-                  Routes.adminOfferFormScreen,
-                  arguments: const AdminOfferFormArgs(),
-                );
-                if (!context.mounted) return;
-                if (result is OfferEntity) {
-                  context.read<AdminOffersCubit>().create(result);
-                } else if (result is List<OfferEntity>) {
-                  context.read<AdminOffersCubit>().createMany(result);
-                }
-              },
-              backgroundColor: AppColors.primary,
-              child: const Icon(Icons.add, color: Colors.white),
-            ),
+            title: _selectionMode
+                ? 'Selected ${_selectedOfferIds.length}'
+                : 'Offers',
+            actions: _selectionMode
+                ? [
+                    IconButton(
+                      onPressed: () => _confirmDeleteSelected(context),
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                    IconButton(
+                      onPressed: _clearSelection,
+                      icon: const Icon(Icons.close),
+                    ),
+                  ]
+                : null,
+            floatingActionButton: _selectionMode
+                ? null
+                : FloatingActionButton(
+                    onPressed: () async {
+                      final result = await Navigator.of(context).pushNamed(
+                        Routes.adminOfferFormScreen,
+                        arguments: const AdminOfferFormArgs(),
+                      );
+                      if (!context.mounted) return;
+                      if (result is OfferEntity) {
+                        context.read<AdminOffersCubit>().create(result);
+                      } else if (result is List<OfferEntity>) {
+                        context.read<AdminOffersCubit>().createMany(result);
+                      }
+                    },
+                    backgroundColor: AppColors.primary,
+                    child: const Icon(Icons.add, color: Colors.white),
+                  ),
             body: BlocBuilder<AdminOffersCubit, AdminOffersState>(
               builder: (context, state) {
                 final isLoading = state.status == AdminOffersStatus.loading;
@@ -154,6 +173,10 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
                                   onTap: isLoading
                                       ? null
                                       : () async {
+                                          if (_selectionMode) {
+                                            _toggleSelection(offer);
+                                            return;
+                                          }
                                           final result =
                                               await Navigator.of(
                                                 context,
@@ -170,9 +193,15 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
                                                 .update(result);
                                           }
                                         },
+                                  onLongPress: isLoading
+                                      ? null
+                                      : () => _toggleSelection(offer),
                                   onDelete: isLoading
                                       ? null
                                       : () => _confirmDelete(context, offer),
+                                  isSelected: _selectedOfferIds
+                                      .contains(offer.id),
+                                  selectionMode: _selectionMode,
                                 ),
                               ),
                             )
@@ -189,6 +218,22 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
     );
   }
 
+  void _toggleSelection(OfferEntity offer) {
+    setState(() {
+      if (_selectedOfferIds.contains(offer.id)) {
+        _selectedOfferIds.remove(offer.id);
+      } else {
+        _selectedOfferIds.add(offer.id);
+      }
+    });
+  }
+
+  void _clearSelection() {
+    setState(() {
+      _selectedOfferIds.clear();
+    });
+  }
+
   Future<void> _confirmDelete(BuildContext context, OfferEntity offer) async {
     final confirmed = await showAdminConfirmDialog(
       context: context,
@@ -197,6 +242,20 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
     );
     if (confirmed == true && context.mounted) {
       context.read<AdminOffersCubit>().delete(offer.id);
+    }
+  }
+
+  Future<void> _confirmDeleteSelected(BuildContext context) async {
+    if (_selectedOfferIds.isEmpty) return;
+    final confirmed = await showAdminConfirmDialog(
+      context: context,
+      title: 'Delete offers',
+      message: 'Delete ${_selectedOfferIds.length} offers?',
+    );
+    if (confirmed == true && context.mounted) {
+      final ids = _selectedOfferIds.toList();
+      _clearSelection();
+      await context.read<AdminOffersCubit>().deleteMany(ids);
     }
   }
 }
