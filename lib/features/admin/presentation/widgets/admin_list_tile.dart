@@ -10,25 +10,37 @@ class AdminListTile extends StatelessWidget {
     required this.title,
     required this.subtitles,
     this.onTap,
+    this.onLongPress,
     this.onDelete,
+    this.isSelected = false,
+    this.selectionMode = false,
   });
 
   final Widget leading;
   final String title;
   final List<Widget> subtitles;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback? onDelete;
+  final bool isSelected;
+  final bool selectionMode;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(16.r),
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Ink(
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         decoration: BoxDecoration(
-          color: AppColors.cardBackground,
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.08)
+              : AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16.r),
+          border: isSelected
+              ? Border.all(color: AppColors.primary.withOpacity(0.4))
+              : null,
           boxShadow: [
             BoxShadow(
               color: AppColors.shadowColor.withOpacity(0.12),
@@ -50,11 +62,18 @@ class AdminListTile extends StatelessWidget {
                 ],
               ),
             ),
-            IconButton(
-              onPressed: onDelete,
-              icon: const Icon(Icons.delete_outline),
-              color: Colors.red,
-            ),
+            if (selectionMode)
+              Checkbox(
+                value: isSelected,
+                onChanged: (_) => onTap?.call(),
+                activeColor: AppColors.primary,
+              )
+            else
+              IconButton(
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline),
+                color: Colors.red,
+              ),
           ],
         ),
       ),

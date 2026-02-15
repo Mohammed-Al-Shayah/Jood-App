@@ -102,4 +102,21 @@ class AdminOffersCubit extends Cubit<AdminOffersState> {
       );
     }
   }
+
+  Future<void> deleteMany(List<String> ids) async {
+    if (ids.isEmpty) return;
+    try {
+      for (final id in ids) {
+        await _deleteOffer(id);
+      }
+      await load();
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: AdminOffersStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
+    }
+  }
 }

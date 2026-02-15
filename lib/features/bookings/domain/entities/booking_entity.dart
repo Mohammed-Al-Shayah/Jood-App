@@ -8,6 +8,7 @@ class BookingEntity extends Equatable {
     required this.offerId,
     required this.date,
     required this.startTime,
+    this.endTime = '',
     required this.adults,
     required this.children,
     required this.currency,
@@ -32,6 +33,7 @@ class BookingEntity extends Equatable {
   final String offerId;
   final String date;
   final String startTime;
+  final String endTime;
   final int adults;
   final int children;
   final String currency;
@@ -57,6 +59,7 @@ class BookingEntity extends Equatable {
     offerId,
     date,
     startTime,
+    endTime,
     adults,
     children,
     currency,

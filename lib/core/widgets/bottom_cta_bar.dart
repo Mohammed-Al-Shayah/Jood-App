@@ -14,7 +14,7 @@ class BottomCtaBar extends StatelessWidget {
   });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final Color backgroundColor;
   final Color shadowColor;
   final TextStyle textStyle;

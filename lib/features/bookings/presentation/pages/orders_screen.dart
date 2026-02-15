@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import '../models/order_item_view_model.dart';
 
 class OrdersScreen extends StatelessWidget {
@@ -100,11 +101,16 @@ class _OrderCard extends StatelessWidget {
 
   final OrderItemViewModel order;
 
+  static const List<String> _cancelledStatuses = ['cancelled', 'canceled'];
+
   Color _statusColor(String statusValue) {
     final normalized = statusValue.toLowerCase();
     if (normalized == 'completed') return const Color(0xFF5C7CFA);
     if (normalized == 'paid' || normalized == 'confirmed') {
       return const Color(0xFF20C997);
+    }
+    if (_cancelledStatuses.contains(normalized)) {
+      return const Color(0xFF868E96);
     }
     return const Color(0xFFFA5252);
   }
@@ -113,6 +119,74 @@ class _OrderCard extends StatelessWidget {
     if (statusValue.isEmpty) return 'Unknown';
     return statusValue[0].toUpperCase() +
         statusValue.substring(1).toLowerCase();
+  }
+
+  bool _isCancelled(String statusValue) {
+    return _cancelledStatuses.contains(statusValue.trim().toLowerCase());
+  }
+
+  bool _isCompleted(String statusValue) {
+    final normalized = statusValue.trim().toLowerCase();
+    return normalized == 'completed' || normalized == 'complete';
+  }
+
+  bool _canShowQr(String statusValue) {
+    final normalized = statusValue.trim().toLowerCase();
+    return normalized == 'paid' || normalized == 'confirmed';
+  }
+
+  DateTime? _parseBookingDate(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    final parsed = DateTime.tryParse(trimmed);
+    if (parsed == null) return null;
+    return DateTime(parsed.year, parsed.month, parsed.day);
+  }
+
+  int? _parseTimeToMinutes(String value) {
+    final trimmed = value.trim().toLowerCase();
+    if (trimmed.isEmpty) return null;
+    final amPmMatch = RegExp(r'^(\d{1,2})(?::(\d{2}))?\s*([ap]m)$')
+        .firstMatch(trimmed);
+    if (amPmMatch != null) {
+      final hour = int.tryParse(amPmMatch.group(1) ?? '');
+      final minute = int.tryParse(amPmMatch.group(2) ?? '0') ?? 0;
+      final period = amPmMatch.group(3);
+      if (hour == null) return null;
+      var h = hour % 12;
+      if (period == 'pm') h += 12;
+      return h * 60 + minute;
+    }
+    final match24 = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(trimmed);
+    if (match24 != null) {
+      final hour = int.tryParse(match24.group(1) ?? '');
+      final minute = int.tryParse(match24.group(2) ?? '');
+      if (hour == null || minute == null) return null;
+      return hour * 60 + minute;
+    }
+    return null;
+  }
+
+  DateTime? _buildDateTimeFromMinutes(String date, int? minutes) {
+    if (minutes == null) return null;
+    final baseDate = _parseBookingDate(date);
+    if (baseDate == null) return null;
+    return baseDate.add(Duration(minutes: minutes));
+  }
+
+  bool _isCancellationAllowed() {
+    final endMinutes = _parseTimeToMinutes(order.endTime);
+    final startMinutes = _parseTimeToMinutes(order.startTime);
+    if (endMinutes == null && startMinutes == null) return false;
+    var endDate = _buildDateTimeFromMinutes(
+      order.date,
+      endMinutes ?? startMinutes,
+    );
+    if (endDate == null) return false;
+    if (endMinutes != null && startMinutes != null && endMinutes <= startMinutes) {
+      endDate = endDate.add(const Duration(days: 1));
+    }
+    return DateTime.now().isBefore(endDate);
   }
 
   String _formattedDate() {
@@ -165,6 +239,11 @@ class _OrderCard extends StatelessWidget {
     required String restaurantImageUrl,
   }) {
     final badgeColor = _statusColor(order.status);
+    final showQr =
+        order.qrPayload.isNotEmpty &&
+        _canShowQr(order.status) &&
+        !_isCompleted(order.status) &&
+        !_isCancelled(order.status);
     return InkWell(
       borderRadius: BorderRadius.circular(18.r),
       onTap: () => _showDetailsSheet(
@@ -238,17 +317,17 @@ class _OrderCard extends StatelessWidget {
             SizedBox(height: 10.h),
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: order.qrPayload.isEmpty
-                    ? null
-                    : () => _showQrSheet(
+              child: showQr
+                  ? TextButton.icon(
+                      onPressed: () => _showQrSheet(
                         context,
                         order.qrPayload,
                         order.bookingCode,
                       ),
-                icon: const Icon(Icons.qr_code),
-                label: const Text('View QR'),
-              ),
+                      icon: const Icon(Icons.qr_code),
+                      label: const Text('View QR'),
+                    )
+                  : const SizedBox.shrink(),
             ),
           ],
         ),
@@ -262,15 +341,27 @@ class _OrderCard extends StatelessWidget {
     required String restaurantImageUrl,
   }) {
     final badgeColor = _statusColor(order.status);
+    final showCancel =
+        !_isCancelled(order.status) &&
+        !_isCompleted(order.status) &&
+        _isCancellationAllowed();
+    final showQr = order.qrPayload.isNotEmpty && _canShowQr(order.status);
+    final viewInsetsBottom = MediaQuery.of(context).viewInsets.bottom;
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       builder: (_) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 24.h),
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            20.w,
+            16.h,
+            20.w,
+            24.h + viewInsetsBottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -372,36 +463,160 @@ class _OrderCard extends StatelessWidget {
                 value: formatCurrency(order.currency, order.tax),
               ),
               SizedBox(height: 14.h),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: order.qrPayload.isEmpty
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                          _showQrSheet(
-                            context,
-                            order.qrPayload,
-                            order.bookingCode,
-                          );
-                        },
-                  icon: const Icon(Icons.qr_code),
-                  label: const Text('View QR'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14.r),
+              if (showCancel) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _handleCancel(context),
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: const Text('Cancel booking'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.redAccent,
+                      side: const BorderSide(color: Colors.redAccent),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                SizedBox(height: 8.h),
+              ],
+              if (showQr)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _showQrSheet(context, order.qrPayload, order.bookingCode);
+                    },
+                    icon: const Icon(Icons.qr_code),
+                    label: const Text('View QR'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
       },
     );
+  }
+
+  Future<void> _handleCancel(BuildContext context) async {
+    if (!_isCancellationAllowed()) {
+      showAppSnackBar(
+        context,
+        'Cancellation window has ended.',
+        type: SnackBarType.info,
+      );
+      return;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      showAppSnackBar(context, 'Please login first.', type: SnackBarType.error);
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      await FirebaseFirestore.instance.runTransaction((tx) async {
+        final bookingRef = FirebaseFirestore.instance
+            .collection('bookings')
+            .doc(order.id);
+        final bookingSnap = await tx.get(bookingRef);
+        if (!bookingSnap.exists) {
+          throw Exception('Booking not found.');
+        }
+
+        final data = bookingSnap.data() ?? const <String, dynamic>{};
+        final status = (data['status'] as String? ?? '').toLowerCase();
+        if (_cancelledStatuses.contains(status)) {
+          throw Exception('Booking already cancelled.');
+        }
+        if (status == 'completed') {
+          throw Exception('Completed booking cannot be cancelled.');
+        }
+
+        final bookingUserId = (data['userId'] as String? ?? '').trim();
+        if (bookingUserId.isNotEmpty && bookingUserId != user.uid) {
+          throw Exception('Not authorized.');
+        }
+
+        final date = (data['date'] as String? ?? '').trim();
+        final startTime = (data['startTime'] as String? ?? '').trim();
+        final endTime = (data['endTime'] as String? ?? '').trim();
+        final endMinutes = _parseTimeToMinutes(endTime);
+        final startMinutes = _parseTimeToMinutes(startTime);
+        var endDate = _buildDateTimeFromMinutes(
+          date,
+          endMinutes ?? startMinutes,
+        );
+        if (endDate != null &&
+            endMinutes != null &&
+            startMinutes != null &&
+            endMinutes <= startMinutes) {
+          endDate = endDate.add(const Duration(days: 1));
+        }
+        if (endDate == null || !DateTime.now().isBefore(endDate)) {
+          throw Exception('CANCELLATION_EXPIRED');
+        }
+
+        final offerId = (data['offerId'] as String? ?? '').trim();
+        final adults = (data['adults'] as num?)?.toInt() ?? 0;
+        final children = (data['children'] as num?)?.toInt() ?? 0;
+
+        tx.update(bookingRef, {
+          'status': 'cancelled',
+          'qrPayload': '',
+          'cancelledAt': FieldValue.serverTimestamp(),
+          'cancelledBy': user.uid,
+          'cancelledByRole': 'user',
+          'refundStatus': 'pending',
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        if (offerId.isNotEmpty) {
+          final offerRef = FirebaseFirestore.instance
+              .collection('offers')
+              .doc(offerId);
+          tx.update(offerRef, {
+            'bookedAdult': FieldValue.increment(-adults),
+            'bookedChild': FieldValue.increment(-children),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      });
+
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        showAppSnackBar(
+          context,
+          'Booking cancelled successfully.',
+          type: SnackBarType.success,
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        Navigator.of(context).pop();
+        final message = error.toString().contains('CANCELLATION_EXPIRED')
+            ? 'Cancellation window has ended.'
+            : 'Failed to cancel booking. Please try again.';
+        showAppSnackBar(context, message, type: SnackBarType.error);
+      }
+    }
   }
 
   void _showQrSheet(BuildContext context, String qrValue, String code) {
