@@ -41,7 +41,8 @@
 			<string>Encoded App ID</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>app-1-1062420615326-ios-30aab72e70cf042ac02b8f</string>
+				<!-- <string>app-1-1062420615326-ios-30aab72e70cf042ac02b8f</string> -->
+				<string>com.googleusercontent.apps.1062420615326-5ug5n36r3fv1tcvocjbpkgj6mk4fdfh0</string>
 			</array>
 		</dict>
 	</array>
