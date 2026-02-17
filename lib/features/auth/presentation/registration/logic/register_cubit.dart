@@ -161,13 +161,15 @@ class RegisterCubit extends SafeCubit<RegisterState> {
               return;
             }
             await _finalizeRegistration(user, normalizedPhone);
+            
             emitSafe(
               state.copyWith(
                 status: RegisterStatus.phoneVerified,
                 errorMessage: null,
               ),
             );
-          } catch (_) {
+          } catch (e) {
+            
             emitSafe(
               state.copyWith(
                 status: RegisterStatus.failure,
