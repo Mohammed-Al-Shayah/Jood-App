@@ -35,6 +35,13 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           _AdminActionCard(
+            icon: Icons.receipt_long,
+            title: 'Orders',
+            subtitle: 'Filter and review bookings',
+            onTap: () => context.pushNamed(Routes.adminOrdersScreen),
+          ),
+          SizedBox(height: 12.h),
+          _AdminActionCard(
             icon: Icons.admin_panel_settings_outlined,
             title: 'Users & Roles',
             subtitle: 'Assign access and roles',
