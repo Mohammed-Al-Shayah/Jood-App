@@ -102,22 +102,40 @@ class RegisterCubit extends SafeCubit<RegisterState> {
   }
 
   Future<void> submit() async {
-    if (state.status == RegisterStatus.loading) return;
+    debugPrint('[RegisterCubit] submit() called');
+
+    if (state.status == RegisterStatus.loading) {
+      debugPrint('[RegisterCubit] Already loading, returning early');
+      return;
+    }
+
     if (!state.isValid) {
+      debugPrint('[RegisterCubit] Form validation failed');
       emitSafe(_update(state.copyWith(submitAttempted: true)));
       return;
     }
 
+    debugPrint('[RegisterCubit] Form is valid, starting registration process');
     emitSafe(
       state.copyWith(status: RegisterStatus.loading, errorMessage: null),
     );
 
     try {
       final providedEmail = state.email.trim();
+      debugPrint('[RegisterCubit] Step 1: Checking email - $providedEmail');
+
       final emailExistsInAuth = await _checkEmailInUse(providedEmail);
+      debugPrint(
+        '[RegisterCubit] Step 2: Email exists in Auth - $emailExistsInAuth',
+      );
+
       final emailExistsInDb = (await _getUserByEmail(providedEmail)) != null;
+      debugPrint(
+        '[RegisterCubit] Step 3: Email exists in DB - $emailExistsInDb',
+      );
 
       if (emailExistsInAuth || emailExistsInDb) {
+        debugPrint('[RegisterCubit] ERROR: Email already registered');
         const errorMessage =
             'This email address is already registered and a new account cannot be created with it.';
         emitSafe(
@@ -131,8 +149,15 @@ class RegisterCubit extends SafeCubit<RegisterState> {
       }
 
       final normalizedPhone = AuthValidators.normalizePhone(state.phone);
+      debugPrint('[RegisterCubit] Step 4: Phone normalized - $normalizedPhone');
+
       final existing = await _getUserByPhone(normalizedPhone);
+      debugPrint(
+        '[RegisterCubit] Step 5: Phone already exists - ${existing != null}',
+      );
+
       if (existing != null) {
+        debugPrint('[RegisterCubit] ERROR: Phone number already in use');
         emitSafe(
           state.copyWith(
             status: RegisterStatus.failure,
@@ -143,15 +168,24 @@ class RegisterCubit extends SafeCubit<RegisterState> {
         return;
       }
 
+      debugPrint(
+        '[RegisterCubit] Step 6: Sending OTP to phone - ${state.phone.trim()}',
+      );
       await _sendPhoneOtp(
         phoneNumber: state.phone.trim(),
         timeout: const Duration(seconds: 60),
         forceResendingToken: state.resendToken,
         verificationCompleted: (credential) async {
           try {
+            debugPrint(
+              '[RegisterCubit] Step 7: Phone verification completed automatically',
+            );
             final result = await _signInWithPhoneCredential(credential);
             final user = result.user;
             if (user == null) {
+              debugPrint(
+                '[RegisterCubit] ERROR: User is null after phone verification',
+              );
               emitSafe(
                 state.copyWith(
                   status: RegisterStatus.failure,
@@ -160,16 +194,31 @@ class RegisterCubit extends SafeCubit<RegisterState> {
               );
               return;
             }
+            debugPrint(
+              '[RegisterCubit] Step 8: Finalizing registration for user ${user.uid}',
+            );
             await _finalizeRegistration(user, normalizedPhone);
-            
+
+            debugPrint(
+              '[RegisterCubit] SUCCESS: Registration completed successfully',
+            );
             emitSafe(
               state.copyWith(
                 status: RegisterStatus.phoneVerified,
                 errorMessage: null,
               ),
             );
-          } catch (e) {
-            
+          } catch (e, stackTrace) {
+            debugPrint('[RegisterCubit] ERROR in verificationCompleted: $e');
+            debugPrint('[RegisterCubit] ERROR STACK TRACE: $stackTrace');
+            if (e is FirebaseAuthException) {
+              debugPrint(
+                '[RegisterCubit] FirebaseAuthException CODE: ${e.code}',
+              );
+              debugPrint(
+                '[RegisterCubit] FirebaseAuthException MESSAGE: ${e.message}',
+              );
+            }
             emitSafe(
               state.copyWith(
                 status: RegisterStatus.failure,
@@ -179,7 +228,40 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           }
         },
         verificationFailed: (e) {
-          debugPrint(e.message);
+          debugPrint('[RegisterCubit] ===== PHONE VERIFICATION FAILED =====');
+          debugPrint('[RegisterCubit] ERROR CODE: ${e.code}');
+          debugPrint('[RegisterCubit] ERROR MESSAGE: ${e.message}');
+          debugPrint('[RegisterCubit] ERROR FULL EXCEPTION: $e');
+          debugPrint('[RegisterCubit]');
+          debugPrint('[RegisterCubit] === TROUBLESHOOTING TIPS ===');
+          if (e.code == 'internal-error') {
+            debugPrint('[RegisterCubit] Possible causes for "internal-error":');
+            debugPrint(
+              '[RegisterCubit] 1. Phone Authentication is NOT ENABLED in Firebase Console',
+            );
+            debugPrint(
+              '[RegisterCubit] 2. App Signing Certificate SHA-1 doesn\'t match Firebase registration',
+            );
+            debugPrint(
+              '[RegisterCubit] 3. Firebase App Check is blocking the request',
+            );
+            debugPrint('[RegisterCubit] 4. Phone number format is incorrect');
+            debugPrint(
+              '[RegisterCubit] 5. Device is missing Google Play Services',
+            );
+            debugPrint('[RegisterCubit]');
+            debugPrint('[RegisterCubit] ACTION ITEMS:');
+            debugPrint(
+              '[RegisterCubit] • Verify phone auth is enabled: Firebase Console → Authentication → Sign-in method',
+            );
+            debugPrint(
+              '[RegisterCubit] • Check app signing certificate: ./gradlew signingReport',
+            );
+            debugPrint(
+              '[RegisterCubit] • Verify phone number includes country code: +972...',
+            );
+          }
+          debugPrint('[RegisterCubit] =====================================');
           emitSafe(
             state.copyWith(
               status: RegisterStatus.failure,
@@ -192,6 +274,7 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           );
         },
         codeSent: (verificationId, resendToken) {
+          debugPrint('[RegisterCubit] Step 7: OTP code sent successfully');
           emitSafe(
             state.copyWith(
               status: RegisterStatus.phoneOtpSent,
@@ -201,10 +284,16 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           );
         },
         codeAutoRetrievalTimeout: (verificationId) {
+          debugPrint('[RegisterCubit] Step 9: Auto-retrieval timeout');
           emitSafe(state.copyWith(verificationId: verificationId));
         },
       );
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException catch (e, stackTrace) {
+      debugPrint(
+        '[RegisterCubit] ERROR: FirebaseAuthException - Code: ${e.code}, Message: ${e.message}',
+      );
+      debugPrint('[RegisterCubit] ERROR FULL EXCEPTION: $e');
+      debugPrint('[RegisterCubit] ERROR STACK TRACE: $stackTrace');
       emitSafe(
         state.copyWith(
           status: RegisterStatus.failure,
@@ -215,7 +304,10 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           ),
         ),
       );
-    } catch (_) {
+    } catch (e, stackTrace) {
+      debugPrint('[RegisterCubit] ERROR: Unexpected exception - $e');
+      debugPrint('[RegisterCubit] ERROR STACK TRACE: $stackTrace');
+      debugPrint('[RegisterCubit] ERROR TYPE: ${e.runtimeType}');
       emitSafe(
         state.copyWith(
           status: RegisterStatus.failure,
@@ -226,28 +318,101 @@ class RegisterCubit extends SafeCubit<RegisterState> {
   }
 
   Future<void> _finalizeRegistration(User user, String normalizedPhone) async {
-    final providedEmail = state.email.trim();
-    if (providedEmail.isEmpty) {
-      throw FirebaseAuthException(code: 'invalid-email');
-    }
-
-    await _linkPasswordCredential(user, providedEmail, state.password.trim());
-    await user.updateDisplayName(state.fullName.trim());
-    await _sendEmailVerification(user);
-
-    final profile = UserEntity(
-      id: user.uid,
-      fullName: state.fullName.trim(),
-      email: providedEmail,
-      emailVerified: false,
-      phone: normalizedPhone,
-      country: state.country.trim(),
-      city: state.city.trim(),
-      role: 'customer',
+    debugPrint(
+      '[RegisterCubit] _finalizeRegistration: Started for user ${user.uid}',
     );
 
-    await _createUser(profile);
-    await _syncAuthUser(user, fallback: profile);
+    try {
+      final providedEmail = state.email.trim();
+      if (providedEmail.isEmpty) {
+        debugPrint('[RegisterCubit] ERROR: Email is empty');
+        throw FirebaseAuthException(code: 'invalid-email');
+      }
+
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 1 - Linking password credential',
+      );
+      await _linkPasswordCredential(user, providedEmail, state.password.trim());
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 1 SUCCESS - Password linked',
+      );
+
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 2 - Updating display name to ${state.fullName.trim()}',
+      );
+      await user.updateDisplayName(state.fullName.trim());
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 2 SUCCESS - Display name updated',
+      );
+
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 3 - Sending email verification',
+      );
+      await _sendEmailVerification(user);
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 3 SUCCESS - Email verification sent',
+      );
+
+      final profile = UserEntity(
+        id: user.uid,
+        fullName: state.fullName.trim(),
+        email: providedEmail,
+        emailVerified: false,
+        phone: normalizedPhone,
+        country: state.country.trim(),
+        city: state.city.trim(),
+        role: 'customer',
+      );
+
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 4 - Creating user profile',
+      );
+      await _createUser(profile);
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 4 SUCCESS - User profile created',
+      );
+
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 5 - Syncing auth user',
+      );
+      await _syncAuthUser(user, fallback: profile);
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: Step 5 SUCCESS - Auth user synced',
+      );
+
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: SUCCESS - All finalization steps completed',
+      );
+    } on FirebaseAuthException catch (e, stackTrace) {
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: ERROR - FirebaseAuthException',
+      );
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: ERROR CODE: ${e.code}',
+      );
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: ERROR MESSAGE: ${e.message}',
+      );
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: ERROR FULL EXCEPTION: $e',
+      );
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: ERROR STACK TRACE: $stackTrace',
+      );
+      rethrow;
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: ERROR - Unexpected exception',
+      );
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: ERROR TYPE: ${e.runtimeType}',
+      );
+      debugPrint('[RegisterCubit] _finalizeRegistration: ERROR MESSAGE: $e');
+      debugPrint(
+        '[RegisterCubit] _finalizeRegistration: ERROR STACK TRACE: $stackTrace',
+      );
+      rethrow;
+    }
   }
 
   Future<void> _linkPasswordCredential(
@@ -255,18 +420,49 @@ class RegisterCubit extends SafeCubit<RegisterState> {
     String email,
     String password,
   ) async {
+    debugPrint(
+      '[RegisterCubit] _linkPasswordCredential: Attempting to link email/password for $email',
+    );
+
     try {
       await _linkEmailPassword(user: user, email: email, password: password);
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'provider-already-linked') return;
+      debugPrint(
+        '[RegisterCubit] _linkPasswordCredential: Successfully linked email/password',
+      );
+    } on FirebaseAuthException catch (e, stackTrace) {
+      debugPrint(
+        '[RegisterCubit] _linkPasswordCredential: FirebaseAuthException - Code: ${e.code}',
+      );
+      debugPrint(
+        '[RegisterCubit] _linkPasswordCredential: ERROR MESSAGE: ${e.message}',
+      );
+      debugPrint(
+        '[RegisterCubit] _linkPasswordCredential: ERROR FULL EXCEPTION: $e',
+      );
+      debugPrint(
+        '[RegisterCubit] _linkPasswordCredential: ERROR STACK TRACE: $stackTrace',
+      );
+
+      if (e.code == 'provider-already-linked') {
+        debugPrint(
+          '[RegisterCubit] _linkPasswordCredential: Provider already linked, ignoring',
+        );
+        return;
+      }
       if (e.code == 'email-already-in-use' ||
           e.code == 'credential-already-in-use') {
+        debugPrint(
+          '[RegisterCubit] _linkPasswordCredential: ERROR - Email already in use',
+        );
         throw FirebaseAuthException(
           code: e.code,
           message:
               'This email is already registered. Please use a different email or log in.',
         );
       }
+      debugPrint(
+        '[RegisterCubit] _linkPasswordCredential: ERROR - ${mapFirebaseAuthException(e, operationNotAllowedMessage: 'Email/password accounts are not enabled.', fallbackMessage: 'Sign up failed. Please try again.')}',
+      );
       throw FirebaseAuthException(
         code: e.code,
         message: mapFirebaseAuthException(
@@ -276,6 +472,17 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           fallbackMessage: 'Sign up failed. Please try again.',
         ),
       );
+    } catch (e, stackTrace) {
+      debugPrint(
+        '[RegisterCubit] _linkPasswordCredential: Unexpected exception - $e',
+      );
+      debugPrint(
+        '[RegisterCubit] _linkPasswordCredential: ERROR TYPE: ${e.runtimeType}',
+      );
+      debugPrint(
+        '[RegisterCubit] _linkPasswordCredential: ERROR STACK TRACE: $stackTrace',
+      );
+      rethrow;
     }
   }
 
