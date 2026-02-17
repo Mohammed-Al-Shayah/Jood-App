@@ -73,6 +73,7 @@ import '../../features/restaurants/domain/usecases/delete_restaurant_usecase.dar
 import '../../features/admin/presentation/cubit/admin_restaurants_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_offers_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_users_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_orders_cubit.dart';
 import '../../features/admin/data/datasources/admin_storage_remote_data_source.dart';
 import '../../features/admin/domain/usecases/delete_storage_file_usecase.dart';
 import '../../features/admin/domain/usecases/upload_restaurant_image_usecase.dart';
@@ -308,6 +309,9 @@ Future<void> setupServiceLocator() async {
       updateUser: getIt(),
       deleteUser: getIt(),
     ),
+  );
+  getIt.registerFactory<AdminOrdersCubit>(
+    () => AdminOrdersCubit(getAllRestaurants: getIt()),
   );
   getIt.registerLazySingleton<UploadRestaurantImageUseCase>(
     () => UploadRestaurantImageUseCase(getIt()),

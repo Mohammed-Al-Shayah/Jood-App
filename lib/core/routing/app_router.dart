@@ -22,6 +22,7 @@ import '../../features/admin/presentation/pages/admin_offer_form_screen.dart';
 import '../../features/admin/presentation/pages/admin_users_screen.dart';
 import '../../features/admin/presentation/pages/admin_user_form_screen.dart';
 import '../../features/admin/presentation/pages/admin_cancelled_orders_screen.dart';
+import '../../features/admin/presentation/pages/admin_orders_screen.dart';
 import '../../features/bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
 import '../../features/bookings/booking_flow/presentation/pages/booking_confirmed_screen.dart';
 import '../../features/bookings/booking_flow/presentation/pages/payment_screen.dart';
@@ -91,6 +92,10 @@ class AppRouter {
       case Routes.adminCancelledOrdersScreen:
         return MaterialPageRoute(
           builder: (_) => const AdminCancelledOrdersScreen(),
+        );
+      case Routes.adminOrdersScreen:
+        return MaterialPageRoute(
+          builder: (_) => const AdminOrdersScreen(),
         );
       case Routes.detailScreen:
         final args = settings.arguments as DetailScreenArgs;
