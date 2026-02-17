@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 
->>>>>>> 00e24eb7f910f6d3ba7fe7a571bb62fd6fc76a70
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -17,10 +14,6 @@ import 'jood_app.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeFirebase();
-<<<<<<< HEAD
-
-=======
->>>>>>> 00e24eb7f910f6d3ba7fe7a571bb62fd6fc76a70
   if (!kReleaseMode) {
     await SeedFirestore.ensureSeeded();
   }
