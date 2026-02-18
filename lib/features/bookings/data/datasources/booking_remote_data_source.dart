@@ -17,11 +17,23 @@ class BookingRemoteDataSource {
     required String userId,
     required int adults,
     required int children,
+    String? paymentSessionId,
   }) async {
     final offerRef = firestore.collection('offers').doc(offerId);
-    final bookingRef = firestore.collection('bookings').doc();
+    final sessionKey = (paymentSessionId ?? '').trim();
+    final safeSessionKey = sessionKey.replaceAll('/', '_');
+    final bookingRef = safeSessionKey.isNotEmpty
+        ? firestore.collection('bookings').doc('thawani_$safeSessionKey')
+        : firestore.collection('bookings').doc();
 
     return firestore.runTransaction((transaction) async {
+      if (sessionKey.isNotEmpty) {
+        final existingSnap = await transaction.get(bookingRef);
+        if (existingSnap.exists) {
+          return BookingModel.fromDoc(existingSnap);
+        }
+      }
+
       final offerSnap = await transaction.get(offerRef);
       final data = offerSnap.data() ?? {};
       final restaurantId = (data['restaurantId'] as String? ?? '').trim();
@@ -89,6 +101,7 @@ class BookingRemoteDataSource {
         'status': 'paid',
         'bookingCode': bookingCode,
         'qrPayload': bookingCode,
+        'paymentSessionId': sessionKey.isEmpty ? null : sessionKey,
         'restaurantNameSnapshot': restaurantNameSnapshot,
         'offerTitleSnapshot': offerTitle,
         'createdAt': FieldValue.serverTimestamp(),
@@ -117,6 +130,7 @@ class BookingRemoteDataSource {
         bookingCode: bookingCode,
         qrPayload: bookingCode,
         createdAt: DateTime.now(),
+        paymentSessionId: sessionKey.isEmpty ? null : sessionKey,
         paidAt: DateTime.now(),
         restaurantNameSnapshot: restaurantNameSnapshot,
         offerTitleSnapshot: offerTitle,

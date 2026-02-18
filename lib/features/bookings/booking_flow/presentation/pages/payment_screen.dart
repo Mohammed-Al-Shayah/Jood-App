@@ -44,6 +44,7 @@ class _PaymentScreenState extends State<PaymentScreen>
   bool _isSubmitting = false;
   bool _guestRedirectHandled = false;
   bool _paymentSuccessHandled = false;
+  String? _sessionId;
   final _formKey = GlobalKey<FormState>();
   final _cardholderController = TextEditingController();
   final _cardNumberController = TextEditingController();
@@ -220,6 +221,7 @@ class _PaymentScreenState extends State<PaymentScreen>
             print("❌ Error: Session ID is null or empty!");
             return;
           }
+          _sessionId = sessionId;
           await PaymentVerificationService.savePending(
             PendingPayment(
               sessionId: sessionId,
@@ -280,6 +282,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               state: state,
               userId: user.uid,
               totalAmount: totalPayable,
+              paymentSessionId: _sessionId,
             ),
           );
         },
@@ -299,6 +302,7 @@ class _PaymentScreenState extends State<PaymentScreen>
     required BookingFlowState state,
     required String userId,
     required double totalAmount,
+    String? paymentSessionId,
   }) async {
     try {
       final offer = state.selectedOffer();
@@ -309,16 +313,20 @@ class _PaymentScreenState extends State<PaymentScreen>
         userId: userId,
         adults: state.adultCount,
         children: state.childCount,
+        paymentSessionId: paymentSessionId,
       );
 
       await getIt<CreatePaymentUseCase>()(
         PaymentEntity(
-          id: 'pay_${booking.id}_${DateTime.now().millisecondsSinceEpoch}',
+          id: paymentSessionId != null && paymentSessionId.isNotEmpty
+              ? 'pay_${paymentSessionId.replaceAll('/', '_')}'
+              : 'pay_${booking.id}',
           bookingId: booking.id,
           amount: totalAmount,
           status: 'success',
           method: 'thawani',
           createdAt: DateTime.now(),
+          paymentSessionId: paymentSessionId,
         ),
       );
 

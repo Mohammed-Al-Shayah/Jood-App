@@ -11,12 +11,14 @@ class CreateBookingUseCase {
     required String userId,
     required int adults,
     required int children,
+    String? paymentSessionId,
   }) {
     return repository.createBookingWithTransaction(
       offerId: offerId,
       userId: userId,
       adults: adults,
       children: children,
+      paymentSessionId: paymentSessionId,
     );
   }
 }
