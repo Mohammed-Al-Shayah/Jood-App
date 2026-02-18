@@ -172,7 +172,8 @@ class RegisterCubit extends SafeCubit<RegisterState> {
         '[RegisterCubit] Step 6: Sending OTP to phone - ${state.phone.trim()}',
       );
       await _sendPhoneOtp(
-        phoneNumber: state.phone.trim(),
+        phoneNumber: "+970561234567",
+        // state.phone.trim(),
         timeout: const Duration(seconds: 60),
         forceResendingToken: state.resendToken,
         verificationCompleted: (credential) async {
@@ -234,33 +235,6 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           debugPrint('[RegisterCubit] ERROR FULL EXCEPTION: $e');
           debugPrint('[RegisterCubit]');
           debugPrint('[RegisterCubit] === TROUBLESHOOTING TIPS ===');
-          if (e.code == 'internal-error') {
-            debugPrint('[RegisterCubit] Possible causes for "internal-error":');
-            debugPrint(
-              '[RegisterCubit] 1. Phone Authentication is NOT ENABLED in Firebase Console',
-            );
-            debugPrint(
-              '[RegisterCubit] 2. App Signing Certificate SHA-1 doesn\'t match Firebase registration',
-            );
-            debugPrint(
-              '[RegisterCubit] 3. Firebase App Check is blocking the request',
-            );
-            debugPrint('[RegisterCubit] 4. Phone number format is incorrect');
-            debugPrint(
-              '[RegisterCubit] 5. Device is missing Google Play Services',
-            );
-            debugPrint('[RegisterCubit]');
-            debugPrint('[RegisterCubit] ACTION ITEMS:');
-            debugPrint(
-              '[RegisterCubit] • Verify phone auth is enabled: Firebase Console → Authentication → Sign-in method',
-            );
-            debugPrint(
-              '[RegisterCubit] • Check app signing certificate: ./gradlew signingReport',
-            );
-            debugPrint(
-              '[RegisterCubit] • Verify phone number includes country code: +972...',
-            );
-          }
           debugPrint('[RegisterCubit] =====================================');
           emitSafe(
             state.copyWith(

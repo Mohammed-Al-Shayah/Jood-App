@@ -64,7 +64,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1062420615326',
     projectId: 'joodapp-3051e',
     storageBucket: 'joodapp-3051e.firebasestorage.app',
-    iosBundleId: 'com.jood.offers',
+    iosBundleId: 'com.joodOffers',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
@@ -85,5 +85,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'joodapp-3051e.firebasestorage.app',
     measurementId: 'G-9Z0MZR78BC',
   );
-
 }
