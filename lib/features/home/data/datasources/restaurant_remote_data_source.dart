@@ -90,17 +90,17 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
                 '';
       if (resolvedCurrent > 0) {
         final priceLabel =
-            '${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(0)}';
+            '${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(2)}';
         data['discountValue'] = resolvedCurrent;
         if (resolvedOriginal > resolvedCurrent) {
           data['priceFrom'] =
-              'From ${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedOriginal.toStringAsFixed(0)}';
+              'From ${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedOriginal.toStringAsFixed(2)}';
           data['discount'] = priceLabel;
           data['slotsLeft'] = 'After discount $priceLabel';
           data['priceFromValue'] = resolvedOriginal;
         } else {
           data['priceFrom'] =
-              'From ${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(0)}';
+              'From ${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(2)}';
           data['priceFromValue'] = resolvedCurrent;
         }
       }

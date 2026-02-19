@@ -41,7 +41,6 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
   late final TextEditingController _bookedChildController;
   late final TextEditingController _statusController;
   late final TextEditingController _titleController;
-  late final TextEditingController _entryConditionsController;
 
   final _statusOptions = const ['active', 'low', 'sold_out'];
   DateTimeRange? _selectedRange;
@@ -80,9 +79,6 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     );
     _statusController = TextEditingController(text: offer?.status ?? 'active');
     _titleController = TextEditingController(text: offer?.title ?? '');
-    _entryConditionsController = TextEditingController(
-      text: _joinList(offer?.entryConditions),
-    );
     _priceAdultController.addListener(_syncChildPriceFromAdult);
     _loadRestaurants();
   }
@@ -104,7 +100,6 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     _bookedChildController.dispose();
     _statusController.dispose();
     _titleController.dispose();
-    _entryConditionsController.dispose();
     super.dispose();
   }
 
@@ -161,13 +156,6 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
                     ),
                   ),
                   SizedBox(height: 14.h),
-                  AdminSectionCard(
-                    title: 'Entry Conditions',
-                    child: _textField(
-                      _entryConditionsController,
-                      'Conditions (comma separated)',
-                    ),
-                  ),
                   SizedBox(height: 16.h),
                   SizedBox(
                     width: double.infinity,
@@ -344,19 +332,6 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     );
   }
 
-  List<String> _splitList(String value) {
-    return value
-        .split(',')
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList();
-  }
-
-  String _joinList(List<String>? values) {
-    if (values == null || values.isEmpty) return '';
-    return values.join(', ');
-  }
-
   Future<void> _loadRestaurants() async {
     final usecase = getIt<GetAllRestaurantsUseCase>();
     final restaurants = await usecase();
@@ -466,7 +441,7 @@ class _AdminOfferFormScreenState extends State<AdminOfferFormScreen> {
     final bookedChild = int.parse(_bookedChildController.text.trim());
     final status = _statusController.text.trim();
     final title = _titleController.text.trim();
-    final entryConditions = _splitList(_entryConditionsController.text);
+    const entryConditions = <String>[];
 
     if (isEdit) {
       final parsedDate = DateTime.tryParse(_dateController.text.trim());
