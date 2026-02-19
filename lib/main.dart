@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 import 'core/di/service_locator.dart';
 import 'core/firebase/firebase_initializer.dart';
@@ -12,6 +13,10 @@ import 'jood_app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  EasyLoading.instance
+    ..userInteractions = false
+    ..maskType = EasyLoadingMaskType.black
+    ..dismissOnTap = false;
   await initializeFirebase();
   if (!kReleaseMode) {
     await SeedFirestore.ensureSeeded();

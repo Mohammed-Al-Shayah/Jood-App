@@ -18,6 +18,7 @@ import 'package:jood/core/widgets/bottom_cta_bar.dart';
 import 'package:jood/features/bookings/domain/usecases/create_booking_usecase.dart';
 import 'package:jood/features/payments/domain/entities/payment_entity.dart';
 import 'package:jood/features/payments/domain/usecases/create_payment_usecase.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:thawani_payment/thawani_payment.dart';
 import 'package:thawani_payment/models/products.dart';
 import '../cubit/booking_flow_cubit.dart';
@@ -305,6 +306,7 @@ class _PaymentScreenState extends State<PaymentScreen>
     String? paymentSessionId,
   }) async {
     try {
+      EasyLoading.show(status: 'loading...');
       final offer = state.selectedOffer();
       if (offer == null) throw Exception('Offer not found.');
 
@@ -336,6 +338,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         'Payment completed successfully.',
         type: SnackBarType.success,
       );
+      EasyLoading.dismiss();
       context.pushReplacementNamed(
         Routes.bookingConfirmedScreen,
         arguments: BookingConfirmedArgs(
