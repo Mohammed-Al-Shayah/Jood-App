@@ -120,16 +120,18 @@ class PaymentVerificationService {
           userId: pending.userId,
           adults: pending.adults,
           children: pending.children,
+          paymentSessionId: pending.sessionId,
         );
 
         await getIt<CreatePaymentUseCase>()(
           PaymentEntity(
-            id: 'pay_${booking.id}_${DateTime.now().millisecondsSinceEpoch}',
+            id: 'pay_${pending.sessionId.replaceAll('/', '_')}',
             bookingId: booking.id,
             amount: pending.totalAmount,
             status: 'success',
             method: 'thawani',
             createdAt: DateTime.now(),
+            paymentSessionId: pending.sessionId,
           ),
         );
 

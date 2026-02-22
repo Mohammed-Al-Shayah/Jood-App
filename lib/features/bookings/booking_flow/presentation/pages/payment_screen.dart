@@ -18,6 +18,7 @@ import 'package:jood/core/widgets/bottom_cta_bar.dart';
 import 'package:jood/features/bookings/domain/usecases/create_booking_usecase.dart';
 import 'package:jood/features/payments/domain/entities/payment_entity.dart';
 import 'package:jood/features/payments/domain/usecases/create_payment_usecase.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:thawani_payment/thawani_payment.dart';
 import 'package:thawani_payment/models/products.dart';
 import '../cubit/booking_flow_cubit.dart';
@@ -44,6 +45,7 @@ class _PaymentScreenState extends State<PaymentScreen>
   bool _isSubmitting = false;
   bool _guestRedirectHandled = false;
   bool _paymentSuccessHandled = false;
+  String? _sessionId;
   final _formKey = GlobalKey<FormState>();
   final _cardholderController = TextEditingController();
   final _cardNumberController = TextEditingController();
@@ -220,6 +222,7 @@ class _PaymentScreenState extends State<PaymentScreen>
             print("❌ Error: Session ID is null or empty!");
             return;
           }
+          _sessionId = sessionId;
           await PaymentVerificationService.savePending(
             PendingPayment(
               sessionId: sessionId,
@@ -280,6 +283,7 @@ class _PaymentScreenState extends State<PaymentScreen>
               state: state,
               userId: user.uid,
               totalAmount: totalPayable,
+              paymentSessionId: _sessionId,
             ),
           );
         },
@@ -299,8 +303,10 @@ class _PaymentScreenState extends State<PaymentScreen>
     required BookingFlowState state,
     required String userId,
     required double totalAmount,
+    String? paymentSessionId,
   }) async {
     try {
+      EasyLoading.show(status: 'loading...');
       final offer = state.selectedOffer();
       if (offer == null) throw Exception('Offer not found.');
 
@@ -309,16 +315,20 @@ class _PaymentScreenState extends State<PaymentScreen>
         userId: userId,
         adults: state.adultCount,
         children: state.childCount,
+        paymentSessionId: paymentSessionId,
       );
 
       await getIt<CreatePaymentUseCase>()(
         PaymentEntity(
-          id: 'pay_${booking.id}_${DateTime.now().millisecondsSinceEpoch}',
+          id: paymentSessionId != null && paymentSessionId.isNotEmpty
+              ? 'pay_${paymentSessionId.replaceAll('/', '_')}'
+              : 'pay_${booking.id}',
           bookingId: booking.id,
           amount: totalAmount,
           status: 'success',
           method: 'thawani',
           createdAt: DateTime.now(),
+          paymentSessionId: paymentSessionId,
         ),
       );
 
@@ -328,6 +338,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         'Payment completed successfully.',
         type: SnackBarType.success,
       );
+      EasyLoading.dismiss();
       context.pushReplacementNamed(
         Routes.bookingConfirmedScreen,
         arguments: BookingConfirmedArgs(

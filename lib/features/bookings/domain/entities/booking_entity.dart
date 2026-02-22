@@ -22,6 +22,7 @@ class BookingEntity extends Equatable {
     required this.bookingCode,
     required this.qrPayload,
     required this.createdAt,
+    this.paymentSessionId,
     this.paidAt,
     this.restaurantNameSnapshot,
     this.offerTitleSnapshot,
@@ -47,6 +48,7 @@ class BookingEntity extends Equatable {
   final String bookingCode;
   final String qrPayload;
   final DateTime createdAt;
+  final String? paymentSessionId;
   final DateTime? paidAt;
   final String? restaurantNameSnapshot;
   final String? offerTitleSnapshot;
@@ -73,6 +75,7 @@ class BookingEntity extends Equatable {
     bookingCode,
     qrPayload,
     createdAt,
+    paymentSessionId,
     paidAt,
     restaurantNameSnapshot,
     offerTitleSnapshot,

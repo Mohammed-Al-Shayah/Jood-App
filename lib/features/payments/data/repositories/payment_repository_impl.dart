@@ -22,6 +22,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
       status: payment.status,
       method: payment.method,
       createdAt: payment.createdAt,
+      paymentSessionId: payment.paymentSessionId,
     );
     return remoteDataSource.createPayment(model);
   }

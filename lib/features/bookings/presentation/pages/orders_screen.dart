@@ -515,6 +515,7 @@ class _OrderCard extends StatelessWidget {
         context,
         'Cancellation window has ended.',
         type: SnackBarType.info,
+        fromTop: true,
       );
       return;
     }
@@ -527,6 +528,7 @@ class _OrderCard extends StatelessWidget {
 
     showDialog<void>(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
@@ -601,20 +603,26 @@ class _OrderCard extends StatelessWidget {
       });
 
       if (context.mounted) {
-        Navigator.of(context).pop();
+        final rootNav = Navigator.of(context, rootNavigator: true);
+        if (rootNav.canPop()) rootNav.pop();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
         showAppSnackBar(
           context,
           'Booking cancelled successfully.',
           type: SnackBarType.success,
+          fromTop: true,
         );
       }
     } catch (error) {
       if (context.mounted) {
-        Navigator.of(context).pop();
+        final rootNav = Navigator.of(context, rootNavigator: true);
+        if (rootNav.canPop()) rootNav.pop();
         final message = error.toString().contains('CANCELLATION_EXPIRED')
             ? 'Cancellation window has ended.'
             : 'Failed to cancel booking. Please try again.';
-        showAppSnackBar(context, message, type: SnackBarType.error);
+        showAppSnackBar(context, message, type: SnackBarType.error, fromTop: true);
       }
     }
   }

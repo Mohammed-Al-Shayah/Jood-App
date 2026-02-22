@@ -13,12 +13,14 @@ class BookingRepositoryImpl implements BookingRepository {
     required String userId,
     required int adults,
     required int children,
+    String? paymentSessionId,
   }) {
     return remoteDataSource.createBookingWithTransaction(
       offerId: offerId,
       userId: userId,
       adults: adults,
       children: children,
+      paymentSessionId: paymentSessionId,
     );
   }
 

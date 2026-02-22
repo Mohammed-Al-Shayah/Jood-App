@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/routing/routes.dart';
@@ -46,6 +47,8 @@ class JoodApp extends StatelessWidget {
               : Routes.homeScreen,
           onGenerateRoute: appRouter.generateRoute,
           builder: (context, widget) {
+            final easyLoadingBuilder = EasyLoading.init();
+            widget = easyLoadingBuilder(context, widget);
             final mediaQuery = MediaQuery.maybeOf(context);
             if (mediaQuery == null) {
               return widget ?? const SizedBox.shrink();

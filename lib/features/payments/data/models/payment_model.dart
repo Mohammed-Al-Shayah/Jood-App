@@ -11,6 +11,7 @@ class PaymentModel extends PaymentEntity {
     required super.status,
     required super.method,
     required super.createdAt,
+    super.paymentSessionId,
   });
 
   factory PaymentModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -22,6 +23,7 @@ class PaymentModel extends PaymentEntity {
       status: data['status'] as String? ?? 'pending',
       method: data['method'] as String? ?? 'card',
       createdAt: _toDateTime(data['createdAt']),
+      paymentSessionId: data['paymentSessionId'] as String?,
     );
   }
 
@@ -31,6 +33,7 @@ class PaymentModel extends PaymentEntity {
       'amount': amount,
       'status': status,
       'method': method,
+      'paymentSessionId': paymentSessionId,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }

@@ -6,6 +6,7 @@ abstract class BookingRepository {
     required String userId,
     required int adults,
     required int children,
+    String? paymentSessionId,
   });
   Future<List<BookingEntity>> getMyBookings(String userId);
   Future<BookingEntity> getBookingById(String id);

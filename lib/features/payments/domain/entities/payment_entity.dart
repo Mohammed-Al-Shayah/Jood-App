@@ -8,6 +8,7 @@ class PaymentEntity extends Equatable {
     required this.status,
     required this.method,
     required this.createdAt,
+    this.paymentSessionId,
   });
 
   final String id;
@@ -16,7 +17,16 @@ class PaymentEntity extends Equatable {
   final String status;
   final String method;
   final DateTime createdAt;
+  final String? paymentSessionId;
 
   @override
-  List<Object?> get props => [id, bookingId, amount, status, method, createdAt];
+  List<Object?> get props => [
+    id,
+    bookingId,
+    amount,
+    status,
+    method,
+    createdAt,
+    paymentSessionId,
+  ];
 }
