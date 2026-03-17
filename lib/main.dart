@@ -6,6 +6,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 import 'core/di/service_locator.dart';
 import 'core/firebase/firebase_initializer.dart';
+import 'core/firebase/firebase_messaging_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/utils/seed_firestore.dart';
 import 'features/users/domain/usecases/sync_auth_user_usecase.dart';
@@ -29,4 +30,9 @@ void main() async {
     await getIt<SyncAuthUserUseCase>()(authUser);
   }
   runApp(JoodApp(appRouter: AppRouter()));
+
+  // تهيئة FCM بعد عرض الإطار الأول - يتجنب تعليق الاتصال مع الـ debugger
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    FirebaseMessagingService().initialize();
+  });
 }
