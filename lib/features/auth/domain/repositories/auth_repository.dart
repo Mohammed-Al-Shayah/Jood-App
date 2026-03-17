@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../entities/otp_mode.dart';
+
 abstract class AuthRepository {
   User? getCurrentUser();
 
@@ -8,16 +10,16 @@ abstract class AuthRepository {
     required String password,
   });
 
-  Future<UserCredential> signInWithPhoneCredential(AuthCredential credential);
-
-  Future<void> verifyPhoneNumber({
+  Future<String> sendPhoneOtp({
     required String phoneNumber,
-    Duration timeout = const Duration(seconds: 60),
-    int? forceResendingToken,
-    required PhoneVerificationCompleted verificationCompleted,
-    required PhoneVerificationFailed verificationFailed,
-    required PhoneCodeSent codeSent,
-    required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+    OtpMode mode = OtpMode.auth,
+  });
+
+  Future<UserCredential?> verifyPhoneOtp({
+    required String phoneNumber,
+    required String verificationId,
+    required String smsCode,
+    OtpMode mode = OtpMode.auth,
   });
 
   Future<void> sendPasswordResetEmail(String email);

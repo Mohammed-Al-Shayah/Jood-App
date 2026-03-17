@@ -30,6 +30,8 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       create: (_) => ProfileEditCubit(
         updateUser: getIt(),
         getUserByPhone: getIt(),
+        sendPhoneOtp: getIt(),
+        verifyOtp: getIt(),
         auth: getIt(),
         user: widget.user,
       ),
@@ -397,9 +399,7 @@ class _PickerField extends StatelessWidget {
               child: Text(
                 isEmpty ? hintText : value,
                 style: AppTextStyles.cardMeta.copyWith(
-                  color: isEmpty
-                      ? AppColors.textMuted
-                      : AppColors.textPrimary,
+                  color: isEmpty ? AppColors.textMuted : AppColors.textPrimary,
                   fontSize: 14.sp,
                 ),
               ),
@@ -412,10 +412,7 @@ class _PickerField extends StatelessWidget {
   }
 }
 
-void _showCountryPicker(
-  BuildContext context,
-  ValueChanged<Country> onSelect,
-) {
+void _showCountryPicker(BuildContext context, ValueChanged<Country> onSelect) {
   showCountryPicker(
     context: context,
     showPhoneCode: false,

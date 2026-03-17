@@ -6,6 +6,7 @@ import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
+import '../../../domain/entities/otp_mode.dart';
 import '../../../domain/usecases/link_email_password_usecase.dart';
 import '../../../domain/usecases/send_email_verification_usecase.dart';
 import '../../../domain/usecases/send_phone_otp_usecase.dart';
@@ -33,7 +34,6 @@ class OtpCubit extends SafeCubit<OtpState> {
        _syncAuthUser = syncAuthUser,
        _args = args,
        _verificationId = args.verificationId,
-       _resendToken = args.resendToken,
        super(OtpState.initial()) {
     _startTimer();
   }
@@ -47,7 +47,6 @@ class OtpCubit extends SafeCubit<OtpState> {
   final VerifyOtpArgs _args;
 
   String _verificationId;
-  int? _resendToken;
   Timer? _timer;
 
   void updateCode(String value) {
@@ -58,31 +57,7 @@ class OtpCubit extends SafeCubit<OtpState> {
     emitSafe(state.copyWith(secondsLeft: 60, canResend: false));
     _startTimer();
     try {
-      await _sendPhoneOtp(
-        phoneNumber: _args.phone,
-        timeout: const Duration(seconds: 60),
-        forceResendingToken: _resendToken,
-        verificationCompleted: (_) {},
-        verificationFailed: (e) {
-          emitSafe(
-            state.copyWith(
-              status: OtpStatus.failure,
-              errorMessage: mapFirebaseAuthException(
-                e,
-                operationNotAllowedMessage: 'Phone auth is not enabled.',
-                fallbackMessage: 'Phone verification failed. Please try again.',
-              ),
-            ),
-          );
-        },
-        codeSent: (verificationId, resendToken) {
-          _verificationId = verificationId;
-          _resendToken = resendToken;
-        },
-        codeAutoRetrievalTimeout: (verificationId) {
-          _verificationId = verificationId;
-        },
-      );
+      _verificationId = await _sendPhoneOtp(phoneNumber: _args.phone);
     } on FirebaseAuthException catch (e) {
       emitSafe(
         state.copyWith(
@@ -109,10 +84,12 @@ class OtpCubit extends SafeCubit<OtpState> {
     emitSafe(state.copyWith(status: OtpStatus.verifying, errorMessage: null));
     try {
       final result = await _verifyOtp(
+        phoneNumber: _args.phone,
         verificationId: _verificationId,
         smsCode: state.code,
+        mode: OtpMode.auth,
       );
-      final user = result.user;
+      final user = result?.user;
       if (user == null) {
         emitSafe(
           state.copyWith(

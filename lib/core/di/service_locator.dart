@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -31,7 +32,6 @@ import '../../features/auth/domain/usecases/reload_user_usecase.dart';
 import '../../features/auth/domain/usecases/send_email_verification_usecase.dart';
 import '../../features/auth/domain/usecases/send_password_reset_email_usecase.dart';
 import '../../features/auth/domain/usecases/send_phone_otp_usecase.dart';
-import '../../features/auth/domain/usecases/sign_in_with_phone_credential_usecase.dart';
 import '../../features/auth/domain/usecases/sign_out_usecase.dart';
 import '../../features/auth/domain/usecases/update_password_usecase.dart';
 import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
@@ -82,6 +82,9 @@ final GetIt getIt = GetIt.instance;
 
 Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
+  getIt.registerLazySingleton<FirebaseFunctions>(
+    () => FirebaseFunctions.instance,
+  );
   getIt.registerLazySingleton<FirebaseFirestore>(
     () => FirebaseFirestore.instance,
   );
@@ -132,7 +135,7 @@ Future<void> setupServiceLocator() async {
         BookingFlowCubit(getOffersForDate: getIt(), getOffersForRange: getIt()),
   );
   getIt.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(getIt()),
+    () => AuthRepositoryImpl(getIt(), getIt()),
   );
   getIt.registerLazySingleton<LoginWithEmailUseCase>(
     () => LoginWithEmailUseCase(getIt()),
@@ -145,9 +148,6 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<VerifyOtpUseCase>(
     () => VerifyOtpUseCase(getIt()),
-  );
-  getIt.registerLazySingleton<SignInWithPhoneCredentialUseCase>(
-    () => SignInWithPhoneCredentialUseCase(getIt()),
   );
   getIt.registerLazySingleton<SendPasswordResetEmailUseCase>(
     () => SendPasswordResetEmailUseCase(getIt()),
@@ -197,13 +197,8 @@ Future<void> setupServiceLocator() async {
     () => RegisterCubit(
       checkEmailInUse: getIt(),
       sendPhoneOtp: getIt(),
-      signInWithPhoneCredential: getIt(),
-      linkEmailPassword: getIt(),
-      sendEmailVerification: getIt(),
-      createUser: getIt(),
       getUserByEmail: getIt(),
       getUserByPhone: getIt(),
-      syncAuthUser: getIt(),
     ),
   );
   getIt.registerLazySingleton<UserRemoteDataSource>(

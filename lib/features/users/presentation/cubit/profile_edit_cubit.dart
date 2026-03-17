@@ -5,6 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jood/core/errors/auth_error_mapper.dart';
 import 'package:jood/core/utils/auth_validators.dart';
+import 'package:jood/features/auth/domain/entities/otp_mode.dart';
+import 'package:jood/features/auth/domain/usecases/send_phone_otp_usecase.dart';
+import 'package:jood/features/auth/domain/usecases/verify_otp_usecase.dart';
 
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/get_user_by_phone_usecase.dart';
@@ -15,10 +18,14 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
   ProfileEditCubit({
     required UpdateUserUseCase updateUser,
     required GetUserByPhoneUseCase getUserByPhone,
+    required SendPhoneOtpUseCase sendPhoneOtp,
+    required VerifyOtpUseCase verifyOtp,
     required FirebaseAuth auth,
     required UserEntity user,
   }) : _updateUser = updateUser,
        _getUserByPhone = getUserByPhone,
+       _sendPhoneOtpUseCase = sendPhoneOtp,
+       _verifyOtp = verifyOtp,
        _auth = auth,
        _user = user,
        super(
@@ -35,6 +42,8 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
 
   final UpdateUserUseCase _updateUser;
   final GetUserByPhoneUseCase _getUserByPhone;
+  final SendPhoneOtpUseCase _sendPhoneOtpUseCase;
+  final VerifyOtpUseCase _verifyOtp;
   final FirebaseAuth _auth;
   final UserEntity _user;
   Timer? _timer;
@@ -179,12 +188,24 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         );
         return;
       }
-      final credential = PhoneAuthProvider.credential(
+      await _verifyOtp(
+        phoneNumber: state.phone.trim(),
         verificationId: state.verificationId!,
         smsCode: state.otpCode.trim(),
+        mode: OtpMode.updatePhone,
       );
-      await current.updatePhoneNumber(credential);
-      final sentVerificationEmail = await _applyUpdates(current);
+      await current.reload();
+      final refreshed = _auth.currentUser;
+      if (refreshed == null) {
+        emit(
+          state.copyWith(
+            status: ProfileEditStatus.failure,
+            errorMessage: 'No signed-in user found.',
+          ),
+        );
+        return;
+      }
+      final sentVerificationEmail = await _applyUpdates(refreshed);
       emit(
         state.copyWith(
           status: ProfileEditStatus.success,
@@ -217,10 +238,10 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
 
   Future<void> resendOtp() async {
     if (!state.canResend) return;
-    await _sendPhoneOtp(state.phone.trim(), forceResend: true);
+    await _sendPhoneOtp(state.phone.trim());
   }
 
-  Future<void> _sendPhoneOtp(String phone, {bool forceResend = false}) async {
+  Future<void> _sendPhoneOtp(String phone) async {
     emit(
       state.copyWith(
         status: ProfileEditStatus.otpSending,
@@ -230,67 +251,38 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
       ),
     );
     _startTimer();
-    await _auth.verifyPhoneNumber(
-      phoneNumber: phone,
-      timeout: const Duration(seconds: 60),
-      forceResendingToken: forceResend ? state.resendToken : null,
-      verificationCompleted: (credential) async {
-        try {
-          final current = _auth.currentUser;
-          if (current == null) {
-            emit(
-              state.copyWith(
-                status: ProfileEditStatus.failure,
-                errorMessage: 'No signed-in user found.',
-              ),
-            );
-            return;
-          }
-          await current.updatePhoneNumber(credential);
-          final sentVerificationEmail = await _applyUpdates(current);
-          emit(
-            state.copyWith(
-              status: ProfileEditStatus.success,
-              successMessage: sentVerificationEmail
-                  ? 'Verification link sent to your new email. Please confirm it.'
-                  : null,
-            ),
-          );
-        } catch (e) {
-          emit(
-            state.copyWith(
-              status: ProfileEditStatus.failure,
-              errorMessage: e.toString(),
-              successMessage: null,
-            ),
-          );
-        }
-      },
-      verificationFailed: (e) {
-        emit(
-          state.copyWith(
-            status: ProfileEditStatus.failure,
-            errorMessage: mapFirebaseAuthException(
-              e,
-              fallbackMessage: 'Phone verification failed. Please try again.',
-            ),
-            successMessage: null,
+    try {
+      final verificationId = await _sendPhoneOtpUseCase(
+        phoneNumber: phone,
+        mode: OtpMode.updatePhone,
+      );
+      emit(
+        state.copyWith(
+          status: ProfileEditStatus.otpSent,
+          verificationId: verificationId,
+          resendToken: null,
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      emit(
+        state.copyWith(
+          status: ProfileEditStatus.failure,
+          errorMessage: mapFirebaseAuthException(
+            e,
+            fallbackMessage: 'Phone verification failed. Please try again.',
           ),
-        );
-      },
-      codeSent: (verificationId, resendToken) {
-        emit(
-          state.copyWith(
-            status: ProfileEditStatus.otpSent,
-            verificationId: verificationId,
-            resendToken: resendToken,
-          ),
-        );
-      },
-      codeAutoRetrievalTimeout: (verificationId) {
-        emit(state.copyWith(verificationId: verificationId));
-      },
-    );
+          successMessage: null,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: ProfileEditStatus.failure,
+          errorMessage: error.toString(),
+          successMessage: null,
+        ),
+      );
+    }
   }
 
   Future<bool> _applyUpdates(User current) async {

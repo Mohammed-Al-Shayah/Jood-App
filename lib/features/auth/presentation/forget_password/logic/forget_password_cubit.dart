@@ -75,33 +75,15 @@ class ForgetPasswordCubit extends SafeCubit<ForgetPasswordState> {
           return;
         }
 
-        await _sendPhoneOtp(
-          phoneNumber: input,
-          timeout: const Duration(seconds: 60),
-          verificationCompleted: (_) {},
-          verificationFailed: (e) {
-            emitSafe(
-              state.copyWith(
-                status: ForgetPasswordStatus.failure,
-                errorMessage: mapFirebaseAuthException(
-                  e,
-                  operationNotAllowedMessage:
-                      'Phone authentication is not enabled for this project.',
-                  fallbackMessage: 'Request failed. Please try again.',
-                ),
-              ),
-            );
-          },
-          codeSent: (verificationId, resendToken) {
-            emitSafe(
-              state.copyWith(
-                status: ForgetPasswordStatus.phoneOtpSent,
-                verificationId: verificationId,
-                resendToken: resendToken,
-              ),
-            );
-          },
-          codeAutoRetrievalTimeout: (_) {},
+        final verificationId = await _sendPhoneOtp(
+          phoneNumber: normalizedPhone,
+        );
+        emitSafe(
+          state.copyWith(
+            status: ForgetPasswordStatus.phoneOtpSent,
+            verificationId: verificationId,
+            resendToken: null,
+          ),
         );
       } else {
         await _sendPasswordResetEmail(input);

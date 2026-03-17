@@ -32,6 +32,8 @@ String mapFirebaseAuthException(
       return 'OTP session expired. Please resend the code.';
     case 'quota-exceeded':
       return 'SMS quota exceeded. Please try again later.';
+    case 'resource-exhausted':
+      return e.message ?? AppStrings.tooManyAttempts;
     case 'too-many-requests':
       return AppStrings.tooManyAttempts;
     case 'operation-not-allowed':

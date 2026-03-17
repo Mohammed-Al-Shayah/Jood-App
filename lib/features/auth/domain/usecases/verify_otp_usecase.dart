@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../entities/otp_mode.dart';
 import '../repositories/auth_repository.dart';
 
 class VerifyOtpUseCase {
@@ -7,14 +8,17 @@ class VerifyOtpUseCase {
 
   final AuthRepository _repository;
 
-  Future<UserCredential> call({
+  Future<UserCredential?> call({
+    required String phoneNumber,
     required String verificationId,
     required String smsCode,
+    OtpMode mode = OtpMode.auth,
   }) {
-    final credential = PhoneAuthProvider.credential(
+    return _repository.verifyPhoneOtp(
+      phoneNumber: phoneNumber,
       verificationId: verificationId,
       smsCode: smsCode,
+      mode: mode,
     );
-    return _repository.signInWithPhoneCredential(credential);
   }
 }

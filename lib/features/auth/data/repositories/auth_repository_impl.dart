@@ -1,11 +1,15 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../../core/utils/auth_validators.dart';
+import '../../domain/entities/otp_mode.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(this._auth);
+  AuthRepositoryImpl(this._auth, this._functions);
 
   final FirebaseAuth _auth;
+  final FirebaseFunctions _functions;
 
   @override
   User? getCurrentUser() => _auth.currentUser;
@@ -19,28 +23,25 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserCredential> signInWithPhoneCredential(AuthCredential credential) {
-    return _auth.signInWithCredential(credential);
+  Future<String> sendPhoneOtp({
+    required String phoneNumber,
+    OtpMode mode = OtpMode.auth,
+  }) {
+    return _sendPhoneOtp(phoneNumber: phoneNumber, mode: mode);
   }
 
   @override
-  Future<void> verifyPhoneNumber({
+  Future<UserCredential?> verifyPhoneOtp({
     required String phoneNumber,
-    Duration timeout = const Duration(seconds: 60),
-    int? forceResendingToken,
-    required PhoneVerificationCompleted verificationCompleted,
-    required PhoneVerificationFailed verificationFailed,
-    required PhoneCodeSent codeSent,
-    required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+    required String verificationId,
+    required String smsCode,
+    OtpMode mode = OtpMode.auth,
   }) {
-    return _auth.verifyPhoneNumber(
+    return _verifyPhoneOtp(
       phoneNumber: phoneNumber,
-      timeout: timeout,
-      forceResendingToken: forceResendingToken,
-      verificationCompleted: verificationCompleted,
-      verificationFailed: verificationFailed,
-      codeSent: codeSent,
-      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
+      verificationId: verificationId,
+      smsCode: smsCode,
+      mode: mode,
     );
   }
 
@@ -96,5 +97,103 @@ class AuthRepositoryImpl implements AuthRepository {
     required String newEmail,
   }) {
     return user.verifyBeforeUpdateEmail(newEmail);
+  }
+
+  Future<String> _sendPhoneOtp({
+    required String phoneNumber,
+    required OtpMode mode,
+  }) async {
+    final normalizedPhone = AuthValidators.normalizePhone(phoneNumber);
+
+    try {
+      final result = await _functions.httpsCallable('sendSmsOtp').call({
+        'phoneNumber': normalizedPhone,
+        'mode': mode.apiValue,
+      });
+      final data = _asMap(result.data);
+      final verificationId = (data['verificationId']?.toString() ?? '').trim();
+      if (verificationId.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'session-expired',
+          message: 'Unable to start phone verification. Please try again.',
+        );
+      }
+      return verificationId;
+    } on FirebaseFunctionsException catch (e) {
+      throw _mapFunctionsException(e);
+    }
+  }
+
+  Future<UserCredential?> _verifyPhoneOtp({
+    required String phoneNumber,
+    required String verificationId,
+    required String smsCode,
+    required OtpMode mode,
+  }) async {
+    final normalizedPhone = AuthValidators.normalizePhone(phoneNumber);
+
+    try {
+      final result = await _functions.httpsCallable('verifySmsOtp').call({
+        'phoneNumber': normalizedPhone,
+        'verificationId': verificationId,
+        'code': smsCode.trim(),
+        'mode': mode.apiValue,
+      });
+
+      if (mode == OtpMode.updatePhone) {
+        await _auth.currentUser?.reload();
+        return null;
+      }
+
+      final data = _asMap(result.data);
+      final customToken = (data['customToken']?.toString() ?? '').trim();
+      if (customToken.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'invalid-credential',
+          message: 'Unable to verify phone. Please try again.',
+        );
+      }
+
+      final credential = await _auth.signInWithCustomToken(customToken);
+      await credential.user?.reload();
+      return credential;
+    } on FirebaseFunctionsException catch (e) {
+      throw _mapFunctionsException(e);
+    }
+  }
+
+  Map<String, dynamic> _asMap(dynamic data) {
+    if (data is Map<Object?, Object?>) {
+      return data.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return <String, dynamic>{};
+  }
+
+  FirebaseAuthException _mapFunctionsException(FirebaseFunctionsException e) {
+    switch (e.code) {
+      case 'invalid-argument':
+        return FirebaseAuthException(
+          code: 'invalid-phone-number',
+          message: e.message,
+        );
+      case 'permission-denied':
+        return FirebaseAuthException(
+          code: 'invalid-verification-code',
+          message: e.message,
+        );
+      case 'deadline-exceeded':
+      case 'not-found':
+        return FirebaseAuthException(
+          code: 'session-expired',
+          message: e.message,
+        );
+      case 'resource-exhausted':
+        return FirebaseAuthException(
+          code: 'resource-exhausted',
+          message: e.message,
+        );
+      default:
+        return FirebaseAuthException(code: e.code, message: e.message);
+    }
   }
 }
