@@ -200,19 +200,23 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (order.restaurantId.isEmpty) {
+    final snapshotName = order.restaurantNameSnapshot.isEmpty
+        ? 'Booking'
+        : order.restaurantNameSnapshot;
+    if (order.restaurantId.isEmpty || order.coverImageUrlSnapshot.isNotEmpty) {
       return _buildCard(
         context: context,
-        restaurantName: order.restaurantNameSnapshot.isEmpty
-            ? 'Restaurant'
-            : order.restaurantNameSnapshot,
-        restaurantImageUrl: '',
+        restaurantName: snapshotName,
+        restaurantImageUrl: order.coverImageUrlSnapshot,
       );
     }
 
+    final sourceCollection = order.bookableType.toLowerCase() == 'attraction'
+        ? 'attractions'
+        : 'restaurants';
     return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       future: FirebaseFirestore.instance
-          .collection('restaurants')
+          .collection(sourceCollection)
           .doc(order.restaurantId)
           .get(),
       builder: (context, snapshot) {
@@ -223,11 +227,14 @@ class _OrderCard extends StatelessWidget {
         final displayName = order.restaurantNameSnapshot.isNotEmpty
             ? order.restaurantNameSnapshot
             : restaurant.name;
+        final displayImage = order.coverImageUrlSnapshot.isNotEmpty
+            ? order.coverImageUrlSnapshot
+            : restaurant.coverImageUrl;
 
         return _buildCard(
           context: context,
           restaurantName: displayName,
-          restaurantImageUrl: restaurant.coverImageUrl,
+          restaurantImageUrl: displayImage,
         );
       },
     );

@@ -47,7 +47,7 @@ class AdminCancelledOrdersScreen extends StatelessWidget {
 
           return ListView.separated(
             itemCount: docs.length,
-            separatorBuilder: (_, __) => SizedBox(height: 12.h),
+            separatorBuilder: (_, _) => SizedBox(height: 12.h),
             itemBuilder: (context, index) {
               final doc = docs[index];
               final data = doc.data();

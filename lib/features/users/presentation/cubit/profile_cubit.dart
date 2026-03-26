@@ -21,9 +21,11 @@ class ProfileCubit extends Cubit<ProfileState> {
   final FirebaseAuth _auth;
 
   Future<void> load() async {
+    if (isClosed) return;
     emit(state.copyWith(status: ProfileStatus.loading, errorMessage: null));
     final user = _auth.currentUser;
     if (user == null) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: ProfileStatus.failure,
@@ -34,8 +36,10 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
     try {
       await user.reload();
+      if (isClosed) return;
       final refreshedUser = _auth.currentUser;
       if (refreshedUser == null) {
+        if (isClosed) return;
         emit(
           state.copyWith(
             status: ProfileStatus.failure,
@@ -45,6 +49,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         return;
       }
       var profile = await _getUserById(refreshedUser.uid);
+      if (isClosed) return;
       if (profile == null) {
         emit(
           state.copyWith(
@@ -55,8 +60,10 @@ class ProfileCubit extends Cubit<ProfileState> {
         return;
       }
       profile = await _syncEmailFromAuth(profile, refreshedUser);
+      if (isClosed) return;
       emit(state.copyWith(status: ProfileStatus.success, user: profile));
     } catch (error) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: ProfileStatus.failure,

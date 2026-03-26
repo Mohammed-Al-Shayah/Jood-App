@@ -24,6 +24,11 @@ class OfferModel extends OfferEntity {
     required super.entryConditions,
     required super.createdAt,
     required super.updatedAt,
+    super.bookingCategory,
+    super.bookableType,
+    super.mealType,
+    super.packageName,
+    super.packageDescription,
   });
 
   factory OfferModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -47,6 +52,11 @@ class OfferModel extends OfferEntity {
       entryConditions: _stringList(data['entryConditions']),
       createdAt: _toDateTime(data['createdAt']),
       updatedAt: _toDateTime(data['updatedAt']),
+      bookingCategory: data['bookingCategory'] as String? ?? '',
+      bookableType: data['bookableType'] as String? ?? 'restaurant',
+      mealType: data['mealType'] as String? ?? '',
+      packageName: data['packageName'] as String? ?? '',
+      packageDescription: data['packageDescription'] as String? ?? '',
     );
   }
 
@@ -67,6 +77,11 @@ class OfferModel extends OfferEntity {
       'status': status,
       'title': title,
       'entryConditions': entryConditions,
+      'bookingCategory': bookingCategory,
+      'bookableType': bookableType,
+      'mealType': mealType,
+      'packageName': packageName,
+      'packageDescription': packageDescription,
     };
   }
 

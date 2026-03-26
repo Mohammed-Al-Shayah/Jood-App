@@ -9,6 +9,11 @@ import '../../features/home/data/repositories/restaurant_repository_impl.dart';
 import '../../features/home/domain/repositories/restaurant_repository.dart';
 import '../../features/home/presentation/cubit/home_cubit.dart';
 import '../../features/bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
+import '../../features/booking_catalog/data/datasources/catalog_remote_data_source.dart';
+import '../../features/booking_catalog/data/repositories/catalog_repository_impl.dart';
+import '../../features/booking_catalog/domain/repositories/catalog_repository.dart';
+import '../../features/booking_catalog/domain/usecases/get_catalog_items_usecase.dart';
+import '../../features/booking_catalog/presentation/cubit/catalog_list_cubit.dart';
 import '../../features/offers/data/datasources/offer_remote_data_source.dart';
 import '../../features/offers/data/repositories/offer_repository_impl.dart';
 import '../../features/offers/domain/repositories/offer_repository.dart';
@@ -105,6 +110,18 @@ Future<void> setupServiceLocator() async {
       auth: getIt(),
       firestore: getIt(),
     ),
+  );
+  getIt.registerLazySingleton<CatalogRemoteDataSource>(
+    () => CatalogRemoteDataSource(getIt()),
+  );
+  getIt.registerLazySingleton<CatalogRepository>(
+    () => CatalogRepositoryImpl(getIt()),
+  );
+  getIt.registerLazySingleton<GetCatalogItemsUseCase>(
+    () => GetCatalogItemsUseCase(getIt()),
+  );
+  getIt.registerFactory<CatalogListCubit>(
+    () => CatalogListCubit(getCatalogItems: getIt()),
   );
   getIt.registerLazySingleton<OfferRemoteDataSource>(
     () => OfferRemoteDataSource(getIt()),

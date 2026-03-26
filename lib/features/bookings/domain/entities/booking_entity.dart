@@ -26,6 +26,8 @@ class BookingEntity extends Equatable {
     this.paidAt,
     this.restaurantNameSnapshot,
     this.offerTitleSnapshot,
+    this.bookableType,
+    this.coverImageUrlSnapshot,
   });
 
   final String id;
@@ -52,6 +54,8 @@ class BookingEntity extends Equatable {
   final DateTime? paidAt;
   final String? restaurantNameSnapshot;
   final String? offerTitleSnapshot;
+  final String? bookableType;
+  final String? coverImageUrlSnapshot;
 
   @override
   List<Object?> get props => [
@@ -79,5 +83,7 @@ class BookingEntity extends Equatable {
     paidAt,
     restaurantNameSnapshot,
     offerTitleSnapshot,
+    bookableType,
+    coverImageUrlSnapshot,
   ];
 }

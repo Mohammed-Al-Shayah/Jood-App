@@ -23,6 +23,8 @@ class OrderItemViewModel {
     required this.createdAt,
     required this.restaurantNameSnapshot,
     required this.offerTitleSnapshot,
+    required this.bookableType,
+    required this.coverImageUrlSnapshot,
   });
 
   final String id;
@@ -46,6 +48,8 @@ class OrderItemViewModel {
   final Timestamp? createdAt;
   final String restaurantNameSnapshot;
   final String offerTitleSnapshot;
+  final String bookableType;
+  final String coverImageUrlSnapshot;
 
   factory OrderItemViewModel.fromDoc(
     DocumentSnapshot<Map<String, dynamic>> doc,
@@ -74,6 +78,9 @@ class OrderItemViewModel {
       restaurantNameSnapshot: (data['restaurantNameSnapshot'] as String? ?? '')
           .trim(),
       offerTitleSnapshot: (data['offerTitleSnapshot'] as String? ?? '').trim(),
+      bookableType: (data['bookableType'] as String? ?? 'restaurant').trim(),
+      coverImageUrlSnapshot: (data['coverImageUrlSnapshot'] as String? ?? '')
+          .trim(),
     );
   }
 }

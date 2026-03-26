@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'catalog_route_args.dart';
 import '../../features/main_shell/presentation/pages/main_shell_screen.dart';
 import '../../features/bookings/presentation/pages/orders_screen.dart';
 import '../../features/bookings/presentation/pages/order_qr_scanner_screen.dart';
@@ -14,6 +15,9 @@ import '../../features/auth/presentation/change_password/pages/change_password.p
 import '../../features/auth/presentation/registration/page/request_under_review.page.dart';
 import '../../features/auth/presentation/registration/page/beneficiary_create_story.page.dart';
 import '../../features/restaurants/presentation/pages/detail_screen.dart';
+import 'package:jood/features/booking_catalog/presentation/pages/catalog_booking_screen.dart';
+import 'package:jood/features/booking_catalog/presentation/pages/catalog_detail_screen.dart';
+import 'package:jood/features/booking_catalog/presentation/pages/catalog_list_screen.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_screen.dart';
 import '../../features/admin/presentation/pages/admin_restaurants_screen.dart';
 import '../../features/admin/presentation/pages/admin_restaurant_form_screen.dart';
@@ -107,6 +111,21 @@ class AppRouter {
             rating: args.rating,
             image: args.image,
           ),
+        );
+      case Routes.catalogListScreen:
+        final args = settings.arguments as CatalogListArgs;
+        return MaterialPageRoute(
+          builder: (_) => CatalogListScreen(category: args.category),
+        );
+      case Routes.catalogDetailScreen:
+        final args = settings.arguments as CatalogDetailArgs;
+        return MaterialPageRoute(
+          builder: (_) => CatalogDetailScreen(item: args.item),
+        );
+      case Routes.catalogBookingScreen:
+        final args = settings.arguments as CatalogBookingArgs;
+        return MaterialPageRoute(
+          builder: (_) => CatalogBookingScreen(item: args.item),
         );
       case Routes.selectDateTimeScreen:
         final args = settings.arguments as SelectDateTimeArgs;

@@ -27,19 +27,29 @@ class HomeCubit extends Cubit<HomeState> {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _restaurantsSub;
+  bool _isFetchingRestaurants = false;
 
   void startListening() {
     _restaurantsSub?.cancel();
     _restaurantsSub = _firestore
         .collection('restaurants')
         .snapshots()
-        .listen((_) => fetchRestaurants());
+        .skip(1)
+        .listen((_) {
+          if (isClosed) return;
+          unawaited(fetchRestaurants(showLoading: false));
+        });
   }
 
-  Future<void> fetchRestaurants() async {
-    emit(state.copyWith(status: HomeStatus.loading));
+  Future<void> fetchRestaurants({bool showLoading = true}) async {
+    if (isClosed || _isFetchingRestaurants) return;
+    _isFetchingRestaurants = true;
+    if (showLoading && state.restaurants.isEmpty) {
+      emit(state.copyWith(status: HomeStatus.loading));
+    }
     try {
       final restaurants = await _repository.getRestaurants();
+      if (isClosed) return;
       if (restaurants.isEmpty) {
         emit(
           state.copyWith(
@@ -64,21 +74,24 @@ class HomeCubit extends Cubit<HomeState> {
         );
       }
     } catch (error) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: HomeStatus.failure,
           errorMessage: error.toString(),
         ),
       );
+    } finally {
+      _isFetchingRestaurants = false;
     }
   }
 
   Future<void> fetchUserLocation() async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null || isClosed) return;
     try {
       final profile = await _getUserById(user.uid);
-      if (profile == null) return;
+      if (profile == null || isClosed) return;
       emit(
         state.copyWith(userCity: profile.city, userCountry: profile.country),
       );
@@ -86,6 +99,7 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   void updateQuery(String value) {
+    if (isClosed) return;
     final filtered = _applyFilters(
       state.restaurants,
       value,
@@ -96,6 +110,7 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   void updateSort({SortField? field, SortOrder? order}) {
+    if (isClosed) return;
     final nextOrder = order ?? state.sortOrder;
     final filtered = _applyFilters(
       state.restaurants,
@@ -196,14 +211,14 @@ class HomeCubit extends Cubit<HomeState> {
     if (restaurant.area.isNotEmpty) parts.add(restaurant.area);
     if (restaurant.cityId.isNotEmpty) parts.add(restaurant.cityId);
     if (parts.isNotEmpty) {
-      return parts.join(' • ');
+      return parts.join(' | ');
     }
     return restaurant.address;
   }
 
   @override
-  Future<void> close() {
-    _restaurantsSub?.cancel();
-    return super.close();
+  Future<void> close() async {
+    await _restaurantsSub?.cancel();
+    await super.close();
   }
 }

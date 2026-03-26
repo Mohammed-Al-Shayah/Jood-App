@@ -11,6 +11,9 @@ class Routes {
   static const String ordersScreen = '/orders';
   static const String profileScreen = '/profile';
   static const String detailScreen = '/detail';
+  static const String catalogListScreen = '/catalog-list';
+  static const String catalogDetailScreen = '/catalog-detail';
+  static const String catalogBookingScreen = '/catalog-booking';
   static const String selectDateTimeScreen = '/select-date-time';
   static const String selectGuestsScreen = '/select-guests';
   static const String paymentScreen = '/payment';

@@ -38,6 +38,9 @@ class BookingRemoteDataSource {
       final data = offerSnap.data() ?? {};
       final restaurantId = (data['restaurantId'] as String? ?? '').trim();
       final offerTitle = (data['title'] as String? ?? '').trim();
+      final bookableType = (data['bookableType'] as String? ?? 'restaurant')
+          .trim()
+          .toLowerCase();
 
       final capacityAdult = (data['capacityAdult'] as num?)?.toInt() ?? 0;
       final capacityChild = (data['capacityChild'] as num?)?.toInt() ?? 0;
@@ -65,15 +68,18 @@ class BookingRemoteDataSource {
       final total = subtotal + tax - discount;
       final bookingCode = _generateCode();
       String restaurantNameSnapshot = '';
+      String coverImageUrlSnapshot = '';
       if (restaurantId.isNotEmpty) {
-        final restaurantRef = firestore
-            .collection('restaurants')
-            .doc(restaurantId);
+        final collection = bookableType == 'attraction'
+            ? 'attractions'
+            : 'restaurants';
+        final restaurantRef = firestore.collection(collection).doc(restaurantId);
         final restaurantSnap = await transaction.get(restaurantRef);
-        final restaurantData =
-            restaurantSnap.data() ?? const <String, dynamic>{};
+        final restaurantData = restaurantSnap.data() ?? const <String, dynamic>{};
         restaurantNameSnapshot = (restaurantData['name'] as String? ?? '')
             .trim();
+        coverImageUrlSnapshot =
+            (restaurantData['coverImageUrl'] as String? ?? '').trim();
       }
 
       transaction.update(offerRef, {
@@ -104,6 +110,8 @@ class BookingRemoteDataSource {
         'paymentSessionId': sessionKey.isEmpty ? null : sessionKey,
         'restaurantNameSnapshot': restaurantNameSnapshot,
         'offerTitleSnapshot': offerTitle,
+        'bookableType': bookableType,
+        'coverImageUrlSnapshot': coverImageUrlSnapshot,
         'createdAt': FieldValue.serverTimestamp(),
         'paidAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -134,6 +142,8 @@ class BookingRemoteDataSource {
         paidAt: DateTime.now(),
         restaurantNameSnapshot: restaurantNameSnapshot,
         offerTitleSnapshot: offerTitle,
+        bookableType: bookableType,
+        coverImageUrlSnapshot: coverImageUrlSnapshot,
       );
     });
   }

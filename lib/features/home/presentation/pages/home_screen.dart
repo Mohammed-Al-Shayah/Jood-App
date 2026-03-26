@@ -9,6 +9,7 @@ import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/routing/catalog_route_args.dart';
 import '../../../../core/routing/routes.dart';
 import '../../../../core/utils/extensions.dart';
 import '../cubit/home_cubit.dart';
@@ -17,6 +18,8 @@ import '../widgets/home_header.dart';
 import '../widgets/home_search_bar.dart';
 import '../widgets/restaurant_card.dart';
 import '../../../restaurants/domain/entities/restaurant_entity.dart';
+import '../../../booking_catalog/domain/entities/catalog_category_type.dart';
+import '../../../booking_catalog/presentation/widgets/catalog_category_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -90,6 +93,62 @@ class HomeTab extends StatelessWidget {
                           HomeSearchBar(
                             onChanged: (value) =>
                                 context.read<HomeCubit>().updateQuery(value),
+                          ),
+                          SizedBox(height: 24.h),
+                          Text(
+                            'Book by category',
+                            style: AppTextStyles.sectionTitle,
+                          ),
+                          SizedBox(height: 6.h),
+                          Text(
+                            'Start with buffet, set menu, or attractions without changing the existing payment flow.',
+                            style: AppTextStyles.cardMeta.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          SizedBox(height: 14.h),
+                          SizedBox(
+                            height: 176.h,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              children: [
+                                CatalogCategoryCard(
+                                  category: CatalogCategoryType.buffet,
+                                  onTap: () {
+                                    context.pushNamed(
+                                      Routes.catalogListScreen,
+                                      arguments: const CatalogListArgs(
+                                        category: CatalogCategoryType.buffet,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                SizedBox(width: 12.w),
+                                CatalogCategoryCard(
+                                  category: CatalogCategoryType.setMenu,
+                                  onTap: () {
+                                    context.pushNamed(
+                                      Routes.catalogListScreen,
+                                      arguments: const CatalogListArgs(
+                                        category: CatalogCategoryType.setMenu,
+                                      ),
+                                    );
+                                  },
+                                ),
+                                SizedBox(width: 12.w),
+                                CatalogCategoryCard(
+                                  category: CatalogCategoryType.attraction,
+                                  onTap: () {
+                                    context.pushNamed(
+                                      Routes.catalogListScreen,
+                                      arguments: const CatalogListArgs(
+                                        category: CatalogCategoryType.attraction,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                           SizedBox(height: 24.h),
                           Row(

@@ -20,6 +20,11 @@ class OfferEntity extends Equatable {
     required this.entryConditions,
     required this.createdAt,
     required this.updatedAt,
+    this.bookingCategory = '',
+    this.bookableType = 'restaurant',
+    this.mealType = '',
+    this.packageName = '',
+    this.packageDescription = '',
   });
 
   final String id;
@@ -40,6 +45,11 @@ class OfferEntity extends Equatable {
   final List<String> entryConditions;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String bookingCategory;
+  final String bookableType;
+  final String mealType;
+  final String packageName;
+  final String packageDescription;
 
   int get remainingAdult => capacityAdult - bookedAdult;
   int get remainingChild => capacityChild - bookedChild;
@@ -64,5 +74,10 @@ class OfferEntity extends Equatable {
         entryConditions,
         createdAt,
         updatedAt,
+        bookingCategory,
+        bookableType,
+        mealType,
+        packageName,
+        packageDescription,
       ];
 }

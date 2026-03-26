@@ -29,6 +29,8 @@ class BookingModel extends BookingEntity {
     super.paidAt,
     super.restaurantNameSnapshot,
     super.offerTitleSnapshot,
+    super.bookableType,
+    super.coverImageUrlSnapshot,
   });
 
   factory BookingModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -58,6 +60,8 @@ class BookingModel extends BookingEntity {
       paidAt: _toDateTimeNullable(data['paidAt']),
       restaurantNameSnapshot: data['restaurantNameSnapshot'] as String?,
       offerTitleSnapshot: data['offerTitleSnapshot'] as String?,
+      bookableType: data['bookableType'] as String?,
+      coverImageUrlSnapshot: data['coverImageUrlSnapshot'] as String?,
     );
   }
 

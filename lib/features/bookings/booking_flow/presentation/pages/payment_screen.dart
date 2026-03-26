@@ -140,13 +140,56 @@ class _PaymentScreenState extends State<PaymentScreen>
       return;
     }
 
-    final state = context.read<BookingFlowCubit>().state;
-    final offer = state.selectedOffer();
-    if (offer == null) {
+    final cubit = context.read<BookingFlowCubit>();
+    final previousState = cubit.state;
+    final previousOffer = previousState.selectedOffer();
+    if (previousOffer == null) {
       showAppSnackBar(
         context,
         'Please select an offer first.',
         type: SnackBarType.error,
+      );
+      return;
+    }
+    final previousAmounts = BookingAmountsViewModel.calculate(
+      adultPrice: previousOffer.priceAdult,
+      childPrice: previousOffer.priceChild,
+      adultOriginalPrice: previousOffer.priceAdultOriginal,
+      adultCount: previousState.adultCount,
+      childCount: previousState.childCount,
+    );
+
+    final stillSelected = await cubit.refreshSelectedDate();
+    final state = cubit.state;
+    final offer = state.selectedOffer();
+    if (!mounted) return;
+    if (!stillSelected || offer == null) {
+      showAppSnackBar(
+        context,
+        'The selected option is no longer available. Please review your booking.',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+
+    final refreshedAmounts = BookingAmountsViewModel.calculate(
+      adultPrice: offer.priceAdult,
+      childPrice: offer.priceChild,
+      adultOriginalPrice: offer.priceAdultOriginal,
+      adultCount: state.adultCount,
+      childCount: state.childCount,
+    );
+    final pricingChanged =
+        previousOffer.id != offer.id ||
+        previousOffer.priceAdult != offer.priceAdult ||
+        previousOffer.priceChild != offer.priceChild ||
+        previousOffer.priceAdultOriginal != offer.priceAdultOriginal ||
+        previousAmounts.totalPayable != refreshedAmounts.totalPayable;
+    if (pricingChanged) {
+      showAppSnackBar(
+        context,
+        'Pricing was updated. Review the refreshed total and confirm again.',
+        type: SnackBarType.info,
       );
       return;
     }
@@ -595,10 +638,10 @@ class _PaymentScreenState extends State<PaymentScreen>
                       >(
                         selector: (state) {
                           final selectedOffer = state.selectedOffer();
-                          final dateLabel = formatOfferDate(state.selectedDate);
-                          final summaryTime = selectedOffer == null
-                              ? dateLabel
-                              : '$dateLabel - ${selectedOffer.startTime}';
+                          final summaryTime = _buildSummaryLabel(
+                            state.selectedDate,
+                            selectedOffer,
+                          );
                           final amounts = BookingAmountsViewModel.calculate(
                             adultPrice: selectedOffer?.priceAdult ?? 0,
                             childPrice: selectedOffer?.priceChild ?? 0,
@@ -640,4 +683,40 @@ class _PaymentScreenState extends State<PaymentScreen>
       ),
     );
   }
+}
+
+String _buildSummaryLabel(DateTime date, dynamic selectedOffer) {
+  final dateLabel = formatOfferDate(date);
+  if (selectedOffer == null) return dateLabel;
+  final parts = <String>[dateLabel];
+  final timeLabel = _buildTimeLabel(selectedOffer);
+  final optionLabel = _buildOptionLabel(selectedOffer);
+  if (timeLabel.isNotEmpty) parts.add(timeLabel);
+  if (optionLabel.isNotEmpty && optionLabel != timeLabel) {
+    parts.add(optionLabel);
+  }
+  return parts.join(' • ');
+}
+
+String _buildTimeLabel(dynamic offer) {
+  final start = (offer.startTime as String? ?? '').trim();
+  final end = (offer.endTime as String? ?? '').trim();
+  if (start.isEmpty && end.isEmpty) return '';
+  if (start.isEmpty) return end;
+  if (end.isEmpty) return start;
+  return '$start - $end';
+}
+
+String _buildOptionLabel(dynamic offer) {
+  final packageName = (offer.packageName as String? ?? '').trim();
+  if (packageName.isNotEmpty) return packageName;
+  final mealType = (offer.mealType as String? ?? '').trim();
+  if (mealType.isNotEmpty) {
+    return mealType
+        .split(RegExp(r'[_\s]+'))
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}')
+        .join(' ');
+  }
+  return (offer.title as String? ?? '').trim();
 }

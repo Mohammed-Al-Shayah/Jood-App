@@ -63,7 +63,7 @@ class BookingConfirmedScreen extends StatelessWidget {
             );
         return (
           dateLabel: formatOfferDate(state.selectedDate),
-          timeLabel: selectedOffer?.startTime ?? '--',
+          timeLabel: _confirmedSelectionLabel(selectedOffer),
           currency: selectedOffer?.currency ?? r'$',
           totalAmount: amounts.totalPayable,
           guestsLabel: buildGuestsLabel(state.adultCount, state.childCount),
@@ -149,4 +149,36 @@ String _codeFromSelection(
   final people = adults + children;
   final hash = base.codeUnits.fold(0, (sum, unit) => sum + unit) % 10000;
   return 'BKG$dateLabel${people.toString().padLeft(2, '0')}${hash.toString().padLeft(4, '0')}';
+}
+
+String _confirmedSelectionLabel(dynamic offer) {
+  if (offer == null) return '--';
+  final start = (offer.startTime as String? ?? '').trim();
+  final end = (offer.endTime as String? ?? '').trim();
+  final packageName = (offer.packageName as String? ?? '').trim();
+  final mealType = (offer.mealType as String? ?? '').trim();
+  final title = (offer.title as String? ?? '').trim();
+  final parts = <String>[];
+  if (start.isNotEmpty || end.isNotEmpty) {
+    if (start.isEmpty) {
+      parts.add(end);
+    } else if (end.isEmpty) {
+      parts.add(start);
+    } else {
+      parts.add('$start - $end');
+    }
+  }
+  if (packageName.isNotEmpty) {
+    parts.add(packageName);
+  } else if (mealType.isNotEmpty) {
+    final mealLabel = mealType
+        .split(RegExp(r'[_\s]+'))
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}')
+        .join(' ');
+    parts.add(mealLabel);
+  } else if (title.isNotEmpty) {
+    parts.add(title);
+  }
+  return parts.isEmpty ? '--' : parts.join(' • ');
 }
