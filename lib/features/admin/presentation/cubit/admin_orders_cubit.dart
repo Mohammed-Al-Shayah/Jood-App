@@ -11,9 +11,11 @@ class AdminOrdersCubit extends Cubit<AdminOrdersState> {
   final GetAllRestaurantsUseCase _getAllRestaurants;
 
   Future<void> load() async {
+    if (isClosed) return;
     emit(state.copyWith(status: AdminOrdersStatus.loading));
     try {
       final restaurants = await _getAllRestaurants();
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminOrdersStatus.success,
@@ -22,6 +24,7 @@ class AdminOrdersCubit extends Cubit<AdminOrdersState> {
         ),
       );
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminOrdersStatus.failure,
@@ -32,14 +35,17 @@ class AdminOrdersCubit extends Cubit<AdminOrdersState> {
   }
 
   void setRestaurant(String restaurantId) {
+    if (isClosed) return;
     emit(state.copyWith(selectedRestaurantId: restaurantId));
   }
 
   void setDateRange(DateTimeRange? range) {
+    if (isClosed) return;
     emit(state.copyWith(dateRange: range));
   }
 
   void clearFilters() {
+    if (isClosed) return;
     emit(
       state.copyWith(
         selectedRestaurantId: '',

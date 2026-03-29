@@ -6,6 +6,8 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'core/routing/app_router.dart';
 import 'core/routing/routes.dart';
 import 'core/theming/app_colors.dart';
+import 'core/widgets/app_keyboard_dismiss_region.dart';
+import 'core/widgets/app_scroll_behavior.dart';
 
 class JoodApp extends StatelessWidget {
   final AppRouter appRouter;
@@ -22,6 +24,7 @@ class JoodApp extends StatelessWidget {
           title: 'Jood',
           debugShowCheckedModeBanner: false,
           navigatorObservers: [routeObserver],
+          scrollBehavior: const AppScrollBehavior(),
           theme: ThemeData(
             useMaterial3: true,
             fontFamily: 'Cairo',
@@ -51,11 +54,13 @@ class JoodApp extends StatelessWidget {
             widget = easyLoadingBuilder(context, widget);
             final mediaQuery = MediaQuery.maybeOf(context);
             if (mediaQuery == null) {
-              return widget ?? const SizedBox.shrink();
+              return AppKeyboardDismissRegion(child: widget);
             }
-            return MediaQuery(
-              data: mediaQuery.copyWith(textScaler: TextScaler.noScaling),
-              child: widget ?? const SizedBox.shrink(),
+            return AppKeyboardDismissRegion(
+              child: MediaQuery(
+                data: mediaQuery.copyWith(textScaler: TextScaler.noScaling),
+                child: widget,
+              ),
             );
           },
         );

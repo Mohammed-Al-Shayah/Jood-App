@@ -31,6 +31,7 @@ class BookingModel extends BookingEntity {
     super.offerTitleSnapshot,
     super.bookableType,
     super.coverImageUrlSnapshot,
+    super.refundStatus,
   });
 
   factory BookingModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -62,6 +63,7 @@ class BookingModel extends BookingEntity {
       offerTitleSnapshot: data['offerTitleSnapshot'] as String?,
       bookableType: data['bookableType'] as String?,
       coverImageUrlSnapshot: data['coverImageUrlSnapshot'] as String?,
+      refundStatus: data['refundStatus'] as String?,
     );
   }
 

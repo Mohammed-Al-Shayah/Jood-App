@@ -1,0 +1,812 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+
+import 'package:jood/core/di/service_locator.dart';
+import 'package:jood/core/theming/app_colors.dart';
+import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/features/admin/presentation/web/admin_web_shell_screen.dart';
+import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
+import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
+import 'package:jood/features/bookings/data/models/booking_model.dart';
+import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
+import 'package:jood/features/offers/domain/entities/offer_entity.dart';
+import 'package:jood/features/offers/domain/usecases/get_offers_usecase.dart';
+import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
+import 'package:jood/features/restaurants/domain/usecases/get_all_restaurants_usecase.dart';
+import 'package:jood/features/users/domain/entities/user_entity.dart';
+import 'package:jood/features/users/domain/usecases/get_users_usecase.dart';
+
+class AdminWebOverviewPage extends StatefulWidget {
+  const AdminWebOverviewPage({super.key, required this.onSelectSection});
+
+  final ValueChanged<AdminWebSection> onSelectSection;
+
+  @override
+  State<AdminWebOverviewPage> createState() => _AdminWebOverviewPageState();
+}
+
+class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
+  late Future<_AdminOverviewData> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _loadOverview();
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _future = _loadOverview();
+    });
+    await _future;
+  }
+
+  Future<_AdminOverviewData> _loadOverview() async {
+    final restaurantsFuture = getIt<GetAllRestaurantsUseCase>()();
+    final offersFuture = getIt<GetOffersUseCase>()();
+    final usersFuture = getIt<GetUsersUseCase>()();
+    final bookingsFuture = FirebaseFirestore.instance
+        .collection('bookings')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    final results = await Future.wait<dynamic>([
+      restaurantsFuture,
+      offersFuture,
+      usersFuture,
+      bookingsFuture,
+    ]);
+
+    final restaurants = results[0] as List<RestaurantEntity>;
+    final offers = results[1] as List<OfferEntity>;
+    final users = results[2] as List<UserEntity>;
+    final bookingsSnapshot = results[3] as QuerySnapshot<Map<String, dynamic>>;
+    final bookings = bookingsSnapshot.docs
+        .map(BookingModel.fromDoc)
+        .toList(growable: false);
+
+    final statusCounts = <String, int>{};
+    double totalRevenue = 0;
+    for (final booking in bookings) {
+      final status = booking.status.trim().toLowerCase();
+      statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+      if (status != 'cancelled' && status != 'failed') {
+        totalRevenue += booking.total;
+      }
+    }
+
+    final offerCategoryCounts = <String, int>{};
+    for (final offer in offers) {
+      final category = offer.bookingCategory.trim().isEmpty
+          ? 'restaurant'
+          : offer.bookingCategory.trim();
+      offerCategoryCounts[category] = (offerCategoryCounts[category] ?? 0) + 1;
+    }
+
+    return _AdminOverviewData(
+      restaurants: restaurants,
+      offers: offers,
+      users: users,
+      bookings: bookings,
+      totalRevenue: totalRevenue,
+      statusCounts: statusCounts,
+      offerCategoryCounts: offerCategoryCounts,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: FutureBuilder<_AdminOverviewData>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return ListView(
+              children: [
+                AdminWebPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Failed to load dashboard',
+                        style: AppTextStyles.cardTitle,
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        '${snapshot.error}',
+                        style: AppTextStyles.cardMeta.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      SizedBox(height: 14.h),
+                      ElevatedButton.icon(
+                        onPressed: _refresh,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Try again'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          }
+
+          final data = snapshot.data!;
+          return ListView(
+            children: [
+              _OverviewHeader(
+                bookingsCount: data.bookings.length,
+                onRefresh: _refresh,
+                onOpenRestaurants: () =>
+                    widget.onSelectSection(AdminWebSection.restaurants),
+                onOpenBuffet: () =>
+                    widget.onSelectSection(AdminWebSection.buffet),
+                onOpenSetMenu: () =>
+                    widget.onSelectSection(AdminWebSection.setMenu),
+                onOpenAttractions: () =>
+                    widget.onSelectSection(AdminWebSection.attractions),
+                onOpenOffers: () =>
+                    widget.onSelectSection(AdminWebSection.offers),
+                onOpenBookings: () =>
+                    widget.onSelectSection(AdminWebSection.bookings),
+                onOpenPayments: () =>
+                    widget.onSelectSection(AdminWebSection.payments),
+                onOpenRefunds: () =>
+                    widget.onSelectSection(AdminWebSection.refunds),
+              ),
+              SizedBox(height: 20.h),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final spacing = 16.w;
+                  final availableWidth = constraints.maxWidth;
+                  final useExpandedRow = availableWidth >= 1180;
+                  final compactCardWidth = availableWidth < 700 ? 260.0 : 280.0;
+                  final metricCards = [
+                    AdminWebMetricCard(
+                      title: 'Total bookings',
+                      value: '${data.bookings.length}',
+                      icon: Icons.receipt_long_outlined,
+                      iconColor: AppColors.primary,
+                      caption:
+                          '${data.statusCounts['cancelled'] ?? 0} cancelled orders',
+                    ),
+                    AdminWebMetricCard(
+                      title: 'Gross revenue',
+                      value: _formatMoney(data.totalRevenue),
+                      icon: Icons.payments_outlined,
+                      iconColor: const Color(0xFF0E9F6E),
+                      caption: 'Non-cancelled booking totals',
+                    ),
+                    AdminWebMetricCard(
+                      title: 'Active restaurants',
+                      value:
+                          '${data.restaurants.where((item) => item.isActive).length}',
+                      icon: Icons.storefront_outlined,
+                      iconColor: const Color(0xFF2563EB),
+                      caption: '${data.restaurants.length} total venues',
+                    ),
+                    AdminWebMetricCard(
+                      title: 'Users',
+                      value: '${data.users.length}',
+                      icon: Icons.people_outline,
+                      iconColor: const Color(0xFFF59E0B),
+                      caption: '${data.offers.length} live offers',
+                    ),
+                  ];
+
+                  if (useExpandedRow) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (
+                          var index = 0;
+                          index < metricCards.length;
+                          index++
+                        ) ...[
+                          Expanded(child: metricCards[index]),
+                          if (index != metricCards.length - 1)
+                            SizedBox(width: spacing),
+                        ],
+                      ],
+                    );
+                  }
+
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (
+                          var index = 0;
+                          index < metricCards.length;
+                          index++
+                        ) ...[
+                          SizedBox(
+                            width: compactCardWidth,
+                            child: metricCards[index],
+                          ),
+                          if (index != metricCards.length - 1)
+                            SizedBox(width: spacing),
+                        ],
+                      ],
+                    ),
+                  );
+                },
+              ),
+              SizedBox(height: 20.h),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stacked = constraints.maxWidth < 1180;
+                  if (stacked) {
+                    return Column(
+                      children: [
+                        _OfferMixPanel(
+                          categoryCounts: data.offerCategoryCounts,
+                        ),
+                        SizedBox(height: 16.h),
+                        _BookingStatusPanel(statusCounts: data.statusCounts),
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _OfferMixPanel(
+                          categoryCounts: data.offerCategoryCounts,
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: _BookingStatusPanel(
+                          statusCounts: data.statusCounts,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              SizedBox(height: 20.h),
+              _RecentBookingsPanel(bookings: data.bookings.take(6).toList()),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _OverviewHeader extends StatelessWidget {
+  const _OverviewHeader({
+    required this.bookingsCount,
+    required this.onRefresh,
+    required this.onOpenRestaurants,
+    required this.onOpenBuffet,
+    required this.onOpenSetMenu,
+    required this.onOpenAttractions,
+    required this.onOpenOffers,
+    required this.onOpenBookings,
+    required this.onOpenPayments,
+    required this.onOpenRefunds,
+  });
+
+  final int bookingsCount;
+  final VoidCallback onRefresh;
+  final VoidCallback onOpenRestaurants;
+  final VoidCallback onOpenBuffet;
+  final VoidCallback onOpenSetMenu;
+  final VoidCallback onOpenAttractions;
+  final VoidCallback onOpenOffers;
+  final VoidCallback onOpenBookings;
+  final VoidCallback onOpenPayments;
+  final VoidCallback onOpenRefunds;
+
+  @override
+  Widget build(BuildContext context) {
+    return AdminWebPanel(
+      color: const Color(0xFF111827),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 920;
+          final content = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Operations snapshot',
+                style: AppTextStyles.cardTitle.copyWith(
+                  color: Colors.white,
+                  fontSize: 26.sp,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'Track bookings, inventory, and team activity from one responsive admin control center.',
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 14.sp,
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Wrap(
+                spacing: 10.w,
+                runSpacing: 10.h,
+                children: [
+                  _HeaderActionChip(
+                    icon: Icons.storefront_outlined,
+                    label: 'Restaurants',
+                    onTap: onOpenRestaurants,
+                  ),
+                  _HeaderActionChip(
+                    icon: Icons.restaurant_menu_outlined,
+                    label: 'Buffet',
+                    onTap: onOpenBuffet,
+                  ),
+                  _HeaderActionChip(
+                    icon: Icons.menu_book_outlined,
+                    label: 'Set Menu',
+                    onTap: onOpenSetMenu,
+                  ),
+                  _HeaderActionChip(
+                    icon: Icons.local_activity_outlined,
+                    label: 'Attractions',
+                    onTap: onOpenAttractions,
+                  ),
+                  _HeaderActionChip(
+                    icon: Icons.local_offer_outlined,
+                    label: 'Offers',
+                    onTap: onOpenOffers,
+                  ),
+                  _HeaderActionChip(
+                    icon: Icons.receipt_long_outlined,
+                    label: 'Bookings',
+                    onTap: onOpenBookings,
+                  ),
+                  _HeaderActionChip(
+                    icon: Icons.credit_card_outlined,
+                    label: 'Payments',
+                    onTap: onOpenPayments,
+                  ),
+                  _HeaderActionChip(
+                    icon: Icons.replay_circle_filled_outlined,
+                    label: 'Refunds',
+                    onTap: onOpenRefunds,
+                  ),
+                ],
+              ),
+            ],
+          );
+
+          final summary = Container(
+            width: stacked ? double.infinity : 220.w,
+            padding: EdgeInsets.all(18.w),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Live activity',
+                  style: AppTextStyles.cardMeta.copyWith(
+                    color: Colors.white.withValues(alpha: 0.72),
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Text(
+                  '$bookingsCount',
+                  style: AppTextStyles.cardTitle.copyWith(
+                    color: Colors.white,
+                    fontSize: 34.sp,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'bookings tracked',
+                  style: AppTextStyles.cardMeta.copyWith(
+                    color: Colors.white.withValues(alpha: 0.72),
+                  ),
+                ),
+                SizedBox(height: 14.h),
+                OutlinedButton.icon(
+                  onPressed: onRefresh,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.18),
+                    ),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 14.w,
+                      vertical: 12.h,
+                    ),
+                  ),
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Refresh'),
+                ),
+              ],
+            ),
+          );
+
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                content,
+                SizedBox(height: 16.h),
+                summary,
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: content),
+              SizedBox(width: 24.w),
+              summary,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HeaderActionChip extends StatelessWidget {
+  const _HeaderActionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(999.r);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: borderRadius,
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: borderRadius,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 28.w,
+                height: 28.w,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999.r),
+                ),
+                child: Icon(icon, color: AppColors.primary, size: 16.sp),
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                label,
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: Colors.white.withValues(alpha: 0.96),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5.sp,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OfferMixPanel extends StatelessWidget {
+  const _OfferMixPanel({required this.categoryCounts});
+
+  final Map<String, int> categoryCounts;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = categoryCounts.values.fold<int>(
+      0,
+      (accumulated, item) => accumulated + item,
+    );
+    final entries = categoryCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return AdminWebPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Offer mix', style: AppTextStyles.cardTitle),
+          SizedBox(height: 6.h),
+          Text(
+            'Distribution of active inventory across booking categories.',
+            style: AppTextStyles.cardMeta.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          SizedBox(height: 18.h),
+          if (entries.isEmpty)
+            Text('No offers available yet.', style: AppTextStyles.cardMeta)
+          else
+            for (final entry in entries) ...[
+              _RatioRow(
+                label: entry.key,
+                count: entry.value,
+                ratio: total == 0 ? 0 : entry.value / total,
+              ),
+              SizedBox(height: 12.h),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BookingStatusPanel extends StatelessWidget {
+  const _BookingStatusPanel({required this.statusCounts});
+
+  final Map<String, int> statusCounts;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = statusCounts.values.fold<int>(
+      0,
+      (accumulated, item) => accumulated + item,
+    );
+    final entries = statusCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return AdminWebPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Booking status', style: AppTextStyles.cardTitle),
+          SizedBox(height: 6.h),
+          Text(
+            'Operational breakdown of current booking outcomes.',
+            style: AppTextStyles.cardMeta.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          SizedBox(height: 18.h),
+          if (entries.isEmpty)
+            Text('No bookings available yet.', style: AppTextStyles.cardMeta)
+          else
+            for (final entry in entries) ...[
+              _RatioRow(
+                label: entry.key,
+                count: entry.value,
+                ratio: total == 0 ? 0 : entry.value / total,
+              ),
+              SizedBox(height: 12.h),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RatioRow extends StatelessWidget {
+  const _RatioRow({
+    required this.label,
+    required this.count,
+    required this.ratio,
+  });
+
+  final String label;
+  final int count;
+  final double ratio;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _titleCase(label),
+                style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
+              ),
+            ),
+            Text(
+              '$count',
+              style: AppTextStyles.cardMeta.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 8.h),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99.r),
+          child: LinearProgressIndicator(
+            value: ratio.clamp(0.0, 1.0),
+            minHeight: 10.h,
+            backgroundColor: const Color(0xFFE9EEF5),
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecentBookingsPanel extends StatelessWidget {
+  const _RecentBookingsPanel({required this.bookings});
+
+  final List<BookingEntity> bookings;
+
+  @override
+  Widget build(BuildContext context) {
+    final formatter = DateFormat('MMM d, yyyy - HH:mm');
+    return AdminWebPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Recent bookings', style: AppTextStyles.cardTitle),
+          SizedBox(height: 6.h),
+          Text(
+            'Latest booking activity across the platform.',
+            style: AppTextStyles.cardMeta.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          SizedBox(height: 18.h),
+          if (bookings.isEmpty)
+            Text('No bookings available yet.', style: AppTextStyles.cardMeta)
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowHeight: 46.h,
+                dataRowMinHeight: 52.h,
+                dataRowMaxHeight: 56.h,
+                columns: const [
+                  DataColumn(label: Text('Code')),
+                  DataColumn(label: Text('Venue')),
+                  DataColumn(label: Text('Offer')),
+                  DataColumn(label: Text('Guests')),
+                  DataColumn(label: Text('Total')),
+                  DataColumn(label: Text('Status')),
+                  DataColumn(label: Text('Created')),
+                ],
+                rows: bookings
+                    .map(
+                      (booking) => DataRow(
+                        cells: [
+                          DataCell(Text(booking.bookingCode)),
+                          DataCell(
+                            Text(
+                              (booking.restaurantNameSnapshot ?? '')
+                                      .trim()
+                                      .isEmpty
+                                  ? booking.restaurantId
+                                  : booking.restaurantNameSnapshot!,
+                            ),
+                          ),
+                          DataCell(
+                            Text(
+                              (booking.offerTitleSnapshot ?? '').trim().isEmpty
+                                  ? booking.offerId
+                                  : booking.offerTitleSnapshot!,
+                            ),
+                          ),
+                          DataCell(
+                            Text('${booking.adults + booking.children}'),
+                          ),
+                          DataCell(
+                            Text(
+                              '${booking.currency} ${booking.total.toStringAsFixed(2)}',
+                            ),
+                          ),
+                          DataCell(_StatusBadge(status: booking.status)),
+                          DataCell(Text(formatter.format(booking.createdAt))),
+                        ],
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = status.trim().toLowerCase();
+    Color color;
+    switch (normalized) {
+      case 'cancelled':
+        color = const Color(0xFFD14343);
+        break;
+      case 'paid':
+      case 'confirmed':
+        color = const Color(0xFF0E9F6E);
+        break;
+      case 'pending':
+        color = const Color(0xFFF59E0B);
+        break;
+      default:
+        color = AppColors.primary;
+        break;
+    }
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999.r),
+      ),
+      child: Text(
+        _titleCase(status),
+        style: AppTextStyles.cardMeta.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminOverviewData {
+  const _AdminOverviewData({
+    required this.restaurants,
+    required this.offers,
+    required this.users,
+    required this.bookings,
+    required this.totalRevenue,
+    required this.statusCounts,
+    required this.offerCategoryCounts,
+  });
+
+  final List<RestaurantEntity> restaurants;
+  final List<OfferEntity> offers;
+  final List<UserEntity> users;
+  final List<BookingEntity> bookings;
+  final double totalRevenue;
+  final Map<String, int> statusCounts;
+  final Map<String, int> offerCategoryCounts;
+}
+
+String _formatMoney(double amount) {
+  return 'OMR ${amount.toStringAsFixed(2)}';
+}
+
+String _titleCase(String value) {
+  final words = value
+      .replaceAll('_', ' ')
+      .split(RegExp(r'\s+'))
+      .where((word) => word.isNotEmpty)
+      .toList(growable: false);
+  if (words.isEmpty) return '-';
+  return words
+      .map(
+        (word) => '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+      )
+      .join(' ');
+}

@@ -347,7 +347,11 @@ List<OfferEntity> _skeletonOffers() {
 }
 
 class AdminOfferFormArgs {
-  const AdminOfferFormArgs({this.offer});
+  const AdminOfferFormArgs({
+    this.offer,
+    this.initialCategory,
+  });
 
   final OfferEntity? offer;
+  final String? initialCategory;
 }

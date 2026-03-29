@@ -25,137 +25,123 @@ class CatalogListScreen extends StatelessWidget {
       create: (_) => getIt<CatalogListCubit>()..load(category),
       child: Scaffold(
         backgroundColor: AppColors.cardBackground,
-        body: SafeArea(
-          child: BlocBuilder<CatalogListCubit, CatalogListState>(
-            builder: (context, state) {
-              return CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              _HeaderButton(
-                                icon: Icons.arrow_back,
-                                onTap: () => Navigator.of(context).pop(),
-                              ),
-                              SizedBox(width: 12.w),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      category.title,
-                                      style: AppTextStyles.headingMedium,
-                                    ),
-                                    SizedBox(height: 4.h),
-                                    Text(
-                                      category.shortDescription,
-                                      style: AppTextStyles.cardMeta.copyWith(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 12.5.sp,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 22.h),
-                          if (state.status == CatalogListStatus.loading)
-                            const LinearProgressIndicator(
-                              color: AppColors.primary,
-                            ),
-                          if (state.status == CatalogListStatus.failure)
-                            Padding(
-                              padding: EdgeInsets.only(top: 18.h),
-                              child: Text(
-                                state.errorMessage ??
-                                    'Failed to load category items.',
-                                style: AppTextStyles.cardMeta,
-                              ),
-                            ),
-                          if (state.status == CatalogListStatus.success &&
-                              state.items.isEmpty)
-                            Padding(
-                              padding: EdgeInsets.only(top: 24.h),
-                              child: Center(
-                                child: Text(
-                                  category.emptyStateTitle,
-                                  style: AppTextStyles.cardMeta.copyWith(
-                                    fontSize: 14.sp,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(76.h),
+          child: AppBar(
+            backgroundColor: AppColors.cardBackground,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            toolbarHeight: 76.h,
+            leadingWidth: 44.w,
+            titleSpacing: 0,
+            leading: IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: Icon(
+                Icons.arrow_back,
+                size: 18.sp,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  category.title,
+                  style: AppTextStyles.headingMedium,
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  category.shortDescription,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.cardMeta.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 12.5.sp,
                   ),
-                  if (state.items.isNotEmpty)
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
-                      sliver: SliverList.builder(
-                        itemCount: state.items.length,
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: 14.h),
-                            child: RestaurantCard(
-                              name: item.name,
-                              badge: item.badge,
-                              price: item.priceFrom,
-                              discount: item.discount,
-                              meta: item.metaLabel,
-                              slots: item.slotsLeft,
-                              rating: item.ratingLabel,
-                              image: CatalogImage(
-                                url: item.coverImageUrl,
-                                name: item.name,
-                                showLabel: false,
-                              ),
-                              onTap: () {
-                                context.pushNamed(
-                                  Routes.catalogDetailScreen,
-                                  arguments: CatalogDetailArgs(item: item),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              );
-            },
+                ),
+              ],
+            ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _HeaderButton extends StatelessWidget {
-  const _HeaderButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.cardBackground,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.all(10.r),
-          child: Icon(icon, size: 18.sp, color: AppColors.textPrimary),
+        body: BlocBuilder<CatalogListCubit, CatalogListState>(
+          builder: (context, state) {
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (state.status == CatalogListStatus.loading)
+                          const LinearProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        if (state.status == CatalogListStatus.failure)
+                          Padding(
+                            padding: EdgeInsets.only(top: 18.h),
+                            child: Text(
+                              state.errorMessage ??
+                                  'Failed to load category items.',
+                              style: AppTextStyles.cardMeta,
+                            ),
+                          ),
+                        if (state.status == CatalogListStatus.success &&
+                            state.items.isEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(top: 24.h),
+                            child: Center(
+                              child: Text(
+                                category.emptyStateTitle,
+                                style: AppTextStyles.cardMeta.copyWith(
+                                  fontSize: 14.sp,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (state.items.isNotEmpty)
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
+                    sliver: SliverList.builder(
+                      itemCount: state.items.length,
+                      itemBuilder: (context, index) {
+                        final item = state.items[index];
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 14.h),
+                          child: RestaurantCard(
+                            name: item.name,
+                            badge: item.badge,
+                            price: item.priceFrom,
+                            discount: item.discount,
+                            meta: item.metaLabel,
+                            slots: item.slotsLeft,
+                            rating: item.ratingLabel,
+                            image: CatalogImage(
+                              url: item.coverImageUrl,
+                              name: item.name,
+                              showLabel: false,
+                            ),
+                            onTap: () {
+                              context.pushNamed(
+                                Routes.catalogDetailScreen,
+                                arguments: CatalogDetailArgs(item: item),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            );
+          },
         ),
       ),
     );

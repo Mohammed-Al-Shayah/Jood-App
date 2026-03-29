@@ -24,9 +24,11 @@ class AdminRestaurantsCubit extends Cubit<AdminRestaurantsState> {
   final DeleteRestaurantUseCase _deleteRestaurant;
 
   Future<void> load() async {
+    if (isClosed) return;
     emit(state.copyWith(status: AdminRestaurantsStatus.loading));
     try {
       final restaurants = await _getAllRestaurants();
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminRestaurantsStatus.success,
@@ -35,6 +37,7 @@ class AdminRestaurantsCubit extends Cubit<AdminRestaurantsState> {
         ),
       );
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminRestaurantsStatus.failure,
@@ -47,8 +50,10 @@ class AdminRestaurantsCubit extends Cubit<AdminRestaurantsState> {
   Future<void> create(RestaurantEntity restaurant) async {
     try {
       await _createRestaurant(restaurant);
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminRestaurantsStatus.failure,
@@ -61,8 +66,10 @@ class AdminRestaurantsCubit extends Cubit<AdminRestaurantsState> {
   Future<void> update(RestaurantEntity restaurant) async {
     try {
       await _updateRestaurant(restaurant);
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminRestaurantsStatus.failure,
@@ -75,8 +82,10 @@ class AdminRestaurantsCubit extends Cubit<AdminRestaurantsState> {
   Future<void> delete(String id) async {
     try {
       await _deleteRestaurant(id);
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminRestaurantsStatus.failure,

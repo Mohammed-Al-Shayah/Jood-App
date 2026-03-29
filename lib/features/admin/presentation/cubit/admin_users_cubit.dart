@@ -20,9 +20,11 @@ class AdminUsersCubit extends Cubit<AdminUsersState> {
   final DeleteUserUseCase _deleteUser;
 
   Future<void> load() async {
+    if (isClosed) return;
     emit(state.copyWith(status: AdminUsersStatus.loading));
     try {
       final users = await _getUsers();
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminUsersStatus.success,
@@ -31,6 +33,7 @@ class AdminUsersCubit extends Cubit<AdminUsersState> {
         ),
       );
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminUsersStatus.failure,
@@ -43,8 +46,10 @@ class AdminUsersCubit extends Cubit<AdminUsersState> {
   Future<void> update(UserEntity user) async {
     try {
       await _updateUser(user);
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminUsersStatus.failure,
@@ -57,8 +62,10 @@ class AdminUsersCubit extends Cubit<AdminUsersState> {
   Future<void> delete(String id) async {
     try {
       await _deleteUser(id);
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminUsersStatus.failure,

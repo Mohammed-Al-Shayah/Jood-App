@@ -159,14 +159,27 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
   Future<void> _initPhoneIso(String phone) async {
     final trimmed = phone.trim();
     if (trimmed.isEmpty) return;
-    try {
-      final info = await PhoneNumber.getRegionInfoFromPhoneNumber(trimmed);
-      final iso = info.isoCode;
-      if (iso != null && iso.isNotEmpty) {
-        emit(state.copyWith(phoneIso: iso));
+
+    final normalized = AuthValidators.normalizePhone(trimmed);
+    final candidates = <String>{
+      trimmed,
+      normalized,
+      if (normalized.isNotEmpty) '+$normalized',
+    };
+
+    for (final candidate in candidates) {
+      if (candidate.trim().isEmpty) continue;
+      try {
+        final info = await PhoneNumber.getRegionInfoFromPhoneNumber(candidate);
+        final iso = info.isoCode;
+        if (iso != null && iso.isNotEmpty) {
+          if (isClosed) return;
+          emit(state.copyWith(phoneIso: iso));
+          return;
+        }
+      } catch (_) {
+        // Try the next phone representation.
       }
-    } catch (_) {
-      // Keep default ISO when parsing fails.
     }
   }
 

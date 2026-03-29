@@ -1,17 +1,21 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../restaurants/domain/entities/restaurant_entity.dart';
+import '../../../booking_catalog/domain/entities/catalog_category_type.dart';
+import '../../../booking_catalog/domain/entities/catalog_item_entity.dart';
 
 enum HomeStatus { initial, loading, success, empty, failure }
 enum SortField { price, discount, rating }
 enum SortOrder { asc, desc }
 
 class HomeState extends Equatable {
+  static const Object _unset = Object();
+
   const HomeState({
     this.status = HomeStatus.initial,
-    this.restaurants = const [],
-    this.filteredRestaurants = const [],
+    this.items = const [],
+    this.filteredItems = const [],
     this.query = '',
+    this.selectedCategory,
     this.sortField,
     this.sortOrder = SortOrder.desc,
     this.errorMessage,
@@ -20,9 +24,10 @@ class HomeState extends Equatable {
   });
 
   final HomeStatus status;
-  final List<RestaurantEntity> restaurants;
-  final List<RestaurantEntity> filteredRestaurants;
+  final List<CatalogItemEntity> items;
+  final List<CatalogItemEntity> filteredItems;
   final String query;
+  final CatalogCategoryType? selectedCategory;
   final SortField? sortField;
   final SortOrder sortOrder;
   final String? errorMessage;
@@ -31,10 +36,11 @@ class HomeState extends Equatable {
 
   HomeState copyWith({
     HomeStatus? status,
-    List<RestaurantEntity>? restaurants,
-    List<RestaurantEntity>? filteredRestaurants,
+    List<CatalogItemEntity>? items,
+    List<CatalogItemEntity>? filteredItems,
     String? query,
-    SortField? sortField,
+    Object? selectedCategory = _unset,
+    Object? sortField = _unset,
     SortOrder? sortOrder,
     String? errorMessage,
     String? userCity,
@@ -42,10 +48,15 @@ class HomeState extends Equatable {
   }) {
     return HomeState(
       status: status ?? this.status,
-      restaurants: restaurants ?? this.restaurants,
-      filteredRestaurants: filteredRestaurants ?? this.filteredRestaurants,
+      items: items ?? this.items,
+      filteredItems: filteredItems ?? this.filteredItems,
       query: query ?? this.query,
-      sortField: sortField ?? this.sortField,
+      selectedCategory: identical(selectedCategory, _unset)
+          ? this.selectedCategory
+          : selectedCategory as CatalogCategoryType?,
+      sortField: identical(sortField, _unset)
+          ? this.sortField
+          : sortField as SortField?,
       sortOrder: sortOrder ?? this.sortOrder,
       errorMessage: errorMessage ?? this.errorMessage,
       userCity: userCity ?? this.userCity,
@@ -56,9 +67,10 @@ class HomeState extends Equatable {
   @override
   List<Object?> get props => [
       status,
-      restaurants,
-      filteredRestaurants,
+      items,
+      filteredItems,
       query,
+      selectedCategory,
       sortField,
       sortOrder,
       errorMessage,

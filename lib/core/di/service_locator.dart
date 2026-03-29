@@ -75,12 +75,21 @@ import '../../features/restaurants/domain/usecases/get_all_restaurants_usecase.d
 import '../../features/restaurants/domain/usecases/create_restaurant_usecase.dart';
 import '../../features/restaurants/domain/usecases/update_restaurant_usecase.dart';
 import '../../features/restaurants/domain/usecases/delete_restaurant_usecase.dart';
+import '../../features/attractions/data/datasources/attraction_remote_data_source.dart';
+import '../../features/attractions/data/repositories/attraction_repository_impl.dart';
+import '../../features/attractions/domain/repositories/attraction_repository.dart';
+import '../../features/attractions/domain/usecases/get_all_attractions_usecase.dart';
+import '../../features/attractions/domain/usecases/create_attraction_usecase.dart';
+import '../../features/attractions/domain/usecases/update_attraction_usecase.dart';
+import '../../features/attractions/domain/usecases/delete_attraction_usecase.dart';
 import '../../features/admin/presentation/cubit/admin_restaurants_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_attractions_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_offers_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_users_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_orders_cubit.dart';
 import '../../features/admin/data/datasources/admin_storage_remote_data_source.dart';
 import '../../features/admin/domain/usecases/delete_storage_file_usecase.dart';
+import '../../features/admin/domain/usecases/upload_attraction_image_usecase.dart';
 import '../../features/admin/domain/usecases/upload_restaurant_image_usecase.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -105,7 +114,7 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<HomeCubit>(
     () => HomeCubit(
-      repository: getIt(),
+      getCatalogItems: getIt(),
       getUserById: getIt(),
       auth: getIt(),
       firestore: getIt(),
@@ -292,6 +301,24 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<DeleteRestaurantUseCase>(
     () => DeleteRestaurantUseCase(getIt()),
   );
+  getIt.registerLazySingleton<AttractionRemoteDataSource>(
+    () => AttractionRemoteDataSource(getIt()),
+  );
+  getIt.registerLazySingleton<AttractionRepository>(
+    () => AttractionRepositoryImpl(getIt()),
+  );
+  getIt.registerLazySingleton<GetAllAttractionsUseCase>(
+    () => GetAllAttractionsUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<CreateAttractionUseCase>(
+    () => CreateAttractionUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<UpdateAttractionUseCase>(
+    () => UpdateAttractionUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<DeleteAttractionUseCase>(
+    () => DeleteAttractionUseCase(getIt()),
+  );
   getIt.registerFactory<RestaurantDetailCubit>(
     () => RestaurantDetailCubit(getRestaurantDetails: getIt()),
   );
@@ -305,6 +332,14 @@ Future<void> setupServiceLocator() async {
       createRestaurant: getIt(),
       updateRestaurant: getIt(),
       deleteRestaurant: getIt(),
+    ),
+  );
+  getIt.registerFactory<AdminAttractionsCubit>(
+    () => AdminAttractionsCubit(
+      getAllAttractions: getIt(),
+      createAttraction: getIt(),
+      updateAttraction: getIt(),
+      deleteAttraction: getIt(),
     ),
   );
   getIt.registerFactory<AdminOffersCubit>(
@@ -327,6 +362,9 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<UploadRestaurantImageUseCase>(
     () => UploadRestaurantImageUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<UploadAttractionImageUseCase>(
+    () => UploadAttractionImageUseCase(getIt()),
   );
   getIt.registerLazySingleton<DeleteStorageFileUseCase>(
     () => DeleteStorageFileUseCase(getIt()),

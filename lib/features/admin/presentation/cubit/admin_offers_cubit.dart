@@ -24,9 +24,11 @@ class AdminOffersCubit extends Cubit<AdminOffersState> {
   final DeleteOfferUseCase _deleteOffer;
 
   Future<void> load() async {
+    if (isClosed) return;
     emit(state.copyWith(status: AdminOffersStatus.loading));
     try {
       final offers = await _getOffers();
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminOffersStatus.success,
@@ -35,6 +37,7 @@ class AdminOffersCubit extends Cubit<AdminOffersState> {
         ),
       );
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminOffersStatus.failure,
@@ -47,8 +50,10 @@ class AdminOffersCubit extends Cubit<AdminOffersState> {
   Future<void> create(OfferEntity offer) async {
     try {
       await _createOffer(offer);
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminOffersStatus.failure,
@@ -63,9 +68,12 @@ class AdminOffersCubit extends Cubit<AdminOffersState> {
     try {
       for (final offer in offers) {
         await _createOffer(offer);
+        if (isClosed) return;
       }
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminOffersStatus.failure,
@@ -78,8 +86,10 @@ class AdminOffersCubit extends Cubit<AdminOffersState> {
   Future<void> update(OfferEntity offer) async {
     try {
       await _updateOffer(offer);
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminOffersStatus.failure,
@@ -92,8 +102,10 @@ class AdminOffersCubit extends Cubit<AdminOffersState> {
   Future<void> delete(String id) async {
     try {
       await _deleteOffer(id);
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminOffersStatus.failure,
@@ -108,9 +120,12 @@ class AdminOffersCubit extends Cubit<AdminOffersState> {
     try {
       for (final id in ids) {
         await _deleteOffer(id);
+        if (isClosed) return;
       }
+      if (isClosed) return;
       await load();
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: AdminOffersStatus.failure,

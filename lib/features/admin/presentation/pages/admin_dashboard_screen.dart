@@ -28,6 +28,13 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           _AdminActionCard(
+            icon: Icons.local_activity_outlined,
+            title: 'Attractions',
+            subtitle: 'Manage standalone attraction venues',
+            onTap: () => context.pushNamed(Routes.adminAttractionsScreen),
+          ),
+          SizedBox(height: 12.h),
+          _AdminActionCard(
             icon: Icons.local_offer_outlined,
             title: 'Offers',
             subtitle: 'Create time slots and pricing',
@@ -85,7 +92,7 @@ class _AdminActionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16.r),
           boxShadow: [
             BoxShadow(
-              color: AppColors.shadowColor.withOpacity(0.12),
+              color: AppColors.shadowColor.withValues(alpha: 0.12),
               blurRadius: 16.r,
               offset: const Offset(0, 8),
             ),
@@ -97,7 +104,7 @@ class _AdminActionCard extends StatelessWidget {
               width: 48.w,
               height: 48.w,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.12),
+                color: AppColors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14.r),
               ),
               child: Icon(icon, color: AppColors.primary),
@@ -133,7 +140,7 @@ class _HeaderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ctaShadow.withOpacity(0.35),
+            color: AppColors.ctaShadow.withValues(alpha: 0.35),
             blurRadius: 18.r,
             offset: const Offset(0, 10),
           ),
@@ -145,7 +152,7 @@ class _HeaderCard extends StatelessWidget {
             width: 52.w,
             height: 52.w,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(16.r),
             ),
             child: const Icon(Icons.dashboard_outlined, color: Colors.white),
@@ -169,7 +176,7 @@ class _HeaderCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85),
                   ),
                 ),
               ],

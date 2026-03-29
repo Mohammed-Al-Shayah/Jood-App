@@ -19,6 +19,8 @@ import 'package:jood/features/booking_catalog/presentation/pages/catalog_booking
 import 'package:jood/features/booking_catalog/presentation/pages/catalog_detail_screen.dart';
 import 'package:jood/features/booking_catalog/presentation/pages/catalog_list_screen.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_screen.dart';
+import '../../features/admin/presentation/pages/admin_attractions_screen.dart';
+import '../../features/admin/presentation/pages/admin_attraction_form_screen.dart';
 import '../../features/admin/presentation/pages/admin_restaurants_screen.dart';
 import '../../features/admin/presentation/pages/admin_restaurant_form_screen.dart';
 import '../../features/admin/presentation/pages/admin_offers_screen.dart';
@@ -33,7 +35,10 @@ import '../../features/bookings/booking_flow/presentation/pages/payment_screen.d
 import '../../features/bookings/booking_flow/presentation/pages/select_date_time_screen.dart';
 import '../../features/bookings/booking_flow/presentation/pages/select_guests_screen.dart';
 import 'routes.dart';
-final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
+
 class AppRouter {
   Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -67,13 +72,24 @@ class AppRouter {
       case Routes.adminDashboardScreen:
         return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
       case Routes.adminRestaurantsScreen:
-        return MaterialPageRoute(builder: (_) => const AdminRestaurantsScreen());
+        return MaterialPageRoute(
+          builder: (_) => const AdminRestaurantsScreen(),
+        );
       case Routes.adminRestaurantFormScreen:
         final args = settings.arguments as AdminRestaurantFormArgs?;
         return MaterialPageRoute(
-          builder: (_) => AdminRestaurantFormScreen(
-            restaurant: args?.restaurant,
-          ),
+          builder: (_) =>
+              AdminRestaurantFormScreen(restaurant: args?.restaurant),
+        );
+      case Routes.adminAttractionsScreen:
+        return MaterialPageRoute(
+          builder: (_) => const AdminAttractionsScreen(),
+        );
+      case Routes.adminAttractionFormScreen:
+        final args = settings.arguments as AdminAttractionFormArgs?;
+        return MaterialPageRoute(
+          builder: (_) =>
+              AdminAttractionFormScreen(attraction: args?.attraction),
         );
       case Routes.adminOffersScreen:
         return MaterialPageRoute(builder: (_) => const AdminOffersScreen());
@@ -82,6 +98,7 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => AdminOfferFormScreen(
             offer: args?.offer,
+            initialCategory: args?.initialCategory,
           ),
         );
       case Routes.adminUsersScreen:
@@ -89,18 +106,14 @@ class AppRouter {
       case Routes.adminUserFormScreen:
         final args = settings.arguments as AdminUserFormArgs?;
         return MaterialPageRoute(
-          builder: (_) => AdminUserFormScreen(
-            user: args?.user,
-          ),
+          builder: (_) => AdminUserFormScreen(user: args?.user),
         );
       case Routes.adminCancelledOrdersScreen:
         return MaterialPageRoute(
           builder: (_) => const AdminCancelledOrdersScreen(),
         );
       case Routes.adminOrdersScreen:
-        return MaterialPageRoute(
-          builder: (_) => const AdminOrdersScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const AdminOrdersScreen());
       case Routes.detailScreen:
         final args = settings.arguments as DetailScreenArgs;
         return MaterialPageRoute(
