@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
-import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/utils/date_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
@@ -10,7 +9,6 @@ import 'package:jood/features/admin/presentation/widgets/admin_input_decoration.
 import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
 import 'package:jood/features/offers/data/models/offer_model.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
-import 'package:jood/features/restaurants/domain/usecases/get_all_restaurants_usecase.dart';
 
 class AdminOfferFormContent extends StatefulWidget {
   const AdminOfferFormContent({
@@ -35,6 +33,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
   final List<_VenueOption> _restaurantVenues = [];
   final List<_VenueOption> _attractionVenues = [];
+  final Map<String, _RestaurantCategorySupport> _restaurantSupportById = {};
   bool _loadingVenues = true;
   bool _isSubmitting = false;
 
@@ -127,6 +126,9 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     _entryConditionsController = TextEditingController(
       text: (offer?.entryConditions ?? const []).join('\n'),
     );
+    if (!_isEdit && (_isBuffet || _isSetMenu)) {
+      _titleController.text = _defaultTitleForMealType(_category, _mealType);
+    }
     _priceAdultController.addListener(_syncChildPriceFromAdult);
     _loadVenues();
   }
@@ -171,7 +173,9 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
               children: [
                 if (!_isCategoryLocked) _categoryDropdown(),
                 _venueDropdown(),
-                _textField(_titleController, _titleLabel()),
+                if (_restaurantCategoryWarning != null)
+                  _categoryWarningCard(_restaurantCategoryWarning!),
+                _titleField(),
                 if (_isEdit) _dateField() else _dateRangeField(),
                 _timeField(_startTimeController, 'Start Time'),
                 _timeField(_endTimeController, 'End Time'),
@@ -272,6 +276,8 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         onChanged: (value) {
           if (value == null || value == _category) return;
           setState(() {
+            final previousCategory = _category;
+            final previousMealType = _mealType;
             _category = value;
             _mealType = _defaultMealTypeForCategory(value);
             if (!_isAttraction) {
@@ -279,6 +285,10 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
               _packageDescriptionController.clear();
             }
             _syncSelectedVenue();
+            _maybeSyncTitleWithMealType(
+              previousCategory: previousCategory,
+              previousMealType: previousMealType,
+            );
           });
         },
       ),
@@ -334,7 +344,13 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
             )
             .toList(),
         onChanged: (value) => setState(() {
+          final previousCategory = _category;
+          final previousMealType = _mealType;
           _mealType = value ?? _defaultMealTypeForCategory(_category);
+          _maybeSyncTitleWithMealType(
+            previousCategory: previousCategory,
+            previousMealType: previousMealType,
+          );
         }),
       ),
     );
@@ -368,6 +384,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     bool readOnly = false,
     VoidCallback? onTap,
     bool required = true,
+    String? Function(String?)? validator,
   }) {
     return Padding(
       padding: EdgeInsets.only(bottom: 18.h),
@@ -376,10 +393,57 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         readOnly: readOnly,
         onTap: onTap,
         decoration: adminInputDecoration(label),
-        validator: required
-            ? (value) =>
-                  (value == null || value.trim().isEmpty) ? 'Required' : null
-            : null,
+        validator:
+            validator ??
+            (required
+                ? (value) => (value == null || value.trim().isEmpty)
+                      ? 'Required'
+                      : null
+                : null),
+      ),
+    );
+  }
+
+  Widget _titleField() {
+    return _textField(
+      _titleController,
+      _titleLabel(),
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) return 'Required';
+        return _titleMismatchError(value);
+      },
+    );
+  }
+
+  Widget _categoryWarningCard(String message) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 18.h),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(14.w),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF7ED),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: const Color(0xFFF5C28B)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Color(0xFFB45309)),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: const Color(0xFF92400E),
+                  fontSize: 12.sp,
+                  height: 1.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -487,7 +551,9 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
   Future<void> _loadVenues() async {
     try {
-      final restaurants = await getIt<GetAllRestaurantsUseCase>()();
+      final restaurantsSnapshot = await FirebaseFirestore.instance
+          .collection('restaurants')
+          .get();
       final attractionsSnapshot = await FirebaseFirestore.instance
           .collection('attractions')
           .get();
@@ -495,9 +561,30 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       _restaurantVenues
         ..clear()
         ..addAll(
-          restaurants
-              .map((item) => _VenueOption(id: item.id, name: item.name))
-              .toList(growable: false),
+          restaurantsSnapshot.docs.map((doc) {
+            final data = doc.data();
+            final name = (data['name'] as String?)?.trim();
+            return _VenueOption(
+              id: doc.id,
+              name: name == null || name.isEmpty ? doc.id : name,
+            );
+          }),
+        );
+      _restaurantSupportById
+        ..clear()
+        ..addEntries(
+          restaurantsSnapshot.docs.map((doc) {
+            final data = doc.data();
+            final name = (data['name'] as String?)?.trim();
+            return MapEntry(
+              doc.id,
+              _RestaurantCategorySupport(
+                name: name == null || name.isEmpty ? doc.id : name,
+                supportsBuffet: _restaurantSupportsCategory(data, 'buffet'),
+                supportsSetMenu: _restaurantSupportsCategory(data, 'set_menu'),
+              ),
+            );
+          }),
         );
       _attractionVenues
         ..clear()
@@ -588,6 +675,50 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     }
   }
 
+  bool _restaurantSupportsCategory(Map<String, dynamic> data, String category) {
+    final bookingCatalog = _asMap(data['bookingCatalog']);
+    final supportedCategories = _normalizedStringList(
+      bookingCatalog['supportedCategories'],
+    );
+
+    if (category == 'buffet') {
+      if (supportedCategories.isEmpty) return true;
+      return supportedCategories.contains('buffet');
+    }
+
+    if (category == 'set_menu') {
+      final setMenuConfig = _asMap(bookingCatalog['setMenu']);
+      if (supportedCategories.contains('set_menu') ||
+          supportedCategories.contains('setmenu')) {
+        return true;
+      }
+      if (setMenuConfig.isNotEmpty) {
+        return setMenuConfig['enabled'] as bool? ?? true;
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  String? get _restaurantCategoryWarning {
+    if (!(_isBuffet || _isSetMenu)) return null;
+    final venueId = _venueId;
+    if (venueId == null || venueId.trim().isEmpty) return null;
+    final support = _restaurantSupportById[venueId];
+    if (support == null) return null;
+
+    if (_isSetMenu && !support.supportsSetMenu) {
+      return '${support.name} is not enabled for Set Menu in booking catalog. Enable Set Menu support for the restaurant before creating new set menu offers.';
+    }
+
+    if (_isBuffet && !support.supportsBuffet) {
+      return '${support.name} is not enabled for Buffet in booking catalog. Enable Buffet support for the restaurant before creating new buffet offers.';
+    }
+
+    return null;
+  }
+
   String _resolveInitialCategory(OfferEntity? offer, String? initialCategory) {
     final rawCategory = (offer?.bookingCategory ?? initialCategory ?? '')
         .trim()
@@ -606,6 +737,32 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     if (category == 'set_menu') return 'breakfast';
     if (category == 'buffet') return 'breakfast';
     return '';
+  }
+
+  String _defaultTitleForMealType(String category, String mealType) {
+    if (mealType.trim().isEmpty) return '';
+    final normalizedCategory = category.trim().toLowerCase();
+    if (normalizedCategory != 'buffet' && normalizedCategory != 'set_menu') {
+      return '';
+    }
+    return _displayMealType(mealType);
+  }
+
+  void _maybeSyncTitleWithMealType({
+    required String previousCategory,
+    required String previousMealType,
+  }) {
+    final currentTitle = _titleController.text.trim();
+    final previousDefault = _defaultTitleForMealType(
+      previousCategory,
+      previousMealType,
+    ).toLowerCase();
+    if (currentTitle.isEmpty || currentTitle.toLowerCase() == previousDefault) {
+      final nextDefault = _defaultTitleForMealType(_category, _mealType);
+      if (nextDefault.isNotEmpty) {
+        _titleController.text = nextDefault;
+      }
+    }
   }
 
   String sectionLabel() {
@@ -655,6 +812,29 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     return 'Offer Title';
   }
 
+  String? _titleMismatchError(String? value) {
+    if (!(_isBuffet || _isSetMenu)) return null;
+    final title = (value ?? '').trim().toLowerCase();
+    final mealType = _mealType.trim().toLowerCase();
+    final baseMealType = _baseMealType(mealType);
+    final displayMealType = _displayMealType(mealType).trim().toLowerCase();
+    if (title.isEmpty || baseMealType.isEmpty) return null;
+    if (title.contains(baseMealType) || title.contains(displayMealType)) {
+      return null;
+    }
+    return _isSetMenu
+        ? 'Title must match the selected set menu type.'
+        : 'Title must match the selected meal type.';
+  }
+
+  String _baseMealType(String mealType) {
+    final normalized = mealType.trim().toLowerCase();
+    if (normalized.startsWith('set_')) {
+      return normalized.substring(4);
+    }
+    return normalized;
+  }
+
   String _formatTime(TimeOfDay time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
@@ -682,6 +862,11 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    final categoryWarning = _restaurantCategoryWarning;
+    if (categoryWarning != null) {
+      showAppSnackBar(context, categoryWarning, type: SnackBarType.error);
+      return;
+    }
 
     final now = DateTime.now();
     final venueId = _venueId ?? '';
@@ -863,6 +1048,24 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     }
     return offers;
   }
+
+  Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map((key, item) => MapEntry(key.toString(), item));
+    }
+    return const <String, dynamic>{};
+  }
+
+  List<String> _normalizedStringList(dynamic value) {
+    if (value is! List) return const [];
+    return value
+        .map(
+          (item) => item.toString().trim().toLowerCase().replaceAll(' ', '_'),
+        )
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
 }
 
 class _VenueOption {
@@ -870,4 +1073,16 @@ class _VenueOption {
 
   final String id;
   final String name;
+}
+
+class _RestaurantCategorySupport {
+  const _RestaurantCategorySupport({
+    required this.name,
+    required this.supportsBuffet,
+    required this.supportsSetMenu,
+  });
+
+  final String name;
+  final bool supportsBuffet;
+  final bool supportsSetMenu;
 }

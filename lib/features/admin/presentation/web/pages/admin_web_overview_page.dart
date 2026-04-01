@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
-import 'package:jood/features/admin/presentation/web/admin_web_shell_screen.dart';
+import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
 import 'package:jood/features/bookings/data/models/booking_model.dart';
@@ -21,7 +21,7 @@ import 'package:jood/features/users/domain/usecases/get_users_usecase.dart';
 class AdminWebOverviewPage extends StatefulWidget {
   const AdminWebOverviewPage({super.key, required this.onSelectSection});
 
-  final ValueChanged<AdminWebSection> onSelectSection;
+  final AdminWebSectionSelector onSelectSection;
 
   @override
   State<AdminWebOverviewPage> createState() => _AdminWebOverviewPageState();
@@ -29,6 +29,7 @@ class AdminWebOverviewPage extends StatefulWidget {
 
 class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
   late Future<_AdminOverviewData> _future;
+  AdminWebTimeFilter _selectedTimeFilter = AdminWebTimeFilter.allTime;
 
   @override
   void initState() {
@@ -96,6 +97,78 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
     );
   }
 
+  List<T> _filterByTimeWindow<T>(
+    List<T> items,
+    DateTime Function(T item) getDate,
+  ) {
+    final now = DateTime.now();
+    return items
+        .where((item) => _selectedTimeFilter.includes(getDate(item), now: now))
+        .toList(growable: false);
+  }
+
+  Map<String, int> _buildStatusCounts(List<BookingEntity> bookings) {
+    final counts = <String, int>{};
+    for (final booking in bookings) {
+      final status = booking.status.trim().toLowerCase();
+      counts[status] = (counts[status] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  double _calculateRevenue(List<BookingEntity> bookings) {
+    var totalRevenue = 0.0;
+    for (final booking in bookings) {
+      final status = booking.status.trim().toLowerCase();
+      if (status == 'cancelled' || status == 'failed') {
+        continue;
+      }
+      totalRevenue += booking.total;
+    }
+    return totalRevenue;
+  }
+
+  Map<String, int> _buildOfferCategoryCounts(List<OfferEntity> offers) {
+    final counts = <String, int>{};
+    for (final offer in offers) {
+      final category = offer.bookingCategory.trim().isEmpty
+          ? 'restaurant'
+          : offer.bookingCategory.trim();
+      counts[category] = (counts[category] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  String _windowDescription() {
+    return _selectedTimeFilter.describeWindow();
+  }
+
+  void _openBookings({String? status}) {
+    widget.onSelectSection(
+      AdminWebSection.bookings,
+      request: AdminWebSectionRequest(
+        timeFilter: _selectedTimeFilter,
+        bookingStatus: _normalizeFilterValue(status),
+      ),
+    );
+  }
+
+  void _openPayments({String? paymentState}) {
+    widget.onSelectSection(
+      AdminWebSection.payments,
+      request: AdminWebSectionRequest(
+        timeFilter: _selectedTimeFilter,
+        paymentState: _normalizeFilterValue(paymentState),
+      ),
+    );
+  }
+
+  String? _normalizeFilterValue(String? value) {
+    final normalized = (value ?? '').trim().toLowerCase();
+    if (normalized.isEmpty || normalized == 'all') return null;
+    return normalized;
+  }
+
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -138,10 +211,35 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
           }
 
           final data = snapshot.data!;
+          final windowBookings = _filterByTimeWindow(
+            data.bookings,
+            (booking) => booking.createdAt,
+          );
+          final windowOffers = _filterByTimeWindow(
+            data.offers,
+            (offer) => offer.createdAt,
+          );
+          final windowRestaurants = _filterByTimeWindow(
+            data.restaurants,
+            (restaurant) => restaurant.createdAt,
+          );
+          final windowStatusCounts = _buildStatusCounts(windowBookings);
+          final windowRevenue = _calculateRevenue(windowBookings);
+          final windowOfferCategoryCounts = _buildOfferCategoryCounts(
+            windowOffers,
+          );
+          final activeRestaurantsCount = data.restaurants
+              .where((item) => item.isActive)
+              .length;
+
           return ListView(
             children: [
               _OverviewHeader(
-                bookingsCount: data.bookings.length,
+                bookingsCount: windowBookings.length,
+                timeFilter: _selectedTimeFilter,
+                onTimeFilterChanged: (value) {
+                  setState(() => _selectedTimeFilter = value);
+                },
                 onRefresh: _refresh,
                 onOpenRestaurants: () =>
                     widget.onSelectSection(AdminWebSection.restaurants),
@@ -153,10 +251,8 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
                     widget.onSelectSection(AdminWebSection.attractions),
                 onOpenOffers: () =>
                     widget.onSelectSection(AdminWebSection.offers),
-                onOpenBookings: () =>
-                    widget.onSelectSection(AdminWebSection.bookings),
-                onOpenPayments: () =>
-                    widget.onSelectSection(AdminWebSection.payments),
+                onOpenBookings: () => _openBookings(),
+                onOpenPayments: () => _openPayments(),
                 onOpenRefunds: () =>
                     widget.onSelectSection(AdminWebSection.refunds),
               ),
@@ -170,33 +266,42 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
                   final metricCards = [
                     AdminWebMetricCard(
                       title: 'Total bookings',
-                      value: '${data.bookings.length}',
+                      value: '${windowBookings.length}',
                       icon: Icons.receipt_long_outlined,
                       iconColor: AppColors.primary,
                       caption:
-                          '${data.statusCounts['cancelled'] ?? 0} cancelled orders',
+                          '${windowStatusCounts['cancelled'] ?? 0} cancelled in ${_windowDescription()}',
+                      onTap: () => _openBookings(),
                     ),
                     AdminWebMetricCard(
                       title: 'Gross revenue',
-                      value: _formatMoney(data.totalRevenue),
+                      value: _formatMoney(windowRevenue),
                       icon: Icons.payments_outlined,
                       iconColor: const Color(0xFF0E9F6E),
-                      caption: 'Non-cancelled booking totals',
+                      caption: 'Collected totals in ${_windowDescription()}',
+                      onTap: () => _openPayments(paymentState: 'paid'),
                     ),
                     AdminWebMetricCard(
                       title: 'Active restaurants',
-                      value:
-                          '${data.restaurants.where((item) => item.isActive).length}',
+                      value: '$activeRestaurantsCount',
                       icon: Icons.storefront_outlined,
                       iconColor: const Color(0xFF2563EB),
-                      caption: '${data.restaurants.length} total venues',
+                      caption: _selectedTimeFilter == AdminWebTimeFilter.allTime
+                          ? '${data.restaurants.length} total venues'
+                          : '${windowRestaurants.length} added in ${_windowDescription()}',
+                      onTap: () =>
+                          widget.onSelectSection(AdminWebSection.restaurants),
                     ),
                     AdminWebMetricCard(
                       title: 'Users',
                       value: '${data.users.length}',
                       icon: Icons.people_outline,
                       iconColor: const Color(0xFFF59E0B),
-                      caption: '${data.offers.length} live offers',
+                      caption: _selectedTimeFilter == AdminWebTimeFilter.allTime
+                          ? 'Platform access directory'
+                          : '${windowOffers.length} offers created in ${_windowDescription()}',
+                      onTap: () =>
+                          widget.onSelectSection(AdminWebSection.users),
                     ),
                   ];
 
@@ -247,10 +352,16 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
                     return Column(
                       children: [
                         _OfferMixPanel(
-                          categoryCounts: data.offerCategoryCounts,
+                          categoryCounts: windowOfferCategoryCounts,
+                          timeFilter: _selectedTimeFilter,
                         ),
                         SizedBox(height: 16.h),
-                        _BookingStatusPanel(statusCounts: data.statusCounts),
+                        _BookingStatusPanel(
+                          statusCounts: windowStatusCounts,
+                          timeFilter: _selectedTimeFilter,
+                          onStatusSelected: (status) =>
+                              _openBookings(status: status),
+                        ),
                       ],
                     );
                   }
@@ -259,13 +370,17 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
                     children: [
                       Expanded(
                         child: _OfferMixPanel(
-                          categoryCounts: data.offerCategoryCounts,
+                          categoryCounts: windowOfferCategoryCounts,
+                          timeFilter: _selectedTimeFilter,
                         ),
                       ),
                       SizedBox(width: 16.w),
                       Expanded(
                         child: _BookingStatusPanel(
-                          statusCounts: data.statusCounts,
+                          statusCounts: windowStatusCounts,
+                          timeFilter: _selectedTimeFilter,
+                          onStatusSelected: (status) =>
+                              _openBookings(status: status),
                         ),
                       ),
                     ],
@@ -273,7 +388,11 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
                 },
               ),
               SizedBox(height: 20.h),
-              _RecentBookingsPanel(bookings: data.bookings.take(6).toList()),
+              _RecentBookingsPanel(
+                bookings: windowBookings.take(6).toList(),
+                timeFilter: _selectedTimeFilter,
+                onViewAll: () => _openBookings(),
+              ),
             ],
           );
         },
@@ -285,6 +404,8 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
 class _OverviewHeader extends StatelessWidget {
   const _OverviewHeader({
     required this.bookingsCount,
+    required this.timeFilter,
+    required this.onTimeFilterChanged,
     required this.onRefresh,
     required this.onOpenRestaurants,
     required this.onOpenBuffet,
@@ -297,6 +418,8 @@ class _OverviewHeader extends StatelessWidget {
   });
 
   final int bookingsCount;
+  final AdminWebTimeFilter timeFilter;
+  final ValueChanged<AdminWebTimeFilter> onTimeFilterChanged;
   final VoidCallback onRefresh;
   final VoidCallback onOpenRestaurants;
   final VoidCallback onOpenBuffet;
@@ -331,6 +454,27 @@ class _OverviewHeader extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 14.sp,
                 ),
+              ),
+              SizedBox(height: 18.h),
+              Text(
+                'Time window',
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: Colors.white.withValues(alpha: 0.72),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 10.h),
+              Wrap(
+                spacing: 8.w,
+                runSpacing: 8.h,
+                children: [
+                  for (final option in AdminWebTimeFilter.values)
+                    _HeaderTimeChip(
+                      label: option.shortLabel,
+                      selected: option == timeFilter,
+                      onTap: () => onTimeFilterChanged(option),
+                    ),
+                ],
               ),
               SizedBox(height: 20.h),
               Wrap(
@@ -409,7 +553,9 @@ class _OverviewHeader extends StatelessWidget {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  'bookings tracked',
+                  timeFilter == AdminWebTimeFilter.allTime
+                      ? 'bookings tracked'
+                      : 'bookings in ${timeFilter.label.toLowerCase()}',
                   style: AppTextStyles.cardMeta.copyWith(
                     color: Colors.white.withValues(alpha: 0.72),
                   ),
@@ -453,6 +599,52 @@ class _OverviewHeader extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _HeaderTimeChip extends StatelessWidget {
+  const _HeaderTimeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(999.r);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: borderRadius,
+        child: Ink(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary.withValues(alpha: 0.22)
+                : Colors.white.withValues(alpha: 0.08),
+            borderRadius: borderRadius,
+            border: Border.all(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: 0.42)
+                  : Colors.white.withValues(alpha: 0.14),
+            ),
+          ),
+          child: Text(
+            label,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: Colors.white.withValues(alpha: 0.96),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -515,9 +707,13 @@ class _HeaderActionChip extends StatelessWidget {
 }
 
 class _OfferMixPanel extends StatelessWidget {
-  const _OfferMixPanel({required this.categoryCounts});
+  const _OfferMixPanel({
+    required this.categoryCounts,
+    required this.timeFilter,
+  });
 
   final Map<String, int> categoryCounts;
+  final AdminWebTimeFilter timeFilter;
 
   @override
   Widget build(BuildContext context) {
@@ -535,7 +731,9 @@ class _OfferMixPanel extends StatelessWidget {
           Text('Offer mix', style: AppTextStyles.cardTitle),
           SizedBox(height: 6.h),
           Text(
-            'Distribution of active inventory across booking categories.',
+            timeFilter == AdminWebTimeFilter.allTime
+                ? 'Distribution of active inventory across booking categories.'
+                : 'Distribution of offers created in ${timeFilter.label.toLowerCase()}.',
             style: AppTextStyles.cardMeta.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -559,9 +757,15 @@ class _OfferMixPanel extends StatelessWidget {
 }
 
 class _BookingStatusPanel extends StatelessWidget {
-  const _BookingStatusPanel({required this.statusCounts});
+  const _BookingStatusPanel({
+    required this.statusCounts,
+    required this.timeFilter,
+    required this.onStatusSelected,
+  });
 
   final Map<String, int> statusCounts;
+  final AdminWebTimeFilter timeFilter;
+  final ValueChanged<String> onStatusSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -579,7 +783,9 @@ class _BookingStatusPanel extends StatelessWidget {
           Text('Booking status', style: AppTextStyles.cardTitle),
           SizedBox(height: 6.h),
           Text(
-            'Operational breakdown of current booking outcomes.',
+            timeFilter == AdminWebTimeFilter.allTime
+                ? 'Operational breakdown of current booking outcomes.'
+                : 'Operational breakdown of bookings created in ${timeFilter.label.toLowerCase()}.',
             style: AppTextStyles.cardMeta.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -593,6 +799,7 @@ class _BookingStatusPanel extends StatelessWidget {
                 label: entry.key,
                 count: entry.value,
                 ratio: total == 0 ? 0 : entry.value / total,
+                onTap: () => onStatusSelected(entry.key),
               ),
               SizedBox(height: 12.h),
             ],
@@ -607,15 +814,17 @@ class _RatioRow extends StatelessWidget {
     required this.label,
     required this.count,
     required this.ratio,
+    this.onTap,
   });
 
   final String label;
   final int count;
   final double ratio;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -647,13 +856,33 @@ class _RatioRow extends StatelessWidget {
         ),
       ],
     );
+
+    if (onTap == null) return content;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18.r),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
+          child: content,
+        ),
+      ),
+    );
   }
 }
 
 class _RecentBookingsPanel extends StatelessWidget {
-  const _RecentBookingsPanel({required this.bookings});
+  const _RecentBookingsPanel({
+    required this.bookings,
+    required this.timeFilter,
+    required this.onViewAll,
+  });
 
   final List<BookingEntity> bookings;
+  final AdminWebTimeFilter timeFilter;
+  final VoidCallback onViewAll;
 
   @override
   Widget build(BuildContext context) {
@@ -662,10 +891,19 @@ class _RecentBookingsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Recent bookings', style: AppTextStyles.cardTitle),
+          Row(
+            children: [
+              Expanded(
+                child: Text('Recent bookings', style: AppTextStyles.cardTitle),
+              ),
+              TextButton(onPressed: onViewAll, child: const Text('View all')),
+            ],
+          ),
           SizedBox(height: 6.h),
           Text(
-            'Latest booking activity across the platform.',
+            timeFilter == AdminWebTimeFilter.allTime
+                ? 'Latest booking activity across the platform.'
+                : 'Latest booking activity from ${timeFilter.label.toLowerCase()}.',
             style: AppTextStyles.cardMeta.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -800,7 +1038,7 @@ String _formatMoney(double amount) {
 String _titleCase(String value) {
   final words = value
       .replaceAll('_', ' ')
-      .split(RegExp(r'\s+'))
+      .split(' ')
       .where((word) => word.isNotEmpty)
       .toList(growable: false);
   if (words.isEmpty) return '-';

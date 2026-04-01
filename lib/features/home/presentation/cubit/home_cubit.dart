@@ -29,11 +29,13 @@ class HomeCubit extends Cubit<HomeState> {
   final FirebaseFirestore _firestore;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _restaurantsSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _attractionsSub;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _offersSub;
   bool _isFetchingRestaurants = false;
 
   void startListening() {
     _restaurantsSub?.cancel();
     _attractionsSub?.cancel();
+    _offersSub?.cancel();
     _restaurantsSub = _firestore
         .collection('restaurants')
         .snapshots()
@@ -50,6 +52,12 @@ class HomeCubit extends Cubit<HomeState> {
           if (isClosed) return;
           unawaited(fetchHomeItems(showLoading: false, shuffleResults: false));
         });
+    _offersSub = _firestore.collection('offers').snapshots().skip(1).listen((
+      _,
+    ) {
+      if (isClosed) return;
+      unawaited(fetchHomeItems(showLoading: false, shuffleResults: false));
+    });
   }
 
   Future<void> fetchHomeItems({
@@ -67,13 +75,7 @@ class HomeCubit extends Cubit<HomeState> {
         _getCatalogItems(CatalogCategoryType.setMenu),
         _getCatalogItems(CatalogCategoryType.attraction),
       ]);
-      final items = _deduplicateVenueItems(
-        results.expand((group) => group).toList(),
-        shuffleResults: shuffleResults,
-      );
-      if (shuffleResults) {
-        items.shuffle();
-      }
+      final items = results.expand((group) => group).toList();
       if (isClosed) return;
       if (items.isEmpty) {
         emit(
@@ -91,6 +93,12 @@ class HomeCubit extends Cubit<HomeState> {
           state.sortField,
           state.sortOrder,
         );
+        if (shuffleResults &&
+            state.selectedCategory == null &&
+            state.query.trim().isEmpty &&
+            state.sortField == null) {
+          filtered.shuffle();
+        }
         emit(
           state.copyWith(
             status: HomeStatus.success,
@@ -164,12 +172,7 @@ class HomeCubit extends Cubit<HomeState> {
       state.sortField,
       state.sortOrder,
     );
-    emit(
-      state.copyWith(
-        selectedCategory: category,
-        filteredItems: filtered,
-      ),
-    );
+    emit(state.copyWith(selectedCategory: category, filteredItems: filtered));
   }
 
   List<CatalogItemEntity> _applyFilters(
@@ -190,7 +193,11 @@ class HomeCubit extends Cubit<HomeState> {
       return name.contains(trimmed) || meta.contains(trimmed);
     }).toList();
 
-    return _sortItems(filtered, sortField, sortOrder);
+    final scopedItems = selectedCategory == null
+        ? _deduplicateVenueItems(filtered, shuffleResults: false)
+        : filtered;
+
+    return _sortItems(scopedItems, sortField, sortOrder);
   }
 
   List<CatalogItemEntity> _sortItems(
@@ -234,9 +241,7 @@ class HomeCubit extends Cubit<HomeState> {
     final current = _parseNumber(item.discount) > 0
         ? _parseNumber(item.discount)
         : _parseNumber(
-            item.discount.trim().isNotEmpty
-                ? item.discount
-                : item.priceFrom,
+            item.discount.trim().isNotEmpty ? item.discount : item.priceFrom,
           );
     if (original > 0 && current > 0 && original >= current) {
       return ((original - current) / original) * 100;
@@ -249,9 +254,17 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   double _parsePercent(String value) {
-    final match = RegExp(r'(\d+(\.\d+)?)\s*%').firstMatch(value);
-    if (match == null) return 0;
-    return double.tryParse(match.group(1) ?? '') ?? 0;
+    final percentIndex = value.indexOf('%');
+    if (percentIndex < 0) return 0;
+    final buffer = StringBuffer();
+    for (final rune in value.substring(0, percentIndex).runes) {
+      final character = String.fromCharCode(rune);
+      final isNumber = (rune >= 48 && rune <= 57) || rune == 46;
+      if (isNumber) {
+        buffer.write(character);
+      }
+    }
+    return double.tryParse(buffer.toString()) ?? 0;
   }
 
   String _metaLabel(CatalogItemEntity item) {
@@ -276,7 +289,8 @@ class HomeCubit extends Cubit<HomeState> {
     }
 
     final previousSelections = <String, CatalogItemEntity>{
-      for (final item in state.items) '${item.sourceCollection}:${item.id}': item,
+      for (final item in state.items)
+        '${item.sourceCollection}:${item.id}': item,
     };
 
     final uniqueItems = <CatalogItemEntity>[];
@@ -319,6 +333,7 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> close() async {
     await _restaurantsSub?.cancel();
     await _attractionsSub?.cancel();
+    await _offersSub?.cancel();
     await super.close();
   }
 }

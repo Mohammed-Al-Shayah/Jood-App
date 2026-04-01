@@ -5,13 +5,16 @@ import 'package:intl/intl.dart';
 
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
 import 'package:jood/features/bookings/data/models/booking_model.dart';
 import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
 
 class AdminWebBookingsPage extends StatefulWidget {
-  const AdminWebBookingsPage({super.key});
+  const AdminWebBookingsPage({super.key, this.initialRequest});
+
+  final AdminWebSectionRequest? initialRequest;
 
   @override
   State<AdminWebBookingsPage> createState() => _AdminWebBookingsPageState();
@@ -22,12 +25,23 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
   String _statusFilter = 'all';
   String _typeFilter = 'all';
   String _venueFilter = 'all';
+  AdminWebTimeFilter _timeFilter = AdminWebTimeFilter.allTime;
   _BookingsSort _sortBy = _BookingsSort.createdNewest;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _applyInitialRequest(widget.initialRequest);
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminWebBookingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialRequest?.cacheKey == widget.initialRequest?.cacheKey) {
+      return;
+    }
+    _applyInitialRequest(widget.initialRequest);
   }
 
   @override
@@ -40,6 +54,25 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
 
   void _onSearchChanged() {
     setState(() {});
+  }
+
+  void _applyInitialRequest(AdminWebSectionRequest? request) {
+    if (request == null) return;
+    _timeFilter = request.timeFilter;
+    _statusFilter = _normalizedStatusFilter(request.bookingStatus);
+  }
+
+  String _normalizedStatusFilter(String? value) {
+    final normalized = (value ?? '').trim().toLowerCase();
+    if (normalized.isEmpty) return 'all';
+    return normalized;
+  }
+
+  List<BookingEntity> _applyTimeFilter(List<BookingEntity> items) {
+    final now = DateTime.now();
+    return items
+        .where((booking) => _timeFilter.includes(booking.createdAt, now: now))
+        .toList(growable: false);
   }
 
   List<BookingEntity> _applyFilters(List<BookingEntity> items) {
@@ -135,25 +168,29 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
         final bookings = (snapshot.data?.docs ?? const [])
             .map(BookingModel.fromDoc)
             .toList(growable: false);
+        final timeFilteredItems = _applyTimeFilter(bookings);
         final venueOptions =
-            bookings
+            timeFilteredItems
                 .map(_venueName)
                 .map((name) => name.trim())
                 .where((name) => name.isNotEmpty && name != '-')
                 .toSet()
                 .toList()
               ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-        final filteredItems = _applyFilters(bookings);
-        final paidCount = bookings.where((booking) {
+        final filteredItems = _applyFilters(timeFilteredItems);
+        final paidCount = timeFilteredItems.where((booking) {
           final status = booking.status.trim().toLowerCase();
           return status == 'paid' || status == 'confirmed';
         }).length;
-        final cancelledCount = bookings
+        final cancelledCount = timeFilteredItems
             .where(
               (booking) => booking.status.trim().toLowerCase() == 'cancelled',
             )
             .length;
-        final revenue = bookings.fold<double>(0, (accumulated, booking) {
+        final revenue = timeFilteredItems.fold<double>(0, (
+          accumulated,
+          booking,
+        ) {
           final status = booking.status.trim().toLowerCase();
           if (status == 'cancelled' || status == 'failed') {
             return accumulated;
@@ -184,10 +221,12 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
                       width: cardWidth,
                       child: AdminWebMetricCard(
                         title: 'All bookings',
-                        value: '${bookings.length}',
+                        value: '${timeFilteredItems.length}',
                         icon: Icons.receipt_long_outlined,
                         iconColor: AppColors.primary,
-                        caption: 'Every booking document in Firestore',
+                        caption: _timeFilter == AdminWebTimeFilter.allTime
+                            ? 'Every booking document in Firestore'
+                            : 'Filtered to ${_timeFilter.label.toLowerCase()}',
                       ),
                     ),
                     SizedBox(
@@ -197,7 +236,8 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
                         value: '$paidCount',
                         icon: Icons.check_circle_outline,
                         iconColor: const Color(0xFF0E9F6E),
-                        caption: '$cancelledCount cancelled bookings',
+                        caption:
+                            '$cancelledCount cancelled in ${_timeFilter.describeWindow()}',
                       ),
                     ),
                     SizedBox(
@@ -229,6 +269,19 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
                     onSortChanged: (value) => setState(() => _sortBy = value),
                   ),
                   SizedBox(height: 12.h),
+                  Wrap(
+                    spacing: 8.w,
+                    runSpacing: 8.h,
+                    children: [
+                      for (final option in AdminWebTimeFilter.values)
+                        _FilterChip(
+                          label: option.shortLabel,
+                          selected: _timeFilter == option,
+                          onTap: () => setState(() => _timeFilter = option),
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: 10.h),
                   Wrap(
                     spacing: 8.w,
                     runSpacing: 8.h,

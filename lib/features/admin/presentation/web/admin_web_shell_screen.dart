@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/pages/admin_web_bookings_page.dart';
 import 'package:jood/features/admin/presentation/web/pages/admin_web_offers_page.dart';
 import 'package:jood/features/admin/presentation/web/pages/admin_web_overview_page.dart';
@@ -15,69 +16,6 @@ import 'package:jood/features/admin/presentation/web/pages/admin_web_users_page.
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_sidebar.dart';
 import 'package:jood/features/auth/domain/usecases/sign_out_usecase.dart';
 import 'package:jood/features/users/domain/entities/user_entity.dart';
-
-enum AdminWebSection {
-  overview(
-    label: 'Overview',
-    subtitle: 'KPIs, revenue, live metrics, and recent activity',
-    icon: Icons.grid_view_rounded,
-  ),
-  restaurants(
-    label: 'Restaurants',
-    subtitle: 'Listings, venue health, and status management',
-    icon: Icons.storefront_outlined,
-  ),
-  buffet(
-    label: 'Buffet',
-    subtitle: 'Meal-based buffet inventory and participating venues',
-    icon: Icons.restaurant_menu_outlined,
-  ),
-  setMenu(
-    label: 'Set Menu',
-    subtitle: 'Curated set menu inventory across restaurant partners',
-    icon: Icons.menu_book_outlined,
-  ),
-  attractions(
-    label: 'Attractions',
-    subtitle: 'Time-slot and package inventory for attraction experiences',
-    icon: Icons.local_activity_outlined,
-  ),
-  offers(
-    label: 'Offers',
-    subtitle: 'Availability, pricing, and inventory control',
-    icon: Icons.local_offer_outlined,
-  ),
-  bookings(
-    label: 'Bookings',
-    subtitle: 'Recent orders, statuses, and operational tracking',
-    icon: Icons.receipt_long_outlined,
-  ),
-  payments(
-    label: 'Payments',
-    subtitle: 'Transactions, payment states, and collected totals',
-    icon: Icons.credit_card_outlined,
-  ),
-  refunds(
-    label: 'Refunds',
-    subtitle: 'Cancelled bookings, refund review, and reconciliation',
-    icon: Icons.replay_circle_filled_outlined,
-  ),
-  users(
-    label: 'Users',
-    subtitle: 'Access, roles, and customer directory',
-    icon: Icons.people_outline,
-  );
-
-  const AdminWebSection({
-    required this.label,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  final String label;
-  final String subtitle;
-  final IconData icon;
-}
 
 class AdminWebShellScreen extends StatefulWidget {
   const AdminWebShellScreen({super.key, required this.currentUser});
@@ -91,12 +29,39 @@ class AdminWebShellScreen extends StatefulWidget {
 class _AdminWebShellScreenState extends State<AdminWebShellScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   AdminWebSection _selectedSection = AdminWebSection.overview;
+  AdminWebSectionRequest? _bookingsRequest;
+  AdminWebSectionRequest? _paymentsRequest;
+  int _sectionViewSeed = 0;
 
-  void _setSection(AdminWebSection section) {
-    if (_selectedSection == section) return;
+  void _setSection(AdminWebSection section, {AdminWebSectionRequest? request}) {
+    final sectionChanged = _selectedSection != section;
+    final requestChanged = request != null;
+    if (!sectionChanged && !requestChanged) return;
     setState(() {
       _selectedSection = section;
+      switch (section) {
+        case AdminWebSection.bookings:
+          _bookingsRequest = request;
+          break;
+        case AdminWebSection.payments:
+          _paymentsRequest = request;
+          break;
+        default:
+          break;
+      }
+      _sectionViewSeed++;
     });
+  }
+
+  String _sectionKey(AdminWebSection section) {
+    switch (section) {
+      case AdminWebSection.bookings:
+        return '${section.name}-${_bookingsRequest?.cacheKey ?? 'default'}-$_sectionViewSeed';
+      case AdminWebSection.payments:
+        return '${section.name}-${_paymentsRequest?.cacheKey ?? 'default'}-$_sectionViewSeed';
+      default:
+        return '${section.name}-$_sectionViewSeed';
+    }
   }
 
   @override
@@ -163,7 +128,7 @@ class _AdminWebShellScreenState extends State<AdminWebShellScreen> {
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 180),
                         child: KeyedSubtree(
-                          key: ValueKey(_selectedSection),
+                          key: ValueKey(_sectionKey(_selectedSection)),
                           child: _buildSectionPage(_selectedSection),
                         ),
                       ),
@@ -197,9 +162,9 @@ class _AdminWebShellScreenState extends State<AdminWebShellScreen> {
       case AdminWebSection.offers:
         return const AdminWebOffersPage();
       case AdminWebSection.bookings:
-        return const AdminWebBookingsPage();
+        return AdminWebBookingsPage(initialRequest: _bookingsRequest);
       case AdminWebSection.payments:
-        return const AdminWebPaymentsPage();
+        return AdminWebPaymentsPage(initialRequest: _paymentsRequest);
       case AdminWebSection.refunds:
         return const AdminWebRefundsPage();
       case AdminWebSection.users:
@@ -351,7 +316,11 @@ class _AdminWebTopBar extends StatelessWidget {
 }
 
 String _initials(String text) {
-  final parts = text.trim().split(RegExp(r'\s+'));
+  final parts = text
+      .trim()
+      .split(' ')
+      .where((part) => part.isNotEmpty)
+      .toList();
   if (parts.isEmpty || parts.first.isEmpty) return 'AD';
   if (parts.length == 1) {
     final word = parts.first;

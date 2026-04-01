@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
-import 'package:jood/features/admin/presentation/web/admin_web_shell_screen.dart';
+import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/users/domain/entities/user_entity.dart';
 
 class AdminWebSidebar extends StatelessWidget {

@@ -34,7 +34,10 @@ class CatalogRemoteDataSource {
     for (final doc in snapshot.docs) {
       final data = doc.data();
       if (!_supportsRestaurantCategory(data, category)) {
-        continue;
+        final matchingOffers = offersByVenue[doc.id] ?? const [];
+        if (!_hasMatchingOffer(matchingOffers, category)) {
+          continue;
+        }
       }
       final labels = _buildLabels(
         data: data,
@@ -111,7 +114,9 @@ class CatalogRemoteDataSource {
     CatalogCategoryType category,
   ) {
     final bookingCatalog = _asMap(data['bookingCatalog']);
-    final supported = _normalizedStringList(bookingCatalog['supportedCategories']);
+    final supported = _normalizedStringList(
+      bookingCatalog['supportedCategories'],
+    );
 
     if (category == CatalogCategoryType.buffet) {
       if (supported.isEmpty) return true;
@@ -124,6 +129,18 @@ class CatalogRemoteDataSource {
     }
     if (setMenuConfig.isNotEmpty) {
       return setMenuConfig['enabled'] as bool? ?? true;
+    }
+    return false;
+  }
+
+  bool _hasMatchingOffer(
+    List<Map<String, dynamic>> offers,
+    CatalogCategoryType category,
+  ) {
+    for (final offer in offers) {
+      if (_matchesCategory(offer, category)) {
+        return true;
+      }
     }
     return false;
   }
@@ -175,13 +192,14 @@ class CatalogRemoteDataSource {
         ? minPrice
         : _min(labelPriceFrom, labelDiscount);
 
-    final currencyLabel =
-        currency.isNotEmpty ? currency : _currencyFromLabel(data['priceFrom']);
+    final currencyLabel = currency.isNotEmpty
+        ? currency
+        : _currencyFromLabel(data['priceFrom']);
     final prefix = currencyLabel == null || currencyLabel.isEmpty
         ? ''
         : '$currencyLabel ';
     final priceFrom = resolvedOriginal > 0
-        ? 'From ${prefix}${resolvedOriginal.toStringAsFixed(2)}'
+        ? 'From $prefix${resolvedOriginal.toStringAsFixed(2)}'
         : _stringValue(data['priceFrom']).trim();
     final discount = resolvedCurrent > 0 && resolvedCurrent < resolvedOriginal
         ? '$prefix${resolvedCurrent.toStringAsFixed(2)}'
@@ -217,9 +235,7 @@ class CatalogRemoteDataSource {
     if (category == CatalogCategoryType.setMenu) {
       return raw == 'set_menu' || raw == 'setmenu';
     }
-    final type = (offer['bookableType'] as String? ?? '')
-        .trim()
-        .toLowerCase();
+    final type = (offer['bookableType'] as String? ?? '').trim().toLowerCase();
     return raw == 'attraction' || type == 'attraction';
   }
 
@@ -251,7 +267,9 @@ class CatalogRemoteDataSource {
   static List<String> _normalizedStringList(dynamic value) {
     if (value is! List) return const [];
     return value
-        .map((item) => item.toString().trim().toLowerCase().replaceAll(' ', '_'))
+        .map(
+          (item) => item.toString().trim().toLowerCase().replaceAll(' ', '_'),
+        )
         .where((item) => item.isNotEmpty)
         .toList();
   }
@@ -260,8 +278,21 @@ class CatalogRemoteDataSource {
     if (value == null) return null;
     final text = value.toString().trim();
     if (text.isEmpty) return null;
-    final match = RegExp(r'([A-Za-z]{2,})').firstMatch(text);
-    return match?.group(1);
+    final buffer = StringBuffer();
+    for (final rune in text.runes) {
+      final character = String.fromCharCode(rune);
+      final isLetter =
+          (rune >= 65 && rune <= 90) || (rune >= 97 && rune <= 122);
+      if (isLetter) {
+        buffer.write(character);
+        continue;
+      }
+      if (buffer.isNotEmpty) {
+        break;
+      }
+    }
+    final result = buffer.toString();
+    return result.isEmpty ? null : result;
   }
 
   static String _stringValue(dynamic value) {

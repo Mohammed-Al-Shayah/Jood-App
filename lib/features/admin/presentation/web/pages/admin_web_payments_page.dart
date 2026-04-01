@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_filter_dropdown_field.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
@@ -12,7 +13,9 @@ import 'package:jood/features/bookings/data/models/booking_model.dart';
 import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
 
 class AdminWebPaymentsPage extends StatefulWidget {
-  const AdminWebPaymentsPage({super.key});
+  const AdminWebPaymentsPage({super.key, this.initialRequest});
+
+  final AdminWebSectionRequest? initialRequest;
 
   @override
   State<AdminWebPaymentsPage> createState() => _AdminWebPaymentsPageState();
@@ -22,12 +25,23 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _paymentFilter = 'all';
   String _venueFilter = 'all';
+  AdminWebTimeFilter _timeFilter = AdminWebTimeFilter.allTime;
   _PaymentsSort _sortBy = _PaymentsSort.createdNewest;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _applyInitialRequest(widget.initialRequest);
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminWebPaymentsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialRequest?.cacheKey == widget.initialRequest?.cacheKey) {
+      return;
+    }
+    _applyInitialRequest(widget.initialRequest);
   }
 
   @override
@@ -40,6 +54,25 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
 
   void _onSearchChanged() {
     setState(() {});
+  }
+
+  void _applyInitialRequest(AdminWebSectionRequest? request) {
+    if (request == null) return;
+    _timeFilter = request.timeFilter;
+    _paymentFilter = _normalizedPaymentFilter(request.paymentState);
+  }
+
+  String _normalizedPaymentFilter(String? value) {
+    final normalized = (value ?? '').trim().toLowerCase();
+    if (normalized.isEmpty) return 'all';
+    return normalized;
+  }
+
+  List<BookingEntity> _applyTimeFilter(List<BookingEntity> items) {
+    final now = DateTime.now();
+    return items
+        .where((booking) => _timeFilter.includes(booking.createdAt, now: now))
+        .toList(growable: false);
   }
 
   List<BookingEntity> _applyFilters(List<BookingEntity> items) {
@@ -128,18 +161,19 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
                 .toList(growable: false)
               ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
+        final timeFilteredItems = _applyTimeFilter(bookings);
         final venueOptions =
-            bookings
+            timeFilteredItems
                 .map(_venueName)
                 .where((name) => name != '-')
                 .toSet()
                 .toList()
               ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-        final filteredItems = _applyFilters(bookings);
-        final paidItems = bookings.where(
+        final filteredItems = _applyFilters(timeFilteredItems);
+        final paidItems = timeFilteredItems.where(
           (item) => _paymentState(item) == 'paid',
         );
-        final pendingItems = bookings.where(
+        final pendingItems = timeFilteredItems.where(
           (item) => _paymentState(item) == 'pending',
         );
         final paidRevenue = paidItems.fold<double>(
@@ -150,7 +184,7 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
           0,
           (totalAmount, item) => totalAmount + item.total,
         );
-        final failedOrCancelledCount = bookings.where((item) {
+        final failedOrCancelledCount = timeFilteredItems.where((item) {
           final state = _paymentState(item);
           return state == 'cancelled' || state == 'failed';
         }).length;
@@ -178,10 +212,12 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
                       width: cardWidth,
                       child: AdminWebMetricCard(
                         title: 'Payment records',
-                        value: '${bookings.length}',
+                        value: '${timeFilteredItems.length}',
                         icon: Icons.credit_card_outlined,
                         iconColor: AppColors.primary,
-                        caption: 'All bookings with payment metadata',
+                        caption: _timeFilter == AdminWebTimeFilter.allTime
+                            ? 'All bookings with payment metadata'
+                            : 'Filtered to ${_timeFilter.label.toLowerCase()}',
                       ),
                     ),
                     SizedBox(
@@ -191,7 +227,8 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
                         value: '${paidItems.length}',
                         icon: Icons.check_circle_outline,
                         iconColor: const Color(0xFF0E9F6E),
-                        caption: _formatMoney(paidRevenue),
+                        caption:
+                            '${_formatMoney(paidRevenue)} in ${_timeFilter.describeWindow()}',
                       ),
                     ),
                     SizedBox(
@@ -201,7 +238,7 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
                         value: '${pendingItems.length}',
                         icon: Icons.hourglass_top_rounded,
                         iconColor: const Color(0xFFF59E0B),
-                        caption: _formatMoney(pendingRevenue),
+                        caption: '${_formatMoney(pendingRevenue)} pending',
                       ),
                     ),
                     SizedBox(
@@ -235,6 +272,19 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
                     onSortChanged: (value) => setState(() => _sortBy = value),
                   ),
                   SizedBox(height: 12.h),
+                  Wrap(
+                    spacing: 8.w,
+                    runSpacing: 8.h,
+                    children: [
+                      for (final option in AdminWebTimeFilter.values)
+                        _FilterChip(
+                          label: option.shortLabel,
+                          selected: _timeFilter == option,
+                          onTap: () => setState(() => _timeFilter = option),
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: 10.h),
                   Wrap(
                     spacing: 8.w,
                     runSpacing: 8.h,
