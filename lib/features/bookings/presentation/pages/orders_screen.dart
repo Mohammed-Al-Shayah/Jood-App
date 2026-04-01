@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import '../models/order_item_view_model.dart';
 
@@ -53,7 +55,7 @@ class OrdersTab extends StatelessWidget {
 
           final docs = snapshot.data?.docs ?? const [];
           if (docs.isEmpty) {
-            return const Center(child: Text('No orders yet.'));
+            return const _OrdersEmptyState();
           }
 
           return CustomScrollView(
@@ -91,6 +93,175 @@ class OrdersTab extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _OrdersEmptyState extends StatelessWidget {
+  const _OrdersEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 20.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('My Orders', style: AppTextStyles.headingMedium),
+            SizedBox(height: 4.h),
+            Text(
+              'Your bookings and QR passes will appear here.',
+              style: AppTextStyles.cardMeta.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Expanded(
+              child: Center(
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(22.r),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(28.r),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFFF4FFFD),
+                        AppColors.primary.withValues(alpha: 0.12),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.14),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        blurRadius: 26.r,
+                        offset: Offset(0, 14.h),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 86.r,
+                        height: 86.r,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primary.withValues(alpha: 0.18),
+                              AppColors.primary.withValues(alpha: 0.06),
+                            ],
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.receipt_long_rounded,
+                          color: AppColors.primaryDark,
+                          size: 38.sp,
+                        ),
+                      ),
+                      SizedBox(height: 22.h),
+                      Text(
+                        'No orders yet',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.headingMedium.copyWith(
+                          fontSize: 22.sp,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+                      Text(
+                        'Start your first booking and come back here to find your reservation details, pricing, and QR access in one place.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.body.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.5,
+                        ),
+                      ),
+                      SizedBox(height: 18.h),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8.w,
+                        runSpacing: 8.h,
+                        children: const [
+                          _OrdersEmptyChip(
+                            icon: Icons.restaurant_outlined,
+                            label: 'Buffet',
+                          ),
+                          _OrdersEmptyChip(
+                            icon: Icons.menu_book_outlined,
+                            label: 'Set Menu',
+                          ),
+                          _OrdersEmptyChip(
+                            icon: Icons.local_activity_outlined,
+                            label: 'Attractions',
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 22.h),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () =>
+                              context.pushNamedAndRemoveAll(Routes.homeScreen),
+                          icon: const Icon(Icons.explore_outlined),
+                          label: const Text('Explore Experiences'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18.r),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OrdersEmptyChip extends StatelessWidget {
+  const _OrdersEmptyChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16.sp, color: AppColors.primaryDark),
+          SizedBox(width: 6.w),
+          Text(
+            label,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -146,8 +317,9 @@ class _OrderCard extends StatelessWidget {
   int? _parseTimeToMinutes(String value) {
     final trimmed = value.trim().toLowerCase();
     if (trimmed.isEmpty) return null;
-    final amPmMatch = RegExp(r'^(\d{1,2})(?::(\d{2}))?\s*([ap]m)$')
-        .firstMatch(trimmed);
+    final amPmMatch = RegExp(
+      r'^(\d{1,2})(?::(\d{2}))?\s*([ap]m)$',
+    ).firstMatch(trimmed);
     if (amPmMatch != null) {
       final hour = int.tryParse(amPmMatch.group(1) ?? '');
       final minute = int.tryParse(amPmMatch.group(2) ?? '0') ?? 0;
@@ -183,7 +355,9 @@ class _OrderCard extends StatelessWidget {
       endMinutes ?? startMinutes,
     );
     if (endDate == null) return false;
-    if (endMinutes != null && startMinutes != null && endMinutes <= startMinutes) {
+    if (endMinutes != null &&
+        startMinutes != null &&
+        endMinutes <= startMinutes) {
       endDate = endDate.add(const Duration(days: 1));
     }
     return DateTime.now().isBefore(endDate);
@@ -629,7 +803,12 @@ class _OrderCard extends StatelessWidget {
         final message = error.toString().contains('CANCELLATION_EXPIRED')
             ? 'Cancellation window has ended.'
             : 'Failed to cancel booking. Please try again.';
-        showAppSnackBar(context, message, type: SnackBarType.error, fromTop: true);
+        showAppSnackBar(
+          context,
+          message,
+          type: SnackBarType.error,
+          fromTop: true,
+        );
       }
     }
   }

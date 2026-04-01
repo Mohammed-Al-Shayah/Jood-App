@@ -25,7 +25,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
     _bookingCategory = bookingCategory.trim().toLowerCase();
     final dates = _buildDates();
     final selectedDate = dates.first;
-    emit(
+    _emitIfOpen(
       state.copyWith(
         status: BookingFlowStatus.loading,
         dates: dates,
@@ -39,7 +39,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
 
   Future<void> selectDate(int index) async {
     final date = state.dates[index];
-    emit(
+    _emitIfOpen(
       state.copyWith(
         selectedDate: date,
         selectedDateIndex: index,
@@ -50,7 +50,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
   }
 
   Future<void> selectCustomDate(DateTime date) async {
-    emit(
+    _emitIfOpen(
       state.copyWith(
         selectedDate: date,
         selectedDateIndex: state.dates.length,
@@ -62,37 +62,37 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
 
   void toggleOffer(int index) {
     final selected = state.selectedOfferIndex == index ? null : index;
-    emit(state.copyWith(selectedOfferIndex: selected));
+    _emitIfOpen(state.copyWith(selectedOfferIndex: selected));
   }
 
   void selectOfferIndex(int? index) {
-    emit(state.copyWith(selectedOfferIndex: index));
+    _emitIfOpen(state.copyWith(selectedOfferIndex: index));
   }
 
   void clearSelectedOffer() {
-    emit(state.copyWith(selectedOfferIndex: null));
+    _emitIfOpen(state.copyWith(selectedOfferIndex: null));
   }
 
   void incrementAdults() {
-    emit(state.copyWith(adultCount: state.adultCount + 1));
+    _emitIfOpen(state.copyWith(adultCount: state.adultCount + 1));
   }
 
   void decrementAdults() {
     if (state.adultCount <= 1) return;
-    emit(state.copyWith(adultCount: state.adultCount - 1));
+    _emitIfOpen(state.copyWith(adultCount: state.adultCount - 1));
   }
 
   void incrementChildren() {
-    emit(state.copyWith(childCount: state.childCount + 1));
+    _emitIfOpen(state.copyWith(childCount: state.childCount + 1));
   }
 
   void decrementChildren() {
     if (state.childCount <= 0) return;
-    emit(state.copyWith(childCount: state.childCount - 1));
+    _emitIfOpen(state.copyWith(childCount: state.childCount - 1));
   }
 
   void setGuestCounts({required int adults, required int children}) {
-    emit(
+    _emitIfOpen(
       state.copyWith(
         adultCount: adults < 0 ? 0 : adults,
         childCount: children < 0 ? 0 : children,
@@ -101,11 +101,11 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
   }
 
   void setAdultCount(int value) {
-    emit(state.copyWith(adultCount: value < 0 ? 0 : value));
+    _emitIfOpen(state.copyWith(adultCount: value < 0 ? 0 : value));
   }
 
   void setChildCount(int value) {
-    emit(state.copyWith(childCount: value < 0 ? 0 : value));
+    _emitIfOpen(state.copyWith(childCount: value < 0 ? 0 : value));
   }
 
   Future<bool> refreshSelectedDate() async {
@@ -120,7 +120,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
   }) async {
     final restaurantId = _restaurantId;
     if (restaurantId == null) {
-      emit(
+      _emitIfOpen(
         state.copyWith(
           status: BookingFlowStatus.failure,
           errorMessage: 'Missing restaurant id.',
@@ -130,8 +130,10 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
       return;
     }
     try {
-      final offers =
-          await getOffersForDate(restaurantId, AppDateUtils.formatDate(date));
+      final offers = await getOffersForDate(
+        restaurantId,
+        AppDateUtils.formatDate(date),
+      );
       final filteredOffers = offers.where(_matchesBookingCategory).toList();
       int? selectedOfferIndex = state.selectedOfferIndex;
       if (preferredOfferId != null && preferredOfferId.isNotEmpty) {
@@ -146,7 +148,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
               selectedOfferIndex >= filteredOffers.length)) {
         selectedOfferIndex = null;
       }
-      emit(
+      _emitIfOpen(
         state.copyWith(
           status: BookingFlowStatus.ready,
           offers: filteredOffers,
@@ -156,7 +158,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
         ),
       );
     } catch (error) {
-      emit(
+      _emitIfOpen(
         state.copyWith(
           status: BookingFlowStatus.failure,
           errorMessage: error.toString(),
@@ -222,7 +224,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
           prices[dayKey] = candidate;
         }
       }
-      emit(state.copyWith(datePrices: prices, currency: currency));
+      _emitIfOpen(state.copyWith(datePrices: prices, currency: currency));
     } catch (_) {
       // Ignore date strip pricing failures.
     }
@@ -230,10 +232,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
 
   bool _matchesBookingCategory(OfferEntity offer) {
     if (_bookingCategory.isEmpty) return true;
-    final raw = offer.bookingCategory
-        .trim()
-        .toLowerCase()
-        .replaceAll(' ', '_');
+    final raw = offer.bookingCategory.trim().toLowerCase().replaceAll(' ', '_');
     if (_bookingCategory == 'buffet') {
       return raw.isEmpty || raw == 'buffet';
     }
@@ -255,5 +254,9 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
     }
     return fallback;
   }
-}
 
+  void _emitIfOpen(BookingFlowState nextState) {
+    if (isClosed) return;
+    emit(nextState);
+  }
+}

@@ -18,8 +18,9 @@ List<CatalogBookingOption> buildMealOptions(
   final options = grouped.entries.map((entry) {
     final sortedEntries = List<MapEntry<int, OfferEntity>>.from(entry.value)
       ..sort((a, b) {
-        final availabilityCompare =
-            availabilityRank(a.value).compareTo(availabilityRank(b.value));
+        final availabilityCompare = availabilityRank(
+          a.value,
+        ).compareTo(availabilityRank(b.value));
         if (availabilityCompare != 0) return availabilityCompare;
         final priceCompare = a.value.priceAdult.compareTo(b.value.priceAdult);
         if (priceCompare != 0) return priceCompare;
@@ -40,13 +41,15 @@ List<CatalogBookingOption> buildMealOptions(
       statusLabel: offerStatusLabel(offer),
       offerIndex: selectedEntry.key,
       isEnabled: enabled,
+      details: buildOptionDetails(offer),
     );
   }).toList();
 
   options.sort((a, b) {
     final leftIndex = order.indexOf(a.label.toLowerCase());
     final rightIndex = order.indexOf(b.label.toLowerCase());
-    if (leftIndex >= 0 && rightIndex >= 0) return leftIndex.compareTo(rightIndex);
+    if (leftIndex >= 0 && rightIndex >= 0)
+      return leftIndex.compareTo(rightIndex);
     if (leftIndex >= 0) return -1;
     if (rightIndex >= 0) return 1;
     return a.label.compareTo(b.label);
@@ -90,6 +93,9 @@ List<CatalogBookingOption> buildTimeSlotOptions(List<OfferEntity> offers) {
           ? entry.value.first.key
           : availableOffers.first.key,
       isEnabled: availableOffers.isNotEmpty,
+      details: buildTimeSlotDetails(
+        availableOffers.isNotEmpty ? availableOffers : entry.value,
+      ),
     );
   }).toList();
 
@@ -111,8 +117,9 @@ List<CatalogBookingOption> buildPackageOptions(
   final result = grouped.entries.map((entry) {
     final sortedEntries = List<MapEntry<int, OfferEntity>>.from(entry.value)
       ..sort((a, b) {
-        final availabilityCompare =
-            availabilityRank(a.value).compareTo(availabilityRank(b.value));
+        final availabilityCompare = availabilityRank(
+          a.value,
+        ).compareTo(availabilityRank(b.value));
         if (availabilityCompare != 0) return availabilityCompare;
         return a.value.priceAdult.compareTo(b.value.priceAdult);
       });
@@ -128,11 +135,44 @@ List<CatalogBookingOption> buildPackageOptions(
       statusLabel: offerStatusLabel(offer),
       offerIndex: selectedEntry.key,
       isEnabled: !isOfferUnavailable(offer),
+      details: buildOptionDetails(
+        offer,
+        leadingDescription: offer.packageDescription,
+      ),
     );
   }).toList();
 
   result.sort((a, b) => a.label.compareTo(b.label));
   return result;
+}
+
+List<String> buildOptionDetails(
+  OfferEntity offer, {
+  String? leadingDescription,
+}) {
+  final details = <String>[];
+  final description = leadingDescription?.trim() ?? '';
+  if (description.isNotEmpty) {
+    details.add(description);
+  }
+  for (final condition in offer.entryConditions) {
+    final value = condition.trim();
+    if (value.isEmpty || details.contains(value)) continue;
+    details.add(value);
+  }
+  return details;
+}
+
+List<String> buildTimeSlotDetails(List<MapEntry<int, OfferEntity>> offers) {
+  final details = <String>[];
+  for (final entry in offers) {
+    final package = packageLabel(entry.value).trim();
+    if (package.isEmpty || package == 'Package' || details.contains(package)) {
+      continue;
+    }
+    details.add(package);
+  }
+  return details;
 }
 
 String mealOptionLabel(OfferEntity offer, CatalogCategoryType category) {
@@ -305,7 +345,9 @@ String titleize(String value) {
   return value
       .split(RegExp(r'[_\s]+'))
       .where((part) => part.isNotEmpty)
-      .map((part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}')
+      .map(
+        (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+      )
       .join(' ');
 }
 

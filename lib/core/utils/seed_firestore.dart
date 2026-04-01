@@ -457,9 +457,36 @@ class SeedFirestore {
       'demo_restaurant_5': 95,
     };
     final setMenuOptions = [
-      {'mealType': 'breakfast', 'start': '08:30', 'end': '10:30', 'delta': 0.0},
-      {'mealType': 'lunch', 'start': '12:30', 'end': '14:30', 'delta': 12.0},
-      {'mealType': 'dinner', 'start': '19:00', 'end': '21:30', 'delta': 24.0},
+      {
+        'mealType': 'breakfast',
+        'start': '08:30',
+        'end': '10:30',
+        'delta': 0.0,
+        'entryConditions': [
+          'Morning set menu with bakery basket and hot drink',
+          'Best suited for lighter early seating',
+        ],
+      },
+      {
+        'mealType': 'lunch',
+        'start': '12:30',
+        'end': '14:30',
+        'delta': 12.0,
+        'entryConditions': [
+          'Midday set menu with starter and main course selection',
+          'Designed for regular lunch seating',
+        ],
+      },
+      {
+        'mealType': 'dinner',
+        'start': '19:00',
+        'end': '21:30',
+        'delta': 24.0,
+        'entryConditions': [
+          'Evening set menu with expanded main course choices',
+          'Dessert course is part of the dinner experience',
+        ],
+      },
     ];
     for (final entry in setMenuRestaurants.entries) {
       final restaurantId = entry.key;

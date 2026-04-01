@@ -8,6 +8,7 @@ class CatalogBookingOption {
     required this.statusLabel,
     required this.offerIndex,
     required this.isEnabled,
+    this.details = const [],
   });
 
   final String key;
@@ -18,4 +19,7 @@ class CatalogBookingOption {
   final String statusLabel;
   final int offerIndex;
   final bool isEnabled;
+  final List<String> details;
+
+  bool get hasDetails => details.isNotEmpty;
 }

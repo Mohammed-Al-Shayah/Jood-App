@@ -67,7 +67,9 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
           return Scaffold(
             backgroundColor: Colors.white,
             bottomNavigationBar: BottomCtaBar(
-              label: selectedOffer == null ? 'Select an option to continue' : 'Next',
+              label: selectedOffer == null
+                  ? 'Select an option to continue'
+                  : 'Next',
               onPressed: canProceed ? () => _goToGuests(context) : null,
               backgroundColor: Colors.white,
               shadowColor: AppColors.shadowColor,
@@ -190,7 +192,8 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
 
     final cubit = context.read<BookingFlowCubit>();
     final currentIndex = state.selectedOfferIndex;
-    if (nextSlot != _selectedTimeSlotKey || nextPackage != _selectedPackageKey) {
+    if (nextSlot != _selectedTimeSlotKey ||
+        nextPackage != _selectedPackageKey) {
       setState(() {
         _selectedTimeSlotKey = nextSlot;
         _selectedPackageKey = nextPackage;
@@ -203,7 +206,10 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
 
   void _handleTimeSlotSelected(String key) {
     final cubit = context.read<BookingFlowCubit>();
-    final packageOptions = buildPackageOptions(cubit.state.offers, timeSlot: key);
+    final packageOptions = buildPackageOptions(
+      cubit.state.offers,
+      timeSlot: key,
+    );
     final selectedPackage = firstWhereOrNull(
       packageOptions,
       (package) => package.isEnabled,
@@ -226,7 +232,9 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
       (package) => package.key == key,
     );
     setState(() => _selectedPackageKey = key);
-    context.read<BookingFlowCubit>().selectOfferIndex(selectedPackage.offerIndex);
+    context.read<BookingFlowCubit>().selectOfferIndex(
+      selectedPackage.offerIndex,
+    );
   }
 
   Future<void> _openDatePicker(BuildContext context) async {
@@ -350,6 +358,7 @@ class _AttractionSection extends StatelessWidget {
             options: timeSlots,
             selectedKey: selectedTimeSlotKey,
             onSelectedKey: onTimeSlotSelected,
+            compactCards: true,
           ),
           SizedBox(height: 16.h),
           _OptionsSection(
@@ -359,6 +368,8 @@ class _AttractionSection extends StatelessWidget {
             options: packageOptions,
             selectedKey: selectedPackageKey,
             onSelectedKey: onPackageSelected,
+            expandSubtitle: true,
+            compactCards: true,
           ),
         ],
       ],
@@ -375,6 +386,8 @@ class _OptionsSection extends StatelessWidget {
     this.selectedKey,
     this.onSelected,
     this.onSelectedKey,
+    this.expandSubtitle = false,
+    this.compactCards = false,
   });
 
   final String title;
@@ -384,6 +397,8 @@ class _OptionsSection extends StatelessWidget {
   final String? selectedKey;
   final ValueChanged<int>? onSelected;
   final ValueChanged<String>? onSelectedKey;
+  final bool expandSubtitle;
+  final bool compactCards;
 
   @override
   Widget build(BuildContext context) {
@@ -421,21 +436,64 @@ class _OptionsSection extends StatelessWidget {
               ),
             ),
           if (options.isNotEmpty)
-            Builder(
-              builder: (context) {
-                final screenWidth = MediaQuery.of(context).size.width;
-                final cardWidth = (screenWidth * 0.78).clamp(250.0, 320.0);
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: options.map((option) {
+            compactCards
+                ? LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cardSpacing = 10.w;
+                      final cardWidth =
+                          (constraints.maxWidth - (cardSpacing * 2)) / 3;
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: List.generate(options.length, (index) {
+                            final option = options[index];
+                            final isSelected = selectedIndex != null
+                                ? selectedIndex == option.offerIndex
+                                : selectedKey == option.key;
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                right: index == options.length - 1
+                                    ? 0
+                                    : cardSpacing,
+                              ),
+                              child: SizedBox(
+                                width: cardWidth,
+                                child: _OptionCard(
+                                  option: option,
+                                  isSelected: isSelected,
+                                  onTap: option.isEnabled
+                                      ? () {
+                                          if (onSelected != null) {
+                                            onSelected!(option.offerIndex);
+                                          } else if (onSelectedKey != null) {
+                                            onSelectedKey!(option.key);
+                                          }
+                                        }
+                                      : null,
+                                  expandSubtitle: expandSubtitle,
+                                  compactLayout: true,
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      );
+                    },
+                  )
+                : Column(
+                    children: List.generate(options.length, (index) {
+                      final option = options[index];
                       final isSelected = selectedIndex != null
                           ? selectedIndex == option.offerIndex
                           : selectedKey == option.key;
                       return Padding(
-                        padding: EdgeInsets.only(right: 12.w),
+                        padding: EdgeInsets.only(
+                          bottom: index == options.length - 1 ? 0 : 12.h,
+                        ),
                         child: SizedBox(
-                          width: cardWidth,
+                          width: double.infinity,
                           child: _OptionCard(
                             option: option,
                             isSelected: isSelected,
@@ -448,41 +506,60 @@ class _OptionsSection extends StatelessWidget {
                                     }
                                   }
                                 : null,
+                            expandSubtitle: expandSubtitle,
                           ),
                         ),
                       );
-                    }).toList(),
+                    }),
                   ),
-                );
-              },
-            ),
         ],
       ),
     );
   }
 }
 
-class _OptionCard extends StatelessWidget {
+class _OptionCard extends StatefulWidget {
   const _OptionCard({
     required this.option,
     required this.isSelected,
     required this.onTap,
+    this.expandSubtitle = false,
+    this.compactLayout = false,
   });
 
   final CatalogBookingOption option;
   final bool isSelected;
   final VoidCallback? onTap;
+  final bool expandSubtitle;
+  final bool compactLayout;
+
+  @override
+  State<_OptionCard> createState() => _OptionCardState();
+}
+
+class _OptionCardState extends State<_OptionCard> {
+  bool _detailsVisible = false;
+
+  void _toggleDetails() {
+    setState(() => _detailsVisible = !_detailsVisible);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isSelected ? AppColors.primary : AppColors.shadowColor;
+    final option = widget.option;
+    final borderColor = widget.isSelected
+        ? AppColors.primary
+        : AppColors.shadowColor;
+    final accentColor = option.isEnabled
+        ? AppColors.primaryDark
+        : const Color(0xFFDD5A5A);
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(16.r),
         child: Container(
-          padding: EdgeInsets.all(14.r),
+          padding: EdgeInsets.all(widget.compactLayout ? 10.r : 14.r),
           decoration: BoxDecoration(
             color: option.isEnabled
                 ? Colors.white
@@ -490,86 +567,258 @@ class _OptionCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16.r),
             border: Border.all(color: borderColor),
           ),
+          child: widget.compactLayout
+              ? _buildCompactBody(option, accentColor)
+              : _buildDefaultBody(option, accentColor),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactBody(CatalogBookingOption option, Color accentColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          option.label,
+          style: AppTextStyles.sectionTitle.copyWith(
+            fontSize: 12.5.sp,
+            height: 1.25,
+            color: option.isEnabled
+                ? AppColors.textPrimary
+                : AppColors.textMuted,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+          decoration: BoxDecoration(
+            color: accentColor.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Text(
+            option.statusLabel,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.cardMeta.copyWith(
+              fontSize: 10.5.sp,
+              color: accentColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        if (option.subtitle.isNotEmpty) ...[
+          SizedBox(height: 8.h),
+          Text(
+            option.subtitle,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 11.5.sp,
+              height: 1.4,
+            ),
+          ),
+        ],
+        SizedBox(height: 10.h),
+        Text(
+          option.primaryPriceLabel,
+          style: AppTextStyles.cardPrice.copyWith(
+            fontSize: 12.sp,
+            color: option.isEnabled ? AppColors.primary : AppColors.textMuted,
+          ),
+        ),
+        if (option.secondaryPriceLabel.isNotEmpty) ...[
+          SizedBox(height: 4.h),
+          Text(
+            option.secondaryPriceLabel,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 10.5.sp,
+              height: 1.35,
+            ),
+          ),
+        ],
+        if (option.hasDetails) ...[
+          SizedBox(height: 8.h),
+          _buildDetailsToggle(compact: true),
+          _buildDetailsPanel(compact: true),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDefaultBody(CatalogBookingOption option, Color accentColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                option.label,
+                maxLines: widget.expandSubtitle ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.sectionTitle.copyWith(
+                  color: option.isEnabled
+                      ? AppColors.textPrimary
+                      : AppColors.textMuted,
+                ),
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: option.isEnabled
+                    ? AppColors.primary.withValues(alpha: 0.08)
+                    : Colors.red.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Text(
+                option.statusLabel,
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: option.isEnabled
+                      ? AppColors.primaryDark
+                      : const Color(0xFFDD5A5A),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (option.subtitle.isNotEmpty) ...[
+          SizedBox(height: 8.h),
+          Text(
+            option.subtitle,
+            maxLines: widget.expandSubtitle ? null : 2,
+            overflow: widget.expandSubtitle ? null : TextOverflow.ellipsis,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 12.5.sp,
+              height: widget.expandSubtitle ? 1.45 : null,
+            ),
+          ),
+        ],
+        SizedBox(height: 10.h),
+        Wrap(
+          spacing: 10.w,
+          runSpacing: 4.h,
+          children: [
+            Text(
+              option.primaryPriceLabel,
+              style: AppTextStyles.cardPrice.copyWith(
+                color: option.isEnabled
+                    ? AppColors.primary
+                    : AppColors.textMuted,
+              ),
+            ),
+            if (option.secondaryPriceLabel.isNotEmpty)
+              Text(
+                option.secondaryPriceLabel,
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+          ],
+        ),
+        if (option.hasDetails) ...[
+          SizedBox(height: 8.h),
+          _buildDetailsToggle(compact: false),
+          _buildDetailsPanel(compact: false),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDetailsToggle({required bool compact}) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _toggleDetails,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _detailsVisible ? 'Hide details' : 'Show details',
+              style: AppTextStyles.cardMeta.copyWith(
+                color: AppColors.primaryDark,
+                fontSize: compact ? 10.5.sp : 11.5.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(width: 4.w),
+            Icon(
+              _detailsVisible
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              size: compact ? 18.r : 20.r,
+              color: AppColors.primaryDark,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailsPanel({required bool compact}) {
+    return AnimatedCrossFade(
+      firstChild: const SizedBox.shrink(),
+      secondChild: Padding(
+        padding: EdgeInsets.only(top: 8.h),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(compact ? 8.r : 10.r),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(12.r),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      option.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.sectionTitle.copyWith(
-                        color: option.isEnabled
-                            ? AppColors.textPrimary
-                            : AppColors.textMuted,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 10.w,
-                      vertical: 6.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: option.isEnabled
-                          ? AppColors.primary.withValues(alpha: 0.08)
-                          : Colors.red.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(20.r),
-                    ),
-                    child: Text(
-                      option.statusLabel,
-                      style: AppTextStyles.cardMeta.copyWith(
-                        color: option.isEnabled
-                            ? AppColors.primaryDark
-                            : const Color(0xFFDD5A5A),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (option.subtitle.isNotEmpty) ...[
-                SizedBox(height: 8.h),
-                Text(
-                  option.subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.cardMeta.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 12.5.sp,
-                  ),
+            children: List.generate(widget.option.details.length, (index) {
+              final detail = widget.option.details[index];
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == widget.option.details.length - 1 ? 0 : 6.h,
                 ),
-              ],
-              SizedBox(height: 10.h),
-              Wrap(
-                spacing: 10.w,
-                runSpacing: 4.h,
-                children: [
-                  Text(
-                    option.primaryPriceLabel,
-                    style: AppTextStyles.cardPrice.copyWith(
-                      color: option.isEnabled
-                          ? AppColors.primary
-                          : AppColors.textMuted,
-                    ),
-                  ),
-                  if (option.secondaryPriceLabel.isNotEmpty)
-                    Text(
-                      option.secondaryPriceLabel,
-                      style: AppTextStyles.cardMeta.copyWith(
-                        color: AppColors.textSecondary,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 5.r,
+                      height: 5.r,
+                      margin: EdgeInsets.only(
+                        top: compact ? 5.h : 6.h,
+                        right: 8.w,
+                      ),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
                       ),
                     ),
-                ],
-              ),
-            ],
+                    Expanded(
+                      child: Text(
+                        detail,
+                        style: AppTextStyles.cardMeta.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: compact ? 10.5.sp : 11.5.sp,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
           ),
         ),
       ),
+      crossFadeState: _detailsVisible
+          ? CrossFadeState.showSecond
+          : CrossFadeState.showFirst,
+      duration: const Duration(milliseconds: 180),
+      sizeCurve: Curves.easeInOut,
     );
   }
 }
