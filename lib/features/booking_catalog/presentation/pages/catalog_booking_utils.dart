@@ -48,8 +48,9 @@ List<CatalogBookingOption> buildMealOptions(
   options.sort((a, b) {
     final leftIndex = order.indexOf(a.label.toLowerCase());
     final rightIndex = order.indexOf(b.label.toLowerCase());
-    if (leftIndex >= 0 && rightIndex >= 0)
+    if (leftIndex >= 0 && rightIndex >= 0) {
       return leftIndex.compareTo(rightIndex);
+    }
     if (leftIndex >= 0) return -1;
     if (rightIndex >= 0) return 1;
     return a.label.compareTo(b.label);

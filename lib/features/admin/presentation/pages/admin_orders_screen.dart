@@ -68,7 +68,7 @@ class _FiltersCard extends StatelessWidget {
           Text('Restaurant', style: AppTextStyles.cardMeta),
           SizedBox(height: 6.h),
           DropdownButtonFormField<String>(
-            value: state.selectedRestaurantId.isEmpty
+            initialValue: state.selectedRestaurantId.isEmpty
                 ? null
                 : state.selectedRestaurantId,
             decoration: InputDecoration(
@@ -241,7 +241,7 @@ class _OrdersList extends StatelessWidget {
 
         return ListView.separated(
           itemCount: grouped.length,
-          separatorBuilder: (_, __) => SizedBox(height: 12.h),
+          separatorBuilder: (_, _) => SizedBox(height: 12.h),
           itemBuilder: (context, index) {
             final group = grouped[index];
             return AdminSectionCard(

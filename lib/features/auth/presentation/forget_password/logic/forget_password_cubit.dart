@@ -1,12 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
+import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
 import '../../../domain/usecases/send_password_reset_email_usecase.dart';
 import '../../../domain/usecases/send_phone_otp_usecase.dart';
-import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
 import 'forget_password_state.dart';
 
 class ForgetPasswordCubit extends SafeCubit<ForgetPasswordState> {
@@ -75,9 +73,7 @@ class ForgetPasswordCubit extends SafeCubit<ForgetPasswordState> {
           return;
         }
 
-        final verificationId = await _sendPhoneOtp(
-          phoneNumber: normalizedPhone,
-        );
+        final verificationId = await _sendPhoneOtp(phoneNumber: normalizedPhone);
         emitSafe(
           state.copyWith(
             status: ForgetPasswordStatus.phoneOtpSent,
@@ -89,23 +85,18 @@ class ForgetPasswordCubit extends SafeCubit<ForgetPasswordState> {
         await _sendPasswordResetEmail(input);
         emitSafe(state.copyWith(status: ForgetPasswordStatus.success));
       }
-    } on FirebaseAuthException catch (e) {
+    } catch (error) {
       emitSafe(
         state.copyWith(
           status: ForgetPasswordStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            operationNotAllowedMessage:
-                'Phone authentication is not enabled for this project.',
-            fallbackMessage: 'Request failed. Please try again.',
-          ),
-        ),
-      );
-    } catch (_) {
-      emitSafe(
-        state.copyWith(
-          status: ForgetPasswordStatus.failure,
-          errorMessage: AppStrings.somethingWentWrong,
+          errorMessage: isAuthError(error)
+              ? mapAuthError(
+                  error,
+                  operationNotAllowedMessage:
+                      'Phone authentication is not enabled for this project.',
+                  fallbackMessage: 'Request failed. Please try again.',
+                )
+              : AppStrings.somethingWentWrong,
         ),
       );
     }

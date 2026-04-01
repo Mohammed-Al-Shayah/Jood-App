@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/constants/app_strings.dart';
@@ -58,23 +57,19 @@ class ChangePasswordCubit extends Cubit<ChangePasswordState> {
       await _updatePassword(user: user, newPassword: state.password.trim());
       await _signOut();
       emit(state.copyWith(status: ChangePasswordStatus.success));
-    } on FirebaseAuthException catch (e) {
+    } catch (error) {
       emit(
         state.copyWith(
           status: ChangePasswordStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            requiresRecentLoginMessage:
-                'Session expired. Please verify your phone again.',
-            fallbackMessage: 'Unable to change password. Please try again.',
-          ),
-        ),
-      );
-    } catch (_) {
-      emit(
-        state.copyWith(
-          status: ChangePasswordStatus.failure,
-          errorMessage: AppStrings.somethingWentWrong,
+          errorMessage: isAuthError(error)
+              ? mapAuthError(
+                  error,
+                  requiresRecentLoginMessage:
+                      'Session expired. Please verify your phone again.',
+                  fallbackMessage:
+                      'Unable to change password. Please try again.',
+                )
+              : AppStrings.somethingWentWrong,
         ),
       );
     }

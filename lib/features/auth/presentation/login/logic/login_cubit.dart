@@ -2,15 +2,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
+import '../../../../../core/errors/auth_error.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
+import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
+import '../../../../../features/users/domain/usecases/sync_auth_user_usecase.dart';
 import '../../../domain/usecases/get_current_user_usecase.dart';
 import '../../../domain/usecases/login_with_email_usecase.dart';
 import '../../../domain/usecases/reload_user_usecase.dart';
 import '../../../domain/usecases/send_email_verification_usecase.dart';
 import '../../../domain/usecases/sign_out_usecase.dart';
-import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
-import '../../../../../features/users/domain/usecases/sync_auth_user_usecase.dart';
 import 'login_state.dart';
 
 class LoginCubit extends SafeCubit<LoginState> {
@@ -107,24 +108,19 @@ class LoginCubit extends SafeCubit<LoginState> {
           errorMessage: 'Activation link resent. Please check your inbox.',
         ),
       );
-    } on FirebaseAuthException catch (e) {
+    } catch (error) {
       emitSafe(
         state.copyWith(
           status: LoginStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            userNotFoundMessage: 'No user found for this email.',
-            operationNotAllowedMessage:
-                'Email/password accounts are not enabled.',
-            fallbackMessage: 'Login failed. Please try again.',
-          ),
-        ),
-      );
-    } catch (_) {
-      emitSafe(
-        state.copyWith(
-          status: LoginStatus.failure,
-          errorMessage: AppStrings.somethingWentWrong,
+          errorMessage: isAuthError(error)
+              ? mapAuthError(
+                  error,
+                  userNotFoundMessage: 'No user found for this email.',
+                  operationNotAllowedMessage:
+                      'Email/password accounts are not enabled.',
+                  fallbackMessage: 'Login failed. Please try again.',
+                )
+              : AppStrings.somethingWentWrong,
         ),
       );
     }
@@ -136,19 +132,12 @@ class LoginCubit extends SafeCubit<LoginState> {
     emitSafe(state.copyWith(status: LoginStatus.loading, errorMessage: null));
     try {
       final input = state.identifier.trim();
-      UserCredential credential;
-
-      if (state.loginMethod == LoginMethod.phone) {
-        credential = await _signInWithPhoneAndPassword(
-          AuthValidators.normalizePhone(input),
-          state.password,
-        );
-      } else {
-        credential = await _loginWithEmail(
-          email: input,
-          password: state.password,
-        );
-      }
+      final credential = state.loginMethod == LoginMethod.phone
+          ? await _signInWithPhoneAndPassword(
+              AuthValidators.normalizePhone(input),
+              state.password,
+            )
+          : await _loginWithEmail(email: input, password: state.password);
 
       final user = credential.user;
       if (user == null) {
@@ -176,7 +165,7 @@ class LoginCubit extends SafeCubit<LoginState> {
       if (AuthValidators.isEmail(input) && !refreshed.emailVerified) {
         try {
           await _sendEmailVerification(refreshed);
-        } on FirebaseAuthException catch (_) {}
+        } catch (_) {}
         await _signOut();
         emitSafe(
           state.copyWith(
@@ -191,27 +180,22 @@ class LoginCubit extends SafeCubit<LoginState> {
 
       await _syncAuthUser(refreshed);
       emitSafe(state.copyWith(status: LoginStatus.success));
-    } on FirebaseAuthException catch (e) {
+    } catch (error) {
       final isEmailLogin = state.loginMethod == LoginMethod.email;
       emitSafe(
         state.copyWith(
           status: LoginStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            userNotFoundMessage: isEmailLogin
-                ? 'No user found for this email.'
-                : 'No user found for this phone.',
-            operationNotAllowedMessage:
-                'Email/password accounts are not enabled.',
-            fallbackMessage: 'Login failed. Please try again.',
-          ),
-        ),
-      );
-    } catch (_) {
-      emitSafe(
-        state.copyWith(
-          status: LoginStatus.failure,
-          errorMessage: AppStrings.somethingWentWrong,
+          errorMessage: isAuthError(error)
+              ? mapAuthError(
+                  error,
+                  userNotFoundMessage: isEmailLogin
+                      ? 'No user found for this email.'
+                      : 'No user found for this phone.',
+                  operationNotAllowedMessage:
+                      'Email/password accounts are not enabled.',
+                  fallbackMessage: 'Login failed. Please try again.',
+                )
+              : AppStrings.somethingWentWrong,
         ),
       );
     }
@@ -224,7 +208,7 @@ class LoginCubit extends SafeCubit<LoginState> {
     final user = await _getUserByPhone(normalizedPhone);
     final email = user?.email.trim() ?? '';
     if (email.isEmpty) {
-      throw FirebaseAuthException(
+      throw const AppAuthException(
         code: 'user-not-found',
         message: 'No user found for this phone.',
       );

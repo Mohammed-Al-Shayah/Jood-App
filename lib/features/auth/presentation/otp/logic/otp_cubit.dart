@@ -4,18 +4,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
+import '../../../../../core/errors/auth_error.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
+import '../../../../users/domain/entities/user_entity.dart';
+import '../../../../users/domain/usecases/create_user_usecase.dart';
+import '../../../../users/domain/usecases/sync_auth_user_usecase.dart';
 import '../../../domain/entities/otp_mode.dart';
 import '../../../domain/usecases/link_email_password_usecase.dart';
 import '../../../domain/usecases/send_email_verification_usecase.dart';
 import '../../../domain/usecases/send_phone_otp_usecase.dart';
 import '../../../domain/usecases/verify_otp_usecase.dart';
-import '../../../../users/domain/entities/user_entity.dart';
-import '../../../../users/domain/usecases/create_user_usecase.dart';
-import '../../../../users/domain/usecases/sync_auth_user_usecase.dart';
-import 'otp_state.dart';
 import '../verify_otp_args.dart';
+import 'otp_state.dart';
 
 class OtpCubit extends SafeCubit<OtpState> {
   OtpCubit({
@@ -58,22 +59,18 @@ class OtpCubit extends SafeCubit<OtpState> {
     _startTimer();
     try {
       _verificationId = await _sendPhoneOtp(phoneNumber: _args.phone);
-    } on FirebaseAuthException catch (e) {
+    } catch (error) {
       emitSafe(
         state.copyWith(
           status: OtpStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            operationNotAllowedMessage: 'Phone auth is not enabled.',
-            fallbackMessage: 'Phone verification failed. Please try again.',
-          ),
-        ),
-      );
-    } catch (_) {
-      emitSafe(
-        state.copyWith(
-          status: OtpStatus.failure,
-          errorMessage: AppStrings.somethingWentWrong,
+          errorMessage: isAuthError(error)
+              ? mapAuthError(
+                  error,
+                  operationNotAllowedMessage: 'Phone auth is not enabled.',
+                  fallbackMessage:
+                      'Phone verification failed. Please try again.',
+                )
+              : AppStrings.somethingWentWrong,
         ),
       );
     }
@@ -105,22 +102,18 @@ class OtpCubit extends SafeCubit<OtpState> {
         await _syncAuthUser(user);
       }
       emitSafe(state.copyWith(status: OtpStatus.success));
-    } on FirebaseAuthException catch (e) {
+    } catch (error) {
       emitSafe(
         state.copyWith(
           status: OtpStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            operationNotAllowedMessage: 'Phone auth is not enabled.',
-            fallbackMessage: 'Phone verification failed. Please try again.',
-          ),
-        ),
-      );
-    } catch (_) {
-      emitSafe(
-        state.copyWith(
-          status: OtpStatus.failure,
-          errorMessage: AppStrings.somethingWentWrong,
+          errorMessage: isAuthError(error)
+              ? mapAuthError(
+                  error,
+                  operationNotAllowedMessage: 'Phone auth is not enabled.',
+                  fallbackMessage:
+                      'Phone verification failed. Please try again.',
+                )
+              : AppStrings.somethingWentWrong,
         ),
       );
     }
@@ -148,7 +141,7 @@ class OtpCubit extends SafeCubit<OtpState> {
   Future<void> _finishRegisterFlow(User user) async {
     final email = (_args.email ?? '').trim();
     if (email.isEmpty) {
-      throw FirebaseAuthException(code: 'invalid-email');
+      throw const AppAuthException(code: 'invalid-email');
     }
     final password = (_args.password ?? '').trim();
     await _linkPasswordCredential(user, email, password);
@@ -174,27 +167,31 @@ class OtpCubit extends SafeCubit<OtpState> {
   ) async {
     try {
       await _linkEmailPassword(user: user, email: email, password: password);
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'provider-already-linked') {
+    } catch (error) {
+      final code = authErrorCode(error);
+      if (code == 'provider-already-linked') {
         return;
       }
-      if (e.code == 'email-already-in-use' ||
-          e.code == 'credential-already-in-use') {
-        throw FirebaseAuthException(
-          code: e.code,
+      if (code == 'email-already-in-use' ||
+          code == 'credential-already-in-use') {
+        throw const AppAuthException(
+          code: 'email-already-in-use',
           message:
               'This email is already registered. Please use a different email or log in.',
         );
       }
-      throw FirebaseAuthException(
-        code: e.code,
-        message: mapFirebaseAuthException(
-          e,
-          operationNotAllowedMessage:
-              'Email/password accounts are not enabled.',
-          fallbackMessage: 'Sign up failed. Please try again.',
-        ),
-      );
+      if (isAuthError(error)) {
+        throw AppAuthException(
+          code: code ?? 'request-failed',
+          message: mapAuthError(
+            error,
+            operationNotAllowedMessage:
+                'Email/password accounts are not enabled.',
+            fallbackMessage: 'Sign up failed. Please try again.',
+          ),
+        );
+      }
+      rethrow;
     }
   }
 }

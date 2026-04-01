@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/rendering.dart';
 import 'package:jood/features/auth/domain/usecases/check_email_in_use_usecase.dart';
 
@@ -6,9 +5,9 @@ import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
-import '../../../domain/usecases/send_phone_otp_usecase.dart';
 import '../../../../../features/users/domain/usecases/get_user_by_email_usecase.dart';
 import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
+import '../../../domain/usecases/send_phone_otp_usecase.dart';
 import 'register_state.dart';
 
 class RegisterCubit extends SafeCubit<RegisterState> {
@@ -159,30 +158,20 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           resendToken: null,
         ),
       );
-    } on FirebaseAuthException catch (e, stackTrace) {
-      debugPrint(
-        '[RegisterCubit] ERROR: FirebaseAuthException - Code: ${e.code}, Message: ${e.message}',
-      );
-      debugPrint('[RegisterCubit] ERROR FULL EXCEPTION: $e');
-      debugPrint('[RegisterCubit] ERROR STACK TRACE: $stackTrace');
-      emitSafe(
-        state.copyWith(
-          status: RegisterStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            operationNotAllowedMessage: 'Phone auth is not enabled.',
-            fallbackMessage: 'Sign up failed. Please try again.',
-          ),
-        ),
-      );
     } catch (e, stackTrace) {
-      debugPrint('[RegisterCubit] ERROR: Unexpected exception - $e');
+      debugPrint('[RegisterCubit] ERROR: Exception - $e');
       debugPrint('[RegisterCubit] ERROR STACK TRACE: $stackTrace');
       debugPrint('[RegisterCubit] ERROR TYPE: ${e.runtimeType}');
       emitSafe(
         state.copyWith(
           status: RegisterStatus.failure,
-          errorMessage: AppStrings.somethingWentWrong,
+          errorMessage: isAuthError(e)
+              ? mapAuthError(
+                  e,
+                  operationNotAllowedMessage: 'Phone auth is not enabled.',
+                  fallbackMessage: 'Sign up failed. Please try again.',
+                )
+              : AppStrings.somethingWentWrong,
         ),
       );
     }

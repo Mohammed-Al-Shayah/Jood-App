@@ -140,29 +140,23 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
               : null,
         ),
       );
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'requires-recent-login') {
+    } catch (error) {
+      if (isReauthRequiredError(error)) {
         await _signOut();
       }
       emit(
         state.copyWith(
           status: ProfileEditStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            operationNotAllowedMessage:
-                'Email/Password sign-in is disabled in Firebase.',
-            requiresRecentLoginMessage:
-                'For security, please sign in again and retry.',
-            fallbackMessage: 'Update failed. Please try again.',
-          ),
-          successMessage: null,
-        ),
-      );
-    } catch (error) {
-      emit(
-        state.copyWith(
-          status: ProfileEditStatus.failure,
-          errorMessage: error.toString(),
+          errorMessage: isAuthError(error)
+              ? mapAuthError(
+                  error,
+                  operationNotAllowedMessage:
+                      'Email/Password sign-in is disabled in Firebase.',
+                  requiresRecentLoginMessage:
+                      'For security, please sign in again and retry.',
+                  fallbackMessage: 'Update failed. Please try again.',
+                )
+              : error.toString(),
           successMessage: null,
         ),
       );
@@ -240,22 +234,17 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
               : null,
         ),
       );
-    } on FirebaseAuthException catch (e) {
-      emit(
-        state.copyWith(
-          status: ProfileEditStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            fallbackMessage: 'Phone verification failed. Please try again.',
-          ),
-          successMessage: null,
-        ),
-      );
     } catch (error) {
       emit(
         state.copyWith(
           status: ProfileEditStatus.failure,
-          errorMessage: error.toString(),
+          errorMessage: isAuthError(error)
+              ? mapAuthError(
+                  error,
+                  fallbackMessage:
+                      'Phone verification failed. Please try again.',
+                )
+              : error.toString(),
           successMessage: null,
         ),
       );
@@ -289,22 +278,17 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
           resendToken: null,
         ),
       );
-    } on FirebaseAuthException catch (e) {
-      emit(
-        state.copyWith(
-          status: ProfileEditStatus.failure,
-          errorMessage: mapFirebaseAuthException(
-            e,
-            fallbackMessage: 'Phone verification failed. Please try again.',
-          ),
-          successMessage: null,
-        ),
-      );
     } catch (error) {
       emit(
         state.copyWith(
           status: ProfileEditStatus.failure,
-          errorMessage: error.toString(),
+          errorMessage: isAuthError(error)
+              ? mapAuthError(
+                  error,
+                  fallbackMessage:
+                      'Phone verification failed. Please try again.',
+                )
+              : error.toString(),
           successMessage: null,
         ),
       );

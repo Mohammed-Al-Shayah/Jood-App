@@ -1,12 +1,12 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../domain/entities/user_entity.dart';
+import '../../../../core/errors/auth_error_mapper.dart';
 import '../../../auth/domain/usecases/delete_account_usecase.dart';
 import '../../../auth/domain/usecases/get_current_user_usecase.dart';
 import '../../../auth/domain/usecases/reload_user_usecase.dart';
 import '../../../auth/domain/usecases/sign_out_usecase.dart';
+import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/get_user_by_id_usecase.dart';
 import '../../domain/usecases/update_user_usecase.dart';
 import 'profile_state.dart';
@@ -116,8 +116,8 @@ class ProfileCubit extends Cubit<ProfileState> {
         status: ProfileAccountActionStatus.success,
         message: 'Your account has been deleted.',
       );
-    } on FirebaseFunctionsException catch (error) {
-      if (_isReauthRequired(error)) {
+    } catch (error) {
+      if (isReauthRequiredError(error)) {
         await _signOut();
         return const ProfileAccountActionResult(
           status: ProfileAccountActionStatus.reauthRequired,
@@ -127,12 +127,12 @@ class ProfileCubit extends Cubit<ProfileState> {
       }
       return ProfileAccountActionResult(
         status: ProfileAccountActionStatus.failure,
-        message: error.message ?? 'Unable to delete account. Please try again.',
-      );
-    } catch (_) {
-      return const ProfileAccountActionResult(
-        status: ProfileAccountActionStatus.failure,
-        message: 'Unable to delete account. Please try again.',
+        message: isAuthError(error)
+            ? mapAuthError(
+                error,
+                fallbackMessage: 'Unable to delete account. Please try again.',
+              )
+            : 'Unable to delete account. Please try again.',
       );
     }
   }
@@ -164,14 +164,5 @@ class ProfileCubit extends Cubit<ProfileState> {
     );
     await _updateUser(updated);
     return updated;
-  }
-
-  bool _isReauthRequired(FirebaseFunctionsException error) {
-    final message = (error.message ?? '').toLowerCase();
-    return error.code == 'unauthenticated' ||
-        error.code == 'failed-precondition' ||
-        error.code == 'permission-denied' ||
-        message.contains('recent') ||
-        message.contains('reauth');
   }
 }
