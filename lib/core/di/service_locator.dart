@@ -46,6 +46,7 @@ import '../../features/auth/domain/usecases/sign_out_usecase.dart';
 import '../../features/auth/domain/usecases/update_password_usecase.dart';
 import '../../features/auth/domain/usecases/verify_before_update_email_usecase.dart';
 import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
+import '../../features/auth/domain/usecases/watch_auth_state_changes_usecase.dart';
 import '../../features/users/data/datasources/user_remote_data_source.dart';
 import '../../features/users/data/repositories/user_repository_impl.dart';
 import '../../features/users/domain/repositories/user_repository.dart';
@@ -204,6 +205,9 @@ Future<void> setupServiceLocator() async {
     () => SendEmailVerificationUseCase(getIt()),
   );
   getIt.registerLazySingleton<SignOutUseCase>(() => SignOutUseCase(getIt()));
+  getIt.registerLazySingleton<WatchAuthStateChangesUseCase>(
+    () => WatchAuthStateChangesUseCase(getIt()),
+  );
   getIt.registerLazySingleton<DeleteAccountUseCase>(
     () => DeleteAccountUseCase(getIt()),
   );
@@ -466,3 +470,4 @@ Future<void> setupServiceLocator() async {
     () => DeleteStorageFileUseCase(getIt()),
   );
 }
+

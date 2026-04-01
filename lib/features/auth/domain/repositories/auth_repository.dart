@@ -5,6 +5,8 @@ import '../entities/otp_mode.dart';
 abstract class AuthRepository {
   User? getCurrentUser();
 
+  Stream<User?> authStateChanges();
+
   Future<UserCredential> loginWithEmailAndPassword({
     required String email,
     required String password,

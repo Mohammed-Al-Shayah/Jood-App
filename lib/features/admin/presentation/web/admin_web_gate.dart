@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:jood/core/di/service_locator.dart';
+import 'package:jood/core/errors/auth_error.dart';
 import 'package:jood/core/errors/auth_error_mapper.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_shell_screen.dart';
 import 'package:jood/features/auth/domain/usecases/login_with_email_usecase.dart';
 import 'package:jood/features/auth/domain/usecases/sign_out_usecase.dart';
+import 'package:jood/features/auth/domain/usecases/watch_auth_state_changes_usecase.dart';
 import 'package:jood/features/users/domain/entities/user_entity.dart';
 import 'package:jood/features/users/domain/usecases/get_user_by_id_usecase.dart';
 
@@ -20,7 +22,7 @@ class AdminWebGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+      stream: getIt<WatchAuthStateChangesUseCase>()(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const _AdminWebLoadingScreen();
@@ -106,7 +108,7 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
       );
       final user = credential.user;
       if (user == null) {
-        throw FirebaseAuthException(
+        throw const AppAuthException(
           code: 'invalid-credential',
           message: 'Authentication did not return a valid user.',
         );
@@ -121,16 +123,14 @@ class _AdminWebLoginScreenState extends State<AdminWebLoginScreen> {
               : 'This account is not allowed to access the admin dashboard.';
         });
       }
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        _errorMessage = mapFirebaseAuthException(
-          e,
-          fallbackMessage: 'Unable to sign in. Please try again.',
-        );
-      });
     } catch (error) {
       setState(() {
-        _errorMessage = error.toString();
+        _errorMessage = isAuthError(error)
+            ? mapAuthError(
+                error,
+                fallbackMessage: 'Unable to sign in. Please try again.',
+              )
+            : error.toString();
       });
     } finally {
       if (mounted) {
@@ -533,3 +533,4 @@ InputDecoration _adminWebInputDecoration({
     suffixIcon: suffixIcon,
   );
 }
+

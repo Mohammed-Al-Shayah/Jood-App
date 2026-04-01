@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -27,7 +28,11 @@ class AdminUserFormContent extends StatefulWidget {
 }
 
 class _AdminUserFormContentState extends State<AdminUserFormContent> {
+  static const _idChars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
   final _formKey = GlobalKey<FormState>();
+  final Random _random = Random.secure();
 
   late final TextEditingController _idController;
   late final TextEditingController _fullNameController;
@@ -204,7 +209,7 @@ class _AdminUserFormContentState extends State<AdminUserFormContent> {
     if (_restaurants.isEmpty) {
       return Padding(
         padding: EdgeInsets.only(bottom: 10.h),
-        child: Text('No restaurants found.'),
+        child: const Text('No restaurants found.'),
       );
     }
     return Padding(
@@ -279,7 +284,10 @@ class _AdminUserFormContentState extends State<AdminUserFormContent> {
   }
 
   String _generateUserId() {
-    final firestore = getIt<FirebaseFirestore>();
-    return firestore.collection('users').doc().id;
+    final buffer = StringBuffer();
+    for (var index = 0; index < 20; index++) {
+      buffer.write(_idChars[_random.nextInt(_idChars.length)]);
+    }
+    return buffer.toString();
   }
 }
