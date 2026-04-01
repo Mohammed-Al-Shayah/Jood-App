@@ -1,22 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
-import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/features/admin/presentation/cubit/admin_overview_cubit.dart';
+import 'package:jood/features/admin/presentation/cubit/admin_overview_state.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
-import 'package:jood/features/bookings/data/models/booking_model.dart';
 import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
-import 'package:jood/features/offers/domain/usecases/get_offers_usecase.dart';
-import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
-import 'package:jood/features/restaurants/domain/usecases/get_all_restaurants_usecase.dart';
-import 'package:jood/features/users/domain/entities/user_entity.dart';
-import 'package:jood/features/users/domain/usecases/get_users_usecase.dart';
+import 'package:jood/core/di/service_locator.dart';
 
 class AdminWebOverviewPage extends StatefulWidget {
   const AdminWebOverviewPage({super.key, required this.onSelectSection});
@@ -28,73 +24,23 @@ class AdminWebOverviewPage extends StatefulWidget {
 }
 
 class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
-  late Future<_AdminOverviewData> _future;
+  late final AdminOverviewCubit _cubit;
   AdminWebTimeFilter _selectedTimeFilter = AdminWebTimeFilter.allTime;
 
   @override
   void initState() {
     super.initState();
-    _future = _loadOverview();
+    _cubit = getIt<AdminOverviewCubit>()..load();
   }
 
-  Future<void> _refresh() async {
-    setState(() {
-      _future = _loadOverview();
-    });
-    await _future;
+  @override
+  void dispose() {
+    _cubit.close();
+    super.dispose();
   }
 
-  Future<_AdminOverviewData> _loadOverview() async {
-    final restaurantsFuture = getIt<GetAllRestaurantsUseCase>()();
-    final offersFuture = getIt<GetOffersUseCase>()();
-    final usersFuture = getIt<GetUsersUseCase>()();
-    final bookingsFuture = FirebaseFirestore.instance
-        .collection('bookings')
-        .orderBy('createdAt', descending: true)
-        .get();
-
-    final results = await Future.wait<dynamic>([
-      restaurantsFuture,
-      offersFuture,
-      usersFuture,
-      bookingsFuture,
-    ]);
-
-    final restaurants = results[0] as List<RestaurantEntity>;
-    final offers = results[1] as List<OfferEntity>;
-    final users = results[2] as List<UserEntity>;
-    final bookingsSnapshot = results[3] as QuerySnapshot<Map<String, dynamic>>;
-    final bookings = bookingsSnapshot.docs
-        .map(BookingModel.fromDoc)
-        .toList(growable: false);
-
-    final statusCounts = <String, int>{};
-    double totalRevenue = 0;
-    for (final booking in bookings) {
-      final status = booking.status.trim().toLowerCase();
-      statusCounts[status] = (statusCounts[status] ?? 0) + 1;
-      if (status != 'cancelled' && status != 'failed') {
-        totalRevenue += booking.total;
-      }
-    }
-
-    final offerCategoryCounts = <String, int>{};
-    for (final offer in offers) {
-      final category = offer.bookingCategory.trim().isEmpty
-          ? 'restaurant'
-          : offer.bookingCategory.trim();
-      offerCategoryCounts[category] = (offerCategoryCounts[category] ?? 0) + 1;
-    }
-
-    return _AdminOverviewData(
-      restaurants: restaurants,
-      offers: offers,
-      users: users,
-      bookings: bookings,
-      totalRevenue: totalRevenue,
-      statusCounts: statusCounts,
-      offerCategoryCounts: offerCategoryCounts,
-    );
+  Future<void> _refresh() {
+    return _cubit.load();
   }
 
   List<T> _filterByTimeWindow<T>(
@@ -171,229 +117,244 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: _refresh,
-      child: FutureBuilder<_AdminOverviewData>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return ListView(
-              children: [
-                AdminWebPanel(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return BlocProvider.value(
+      value: _cubit,
+      child: BlocBuilder<AdminOverviewCubit, AdminOverviewState>(
+        builder: (context, state) {
+          return RefreshIndicator(
+            onRefresh: _refresh,
+            child: Builder(
+              builder: (context) {
+                if (state.status == AdminOverviewStatus.loading &&
+                    state.data.bookings.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state.status == AdminOverviewStatus.failure) {
+                  return ListView(
                     children: [
-                      Text(
-                        'Failed to load dashboard',
-                        style: AppTextStyles.cardTitle,
-                      ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        '${snapshot.error}',
-                        style: AppTextStyles.cardMeta.copyWith(
-                          color: AppColors.textSecondary,
+                      AdminWebPanel(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Failed to load dashboard',
+                              style: AppTextStyles.cardTitle,
+                            ),
+                            SizedBox(height: 8.h),
+                            Text(
+                              state.errorMessage ?? 'Unknown error',
+                              style: AppTextStyles.cardMeta.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            SizedBox(height: 14.h),
+                            ElevatedButton.icon(
+                              onPressed: _refresh,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Try again'),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 14.h),
-                      ElevatedButton.icon(
-                        onPressed: _refresh,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Try again'),
-                      ),
                     ],
-                  ),
-                ),
-              ],
-            );
-          }
+                  );
+                }
 
-          final data = snapshot.data!;
-          final windowBookings = _filterByTimeWindow(
-            data.bookings,
-            (booking) => booking.createdAt,
-          );
-          final windowOffers = _filterByTimeWindow(
-            data.offers,
-            (offer) => offer.createdAt,
-          );
-          final windowRestaurants = _filterByTimeWindow(
-            data.restaurants,
-            (restaurant) => restaurant.createdAt,
-          );
-          final windowStatusCounts = _buildStatusCounts(windowBookings);
-          final windowRevenue = _calculateRevenue(windowBookings);
-          final windowOfferCategoryCounts = _buildOfferCategoryCounts(
-            windowOffers,
-          );
-          final activeRestaurantsCount = data.restaurants
-              .where((item) => item.isActive)
-              .length;
+                final data = state.data;
+                final windowBookings = _filterByTimeWindow(
+                  data.bookings,
+                  (booking) => booking.createdAt,
+                );
+                final windowOffers = _filterByTimeWindow(
+                  data.offers,
+                  (offer) => offer.createdAt,
+                );
+                final windowRestaurants = _filterByTimeWindow(
+                  data.restaurants,
+                  (restaurant) => restaurant.createdAt,
+                );
+                final windowStatusCounts = _buildStatusCounts(windowBookings);
+                final windowRevenue = _calculateRevenue(windowBookings);
+                final windowOfferCategoryCounts = _buildOfferCategoryCounts(
+                  windowOffers,
+                );
+                final activeRestaurantsCount = data.restaurants
+                    .where((item) => item.isActive)
+                    .length;
 
-          return ListView(
-            children: [
-              _OverviewHeader(
-                bookingsCount: windowBookings.length,
-                timeFilter: _selectedTimeFilter,
-                onTimeFilterChanged: (value) {
-                  setState(() => _selectedTimeFilter = value);
-                },
-                onRefresh: _refresh,
-                onOpenRestaurants: () =>
-                    widget.onSelectSection(AdminWebSection.restaurants),
-                onOpenBuffet: () =>
-                    widget.onSelectSection(AdminWebSection.buffet),
-                onOpenSetMenu: () =>
-                    widget.onSelectSection(AdminWebSection.setMenu),
-                onOpenAttractions: () =>
-                    widget.onSelectSection(AdminWebSection.attractions),
-                onOpenOffers: () =>
-                    widget.onSelectSection(AdminWebSection.offers),
-                onOpenBookings: () => _openBookings(),
-                onOpenPayments: () => _openPayments(),
-                onOpenRefunds: () =>
-                    widget.onSelectSection(AdminWebSection.refunds),
-              ),
-              SizedBox(height: 20.h),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final spacing = 16.w;
-                  final availableWidth = constraints.maxWidth;
-                  final useExpandedRow = availableWidth >= 1180;
-                  final compactCardWidth = availableWidth < 700 ? 260.0 : 280.0;
-                  final metricCards = [
-                    AdminWebMetricCard(
-                      title: 'Total bookings',
-                      value: '${windowBookings.length}',
-                      icon: Icons.receipt_long_outlined,
-                      iconColor: AppColors.primary,
-                      caption:
-                          '${windowStatusCounts['cancelled'] ?? 0} cancelled in ${_windowDescription()}',
-                      onTap: () => _openBookings(),
-                    ),
-                    AdminWebMetricCard(
-                      title: 'Gross revenue',
-                      value: _formatMoney(windowRevenue),
-                      icon: Icons.payments_outlined,
-                      iconColor: const Color(0xFF0E9F6E),
-                      caption: 'Collected totals in ${_windowDescription()}',
-                      onTap: () => _openPayments(paymentState: 'paid'),
-                    ),
-                    AdminWebMetricCard(
-                      title: 'Active restaurants',
-                      value: '$activeRestaurantsCount',
-                      icon: Icons.storefront_outlined,
-                      iconColor: const Color(0xFF2563EB),
-                      caption: _selectedTimeFilter == AdminWebTimeFilter.allTime
-                          ? '${data.restaurants.length} total venues'
-                          : '${windowRestaurants.length} added in ${_windowDescription()}',
-                      onTap: () =>
+                return ListView(
+                  children: [
+                    _OverviewHeader(
+                      bookingsCount: windowBookings.length,
+                      timeFilter: _selectedTimeFilter,
+                      onTimeFilterChanged: (value) {
+                        setState(() => _selectedTimeFilter = value);
+                      },
+                      onRefresh: _refresh,
+                      onOpenRestaurants: () =>
                           widget.onSelectSection(AdminWebSection.restaurants),
+                      onOpenBuffet: () =>
+                          widget.onSelectSection(AdminWebSection.buffet),
+                      onOpenSetMenu: () =>
+                          widget.onSelectSection(AdminWebSection.setMenu),
+                      onOpenAttractions: () =>
+                          widget.onSelectSection(AdminWebSection.attractions),
+                      onOpenOffers: () =>
+                          widget.onSelectSection(AdminWebSection.offers),
+                      onOpenBookings: () => _openBookings(),
+                      onOpenPayments: () => _openPayments(),
+                      onOpenRefunds: () =>
+                          widget.onSelectSection(AdminWebSection.refunds),
                     ),
-                    AdminWebMetricCard(
-                      title: 'Users',
-                      value: '${data.users.length}',
-                      icon: Icons.people_outline,
-                      iconColor: const Color(0xFFF59E0B),
-                      caption: _selectedTimeFilter == AdminWebTimeFilter.allTime
-                          ? 'Platform access directory'
-                          : '${windowOffers.length} offers created in ${_windowDescription()}',
-                      onTap: () =>
-                          widget.onSelectSection(AdminWebSection.users),
-                    ),
-                  ];
-
-                  if (useExpandedRow) {
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (
-                          var index = 0;
-                          index < metricCards.length;
-                          index++
-                        ) ...[
-                          Expanded(child: metricCards[index]),
-                          if (index != metricCards.length - 1)
-                            SizedBox(width: spacing),
-                        ],
-                      ],
-                    );
-                  }
-
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (
-                          var index = 0;
-                          index < metricCards.length;
-                          index++
-                        ) ...[
-                          SizedBox(
-                            width: compactCardWidth,
-                            child: metricCards[index],
+                    SizedBox(height: 20.h),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final spacing = 16.w;
+                        final availableWidth = constraints.maxWidth;
+                        final useExpandedRow = availableWidth >= 1180;
+                        final compactCardWidth = availableWidth < 700
+                            ? 260.0
+                            : 280.0;
+                        final metricCards = [
+                          AdminWebMetricCard(
+                            title: 'Total bookings',
+                            value: '${windowBookings.length}',
+                            icon: Icons.receipt_long_outlined,
+                            iconColor: AppColors.primary,
+                            caption:
+                                '${windowStatusCounts['cancelled'] ?? 0} cancelled in ${_windowDescription()}',
+                            onTap: () => _openBookings(),
                           ),
-                          if (index != metricCards.length - 1)
-                            SizedBox(width: spacing),
-                        ],
-                      ],
+                          AdminWebMetricCard(
+                            title: 'Gross revenue',
+                            value: _formatMoney(windowRevenue),
+                            icon: Icons.payments_outlined,
+                            iconColor: const Color(0xFF0E9F6E),
+                            caption:
+                                'Collected totals in ${_windowDescription()}',
+                            onTap: () => _openPayments(paymentState: 'paid'),
+                          ),
+                          AdminWebMetricCard(
+                            title: 'Active restaurants',
+                            value: '$activeRestaurantsCount',
+                            icon: Icons.storefront_outlined,
+                            iconColor: const Color(0xFF2563EB),
+                            caption:
+                                _selectedTimeFilter ==
+                                    AdminWebTimeFilter.allTime
+                                ? '${data.restaurants.length} total venues'
+                                : '${windowRestaurants.length} added in ${_windowDescription()}',
+                            onTap: () => widget.onSelectSection(
+                              AdminWebSection.restaurants,
+                            ),
+                          ),
+                          AdminWebMetricCard(
+                            title: 'Users',
+                            value: '${data.users.length}',
+                            icon: Icons.people_outline,
+                            iconColor: const Color(0xFFF59E0B),
+                            caption:
+                                _selectedTimeFilter ==
+                                    AdminWebTimeFilter.allTime
+                                ? 'Platform access directory'
+                                : '${windowOffers.length} offers created in ${_windowDescription()}',
+                            onTap: () =>
+                                widget.onSelectSection(AdminWebSection.users),
+                          ),
+                        ];
+
+                        if (useExpandedRow) {
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (
+                                var index = 0;
+                                index < metricCards.length;
+                                index++
+                              ) ...[
+                                Expanded(child: metricCards[index]),
+                                if (index != metricCards.length - 1)
+                                  SizedBox(width: spacing),
+                              ],
+                            ],
+                          );
+                        }
+
+                        return SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (
+                                var index = 0;
+                                index < metricCards.length;
+                                index++
+                              ) ...[
+                                SizedBox(
+                                  width: compactCardWidth,
+                                  child: metricCards[index],
+                                ),
+                                if (index != metricCards.length - 1)
+                                  SizedBox(width: spacing),
+                              ],
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-              SizedBox(height: 20.h),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final stacked = constraints.maxWidth < 1180;
-                  if (stacked) {
-                    return Column(
-                      children: [
-                        _OfferMixPanel(
-                          categoryCounts: windowOfferCategoryCounts,
-                          timeFilter: _selectedTimeFilter,
-                        ),
-                        SizedBox(height: 16.h),
-                        _BookingStatusPanel(
-                          statusCounts: windowStatusCounts,
-                          timeFilter: _selectedTimeFilter,
-                          onStatusSelected: (status) =>
-                              _openBookings(status: status),
-                        ),
-                      ],
-                    );
-                  }
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _OfferMixPanel(
-                          categoryCounts: windowOfferCategoryCounts,
-                          timeFilter: _selectedTimeFilter,
-                        ),
-                      ),
-                      SizedBox(width: 16.w),
-                      Expanded(
-                        child: _BookingStatusPanel(
-                          statusCounts: windowStatusCounts,
-                          timeFilter: _selectedTimeFilter,
-                          onStatusSelected: (status) =>
-                              _openBookings(status: status),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              SizedBox(height: 20.h),
-              _RecentBookingsPanel(
-                bookings: windowBookings.take(6).toList(),
-                timeFilter: _selectedTimeFilter,
-                onViewAll: () => _openBookings(),
-              ),
-            ],
+                    SizedBox(height: 20.h),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final stacked = constraints.maxWidth < 1180;
+                        if (stacked) {
+                          return Column(
+                            children: [
+                              _OfferMixPanel(
+                                categoryCounts: windowOfferCategoryCounts,
+                                timeFilter: _selectedTimeFilter,
+                              ),
+                              SizedBox(height: 16.h),
+                              _BookingStatusPanel(
+                                statusCounts: windowStatusCounts,
+                                timeFilter: _selectedTimeFilter,
+                                onStatusSelected: (status) =>
+                                    _openBookings(status: status),
+                              ),
+                            ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _OfferMixPanel(
+                                categoryCounts: windowOfferCategoryCounts,
+                                timeFilter: _selectedTimeFilter,
+                              ),
+                            ),
+                            SizedBox(width: 16.w),
+                            Expanded(
+                              child: _BookingStatusPanel(
+                                statusCounts: windowStatusCounts,
+                                timeFilter: _selectedTimeFilter,
+                                onStatusSelected: (status) =>
+                                    _openBookings(status: status),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    SizedBox(height: 20.h),
+                    _RecentBookingsPanel(
+                      bookings: windowBookings.take(6).toList(),
+                      timeFilter: _selectedTimeFilter,
+                      onViewAll: () => _openBookings(),
+                    ),
+                  ],
+                );
+              },
+            ),
           );
         },
       ),
@@ -1009,26 +970,6 @@ class _StatusBadge extends StatelessWidget {
       ),
     );
   }
-}
-
-class _AdminOverviewData {
-  const _AdminOverviewData({
-    required this.restaurants,
-    required this.offers,
-    required this.users,
-    required this.bookings,
-    required this.totalRevenue,
-    required this.statusCounts,
-    required this.offerCategoryCounts,
-  });
-
-  final List<RestaurantEntity> restaurants;
-  final List<OfferEntity> offers;
-  final List<UserEntity> users;
-  final List<BookingEntity> bookings;
-  final double totalRevenue;
-  final Map<String, int> statusCounts;
-  final Map<String, int> offerCategoryCounts;
 }
 
 String _formatMoney(double amount) {

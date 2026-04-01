@@ -1,16 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
+import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_filter_dropdown_field.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
-import 'package:jood/features/bookings/data/models/booking_model.dart';
 import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
+import 'package:jood/features/bookings/domain/usecases/update_booking_refund_status_usecase.dart';
+import 'package:jood/features/bookings/domain/usecases/watch_all_bookings_usecase.dart';
+import 'package:jood/features/users/domain/usecases/get_users_usecase.dart';
 
 class AdminWebRefundsPage extends StatefulWidget {
   const AdminWebRefundsPage({super.key});
@@ -26,12 +28,12 @@ class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
   _RefundsSort _sortBy = _RefundsSort.cancelledNewest;
   String? _updatingBookingId;
   final Map<String, _RefundCustomerInfo> _customerCache = {};
-  final Set<String> _loadingCustomerIds = {};
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _loadCustomers();
   }
 
   @override
@@ -44,6 +46,23 @@ class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
 
   void _onSearchChanged() {
     setState(() {});
+  }
+
+  Future<void> _loadCustomers() async {
+    try {
+      final users = await getIt<GetUsersUseCase>()();
+      if (!mounted) return;
+      setState(() {
+        for (final user in users) {
+          _customerCache[user.id] = _RefundCustomerInfo(
+            fullName: user.fullName.trim(),
+            phone: user.phone.trim(),
+          );
+        }
+      });
+    } catch (_) {
+      // Keep fallback values from booking data if the user directory fails.
+    }
   }
 
   List<BookingEntity> _applyFilters(List<BookingEntity> items) {
@@ -107,73 +126,18 @@ class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
     return fallback.isEmpty ? '-' : fallback;
   }
 
-  void _ensureCustomerProfiles(Iterable<String> userIds) {
-    final missingIds = userIds
-        .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
-        .where((id) => !_customerCache.containsKey(id))
-        .where((id) => !_loadingCustomerIds.contains(id))
-        .toList(growable: false);
-
-    if (missingIds.isEmpty) return;
-    _loadingCustomerIds.addAll(missingIds);
-
-    Future.wait(
-          missingIds.map(
-            (id) =>
-                FirebaseFirestore.instance.collection('users').doc(id).get(),
-          ),
-        )
-        .then((docs) {
-          if (!mounted) return;
-          setState(() {
-            for (final doc in docs) {
-              final data = doc.data();
-              _customerCache[doc.id] = _RefundCustomerInfo(
-                fullName: (data?['fullName'] as String? ?? '').trim(),
-                phone: (data?['phone'] as String? ?? '').trim(),
-              );
-            }
-            _loadingCustomerIds.removeAll(missingIds);
-          });
-        })
-        .catchError((_) {
-          if (!mounted) return;
-          setState(() {
-            for (final id in missingIds) {
-              _customerCache[id] = const _RefundCustomerInfo(
-                fullName: '',
-                phone: '',
-              );
-            }
-            _loadingCustomerIds.removeAll(missingIds);
-          });
-        });
-  }
-
   Future<void> _updateRefundStatus(String bookingId, String status) async {
     setState(() {
       _updatingBookingId = bookingId;
     });
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid ?? 'admin';
-      final payload = <String, dynamic>{
-        'refundStatus': status,
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-      if (status == 'checked') {
-        payload['refundCheckedAt'] = FieldValue.serverTimestamp();
-        payload['refundCheckedBy'] = userId;
-      }
-      if (status == 'refunded') {
-        payload['refundedAt'] = FieldValue.serverTimestamp();
-        payload['refundedBy'] = userId;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('bookings')
-          .doc(bookingId)
-          .set(payload, SetOptions(merge: true));
+      final currentUser = getIt<GetCurrentUserUseCase>()();
+      final userId = currentUser?.uid ?? 'admin';
+      await getIt<UpdateBookingRefundStatusUseCase>()(
+        bookingId: bookingId,
+        status: status,
+        actorUserId: userId,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -185,11 +149,9 @@ class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final stream = FirebaseFirestore.instance
-        .collection('bookings')
-        .snapshots();
+    final stream = getIt<WatchAllBookingsUseCase>()();
 
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<List<BookingEntity>>(
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -204,17 +166,12 @@ class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
           );
         }
 
-        final cancelledBookings =
-            (snapshot.data?.docs ?? const [])
-                .map(BookingModel.fromDoc)
-                .where((item) {
-                  final status = item.status.trim().toLowerCase();
-                  return status == 'cancelled' || status == 'canceled';
-                })
-                .toList(growable: false)
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-        _ensureCustomerProfiles(cancelledBookings.map((item) => item.userId));
+        final cancelledBookings = List<BookingEntity>.from(
+          (snapshot.data ?? const <BookingEntity>[]).where((item) {
+            final status = item.status.trim().toLowerCase();
+            return status == 'cancelled' || status == 'canceled';
+          }),
+        )..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
         final venueOptions =
             cancelledBookings

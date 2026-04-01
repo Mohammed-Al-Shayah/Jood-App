@@ -1,21 +1,33 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../models/booking_review_view_model.dart';
-import '../models/scanner_models.dart';
 
-class OrderQrScannerScreen extends StatefulWidget {
+import '../cubit/order_qr_scanner_cubit.dart';
+
+class OrderQrScannerScreen extends StatelessWidget {
   const OrderQrScannerScreen({super.key});
 
   @override
-  State<OrderQrScannerScreen> createState() => _OrderQrScannerScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => getIt<OrderQrScannerCubit>(),
+      child: const _OrderQrScannerView(),
+    );
+  }
 }
 
-class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
+class _OrderQrScannerView extends StatefulWidget {
+  const _OrderQrScannerView();
+
+  @override
+  State<_OrderQrScannerView> createState() => _OrderQrScannerViewState();
+}
+
+class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
   bool _isProcessing = false;
   bool _isSheetOpen = false;
   final ValueNotifier<String> _statusTextNotifier = ValueNotifier<String>(
@@ -39,60 +51,11 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
     _statusTextNotifier.value = 'Verifying order...';
 
     try {
-      final code = raw.startsWith('BOOKING:') ? raw.substring(8).trim() : raw;
-      if (code.isEmpty) {
-        throw Exception('Invalid QR code.');
-      }
-
-      final authUser = FirebaseAuth.instance.currentUser;
-      if (authUser == null) {
-        throw Exception('No signed-in user.');
-      }
-
-      final db = FirebaseFirestore.instance;
-      final staffDoc = await db.collection('users').doc(authUser.uid).get();
-      final staff = StaffAccessModel.fromDoc(staffDoc);
-
-      if (!staff.canRedeemOrder) {
-        throw Exception('Only restaurant staff can redeem orders.');
-      }
-      if (staff.restaurantId.isEmpty) {
-        throw Exception('Staff account missing restaurant id.');
-      }
-
-      final booking = await _loadBookingForStaff(
-        code: code,
-        staffRestaurantId: staff.restaurantId,
-      );
-      var bookingView = BookingReviewViewModel.fromValues(
-        bookingId: booking.id,
-        bookingCode: booking.bookingCode,
-        restaurantId: booking.restaurantId,
-        offerId: booking.offerId,
-        date: booking.date,
-        startTime: booking.startTime,
-        adults: booking.adults,
-        children: booking.children,
-        status: booking.status,
-        subtotal: booking.subtotal,
-        tax: booking.tax,
-        total: booking.total,
-        restaurantNameSnapshot: booking.restaurantNameSnapshot,
-        offerTitleSnapshot: booking.offerTitleSnapshot,
-        fallbackCode: code,
-      );
-      final restaurantName = bookingView.restaurantName.isNotEmpty
-          ? bookingView.restaurantName
-          : await _restaurantName(bookingView.restaurantId);
-      final offerTitle = bookingView.offerTitle.isNotEmpty
-          ? bookingView.offerTitle
-          : await _offerTitle(bookingView.offerId);
-      bookingView = bookingView.copyWith(
-        restaurantName: restaurantName,
-        offerTitle: offerTitle,
-      );
-
+      final bookingView = await context
+          .read<OrderQrScannerCubit>()
+          .loadBookingForCode(raw);
       if (!mounted) return;
+
       _isSheetOpen = true;
       bool? confirm;
       try {
@@ -126,109 +89,24 @@ class _OrderQrScannerScreenState extends State<OrderQrScannerScreen> {
         return;
       }
 
-      final completeText = await _completeBooking(
-        bookingId: bookingView.bookingId,
-        staffRestaurantId: staff.restaurantId,
-        uid: authUser.uid,
-      );
       if (!mounted) return;
+      _statusTextNotifier.value = 'Completing order...';
+      final completeText = await context
+          .read<OrderQrScannerCubit>()
+          .completeCurrentBooking();
+      if (!mounted) return;
+
       _statusTextNotifier.value = completeText;
       showAppSnackBar(context, completeText, type: SnackBarType.success);
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
-      final message = e.toString().replaceFirst('Exception: ', '').trim();
+      final message = error.toString().replaceFirst('Exception: ', '').trim();
       _statusTextNotifier.value = message;
       showAppSnackBar(context, message, type: SnackBarType.error);
     } finally {
       await Future<void>.delayed(const Duration(milliseconds: 900));
       _isProcessing = false;
     }
-  }
-
-  Future<ScannedBookingModel> _loadBookingForStaff({
-    required String code,
-    required String staffRestaurantId,
-  }) async {
-    final db = FirebaseFirestore.instance;
-    final bookingQuery = await db
-        .collection('bookings')
-        .where('bookingCode', isEqualTo: code)
-        .limit(1)
-        .get();
-    if (bookingQuery.docs.isEmpty) {
-      throw Exception('Order not found.');
-    }
-    final booking = ScannedBookingModel.fromDoc(bookingQuery.docs.first);
-    if (booking.restaurantId != staffRestaurantId) {
-      throw Exception('This order belongs to another restaurant.');
-    }
-    if (booking.status == 'completed') {
-      throw Exception('Order already completed.');
-    }
-    if (booking.status != 'paid' && booking.status != 'confirmed') {
-      throw Exception('Order is not paid.');
-    }
-    return booking;
-  }
-
-  Future<String> _completeBooking({
-    required String bookingId,
-    required String staffRestaurantId,
-    required String uid,
-  }) async {
-    final db = FirebaseFirestore.instance;
-    final bookingRef = db.collection('bookings').doc(bookingId);
-    return db.runTransaction((tx) async {
-      final bookingSnap = await tx.get(bookingRef);
-      final booking = ScannedBookingModel.fromDoc(bookingSnap);
-
-      if (booking.restaurantId != staffRestaurantId) {
-        throw Exception('This order belongs to another restaurant.');
-      }
-      if (booking.status == 'completed') {
-        throw Exception('Order already completed.');
-      }
-      if (booking.status != 'paid' && booking.status != 'confirmed') {
-        throw Exception('Order is not paid.');
-      }
-
-      tx.update(bookingRef, {
-        'status': 'completed',
-        'qrRedeemedAt': FieldValue.serverTimestamp(),
-        'redeemedBy': uid,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      return 'Order completed successfully.';
-    });
-  }
-
-  Future<String> _restaurantName(String restaurantId) async {
-    if (restaurantId.trim().isEmpty) return restaurantId;
-    final doc = await FirebaseFirestore.instance
-        .collection('restaurants')
-        .doc(restaurantId)
-        .get();
-    final data = doc.data();
-    return (data?['name'] as String?)?.trim().isNotEmpty == true
-        ? (data?['name'] as String)
-        : restaurantId;
-  }
-
-  Future<String> _offerTitle(String offerId) async {
-    final cleaned = offerId.trim();
-    if (cleaned.isEmpty) return '-';
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('offers')
-          .doc(cleaned)
-          .get();
-      final data = doc.data();
-      final title = (data?['title'] as String? ?? '').trim();
-      if (title.isNotEmpty) return title;
-    } catch (_) {
-      // Keep scanner flow working even if offers read fails.
-    }
-    return cleaned.replaceAll('_', ' ');
   }
 
   @override

@@ -1,19 +1,18 @@
 import 'dart:convert';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jood/core/routing/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jood/core/di/service_locator.dart';
+import 'package:jood/core/payments/payment_completion_service.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
-import 'package:jood/features/bookings/domain/usecases/create_booking_usecase.dart';
-import 'package:jood/features/payments/domain/entities/payment_entity.dart';
-import 'package:jood/features/payments/domain/usecases/create_payment_usecase.dart';
+import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:jood/features/bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
+
 class PendingPayment {
   const PendingPayment({
     required this.sessionId,
@@ -34,14 +33,14 @@ class PendingPayment {
   final String restaurantName;
 
   Map<String, dynamic> toJson() => {
-        'sessionId': sessionId,
-        'offerId': offerId,
-        'userId': userId,
-        'adults': adults,
-        'children': children,
-        'totalAmount': totalAmount,
-        'restaurantName': restaurantName,
-      };
+    'sessionId': sessionId,
+    'offerId': offerId,
+    'userId': userId,
+    'adults': adults,
+    'children': children,
+    'totalAmount': totalAmount,
+    'restaurantName': restaurantName,
+  };
 
   static PendingPayment? fromJson(Map<String, dynamic> json) {
     final sessionId = (json['sessionId'] as String?)?.trim() ?? '';
@@ -92,15 +91,17 @@ class PaymentVerificationService {
   }) async {
     if (_checking) return;
     _checking = true;
+    final fallbackCubit = cubit ?? context.read<BookingFlowCubit>();
     try {
       final pending = await _readPending();
       if (pending == null) return;
 
       if (showDialog) {
+        if (!context.mounted) return;
         _showCheckingDialog(context);
       }
 
-      final currentUser = FirebaseAuth.instance.currentUser;
+      final currentUser = getIt<GetCurrentUserUseCase>()();
       if (currentUser == null || currentUser.uid != pending.userId) return;
 
       final callable = FirebaseFunctions.instance.httpsCallable(
@@ -115,25 +116,16 @@ class PaymentVerificationService {
       final status = (data['status'] as String? ?? '').toLowerCase();
 
       if (status == 'paid' || status == 'success') {
-        final booking = await getIt<CreateBookingUseCase>()(
-          offerId: pending.offerId,
-          userId: pending.userId,
-          adults: pending.adults,
-          children: pending.children,
-          paymentSessionId: pending.sessionId,
-        );
-
-        await getIt<CreatePaymentUseCase>()(
-          PaymentEntity(
-            id: 'pay_${pending.sessionId.replaceAll('/', '_')}',
-            bookingId: booking.id,
-            amount: pending.totalAmount,
-            status: 'success',
-            method: 'thawani',
-            createdAt: DateTime.now(),
-            paymentSessionId: pending.sessionId,
-          ),
-        );
+        final completion = await getIt<PaymentCompletionService>()
+            .completeSuccessfulPayment(
+              offerId: pending.offerId,
+              userId: pending.userId,
+              adults: pending.adults,
+              children: pending.children,
+              totalAmount: pending.totalAmount,
+              paymentSessionId: pending.sessionId,
+            );
+        final booking = completion.booking;
 
         await clearPending();
         if (!context.mounted) return;
@@ -146,7 +138,7 @@ class PaymentVerificationService {
           Routes.bookingConfirmedScreen,
           arguments: BookingConfirmedArgs(
             restaurantName: pending.restaurantName,
-            cubit: cubit ?? context.read<BookingFlowCubit>(),
+            cubit: fallbackCubit,
             bookingCode: booking.bookingCode,
             qrData: booking.qrPayload,
           ),
@@ -154,9 +146,7 @@ class PaymentVerificationService {
         return;
       }
 
-      if (status == 'failed' ||
-          status == 'canceled' ||
-          status == 'cancelled') {
+      if (status == 'failed' || status == 'canceled' || status == 'cancelled') {
         await clearPending();
         if (context.mounted) {
           showAppSnackBar(
@@ -169,7 +159,7 @@ class PaymentVerificationService {
     } catch (_) {
       // Keep pending for a later retry on resume.
     } finally {
-      if (showDialog) {
+      if (showDialog && context.mounted) {
         _hideCheckingDialog(context);
       }
       _checking = false;
@@ -199,9 +189,7 @@ class PaymentVerificationService {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
                 SizedBox(width: 12),
-                Expanded(
-                  child: Text('Payment is being verified ....'),
-                ),
+                Expanded(child: Text('Payment is being verified ....')),
               ],
             ),
           ),

@@ -1,5 +1,3 @@
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -202,7 +200,18 @@ class ProfileTab extends StatelessWidget {
                     subtitle: 'Sign out from this device and return to login.',
                     tint: AppColors.textPrimary,
                     onTap: () async {
-                      await FirebaseAuth.instance.signOut();
+                      final message = await context
+                          .read<ProfileCubit>()
+                          .signOut();
+                      if (!context.mounted) return;
+                      if (message != null) {
+                        showAppSnackBar(
+                          context,
+                          message,
+                          type: SnackBarType.error,
+                        );
+                        return;
+                      }
                       if (context.mounted) {
                         context.pushNamedAndRemoveAll(Routes.loginScreen);
                       }
@@ -832,64 +841,28 @@ Future<void> _handleDeleteAccount(BuildContext context) async {
   if (step2 != true || !context.mounted) return;
 
   _showBlockingLoading(context, 'Deleting your account...');
-  try {
-    final callable = FirebaseFunctions.instance.httpsCallable('deleteAccount');
-    await callable.call();
-    await FirebaseAuth.instance.signOut();
-    if (!context.mounted) return;
-    Navigator.of(context, rootNavigator: true).pop();
-    showAppSnackBar(
-      context,
-      'Your account has been deleted.',
-      type: SnackBarType.success,
-    );
+  final result = await context.read<ProfileCubit>().deleteAccount();
+  if (!context.mounted) return;
+  Navigator.of(context, rootNavigator: true).pop();
+  if (result.status == ProfileAccountActionStatus.success) {
+    showAppSnackBar(context, result.message, type: SnackBarType.success);
     context.pushNamedAndRemoveAll(Routes.loginScreen);
-  } on FirebaseFunctionsException catch (e) {
-    if (context.mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-    }
-    if (_isReauthRequired(e)) {
-      if (!context.mounted) return;
-      await _showDeleteConfirmDialog(
-        context,
-        title: 'Re-authentication required',
-        message:
-            'Please log in again to confirm your identity, then retry deleting your account.',
-        confirmLabel: 'Go to login',
-        isDestructive: true,
-      );
-      await FirebaseAuth.instance.signOut();
-      if (context.mounted) {
-        context.pushNamedAndRemoveAll(Routes.loginScreen);
-      }
-      return;
-    }
-    if (context.mounted) {
-      showAppSnackBar(
-        context,
-        e.message ?? 'Unable to delete account. Please try again.',
-        type: SnackBarType.error,
-      );
-    }
-  } catch (_) {
-    if (context.mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-      showAppSnackBar(
-        context,
-        'Unable to delete account. Please try again.',
-        type: SnackBarType.error,
-      );
-    }
+    return;
   }
-}
-
-bool _isReauthRequired(FirebaseFunctionsException e) {
-  final msg = (e.message ?? '').toLowerCase();
-  return e.code == 'unauthenticated' ||
-      e.code == 'failed-precondition' ||
-      e.code == 'permission-denied' ||
-      msg.contains('recent') ||
-      msg.contains('reauth');
+  if (result.status == ProfileAccountActionStatus.reauthRequired) {
+    await _showDeleteConfirmDialog(
+      context,
+      title: 'Re-authentication required',
+      message: result.message,
+      confirmLabel: 'Go to login',
+      isDestructive: true,
+    );
+    if (context.mounted) {
+      context.pushNamedAndRemoveAll(Routes.loginScreen);
+    }
+    return;
+  }
+  showAppSnackBar(context, result.message, type: SnackBarType.error);
 }
 
 Future<bool?> _showDeleteConfirmDialog(

@@ -1,29 +1,55 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/user_entity.dart';
+import '../../../auth/domain/usecases/delete_account_usecase.dart';
+import '../../../auth/domain/usecases/get_current_user_usecase.dart';
+import '../../../auth/domain/usecases/reload_user_usecase.dart';
+import '../../../auth/domain/usecases/sign_out_usecase.dart';
 import '../../domain/usecases/get_user_by_id_usecase.dart';
 import '../../domain/usecases/update_user_usecase.dart';
 import 'profile_state.dart';
+
+enum ProfileAccountActionStatus { success, reauthRequired, failure }
+
+class ProfileAccountActionResult {
+  const ProfileAccountActionResult({
+    required this.status,
+    required this.message,
+  });
+
+  final ProfileAccountActionStatus status;
+  final String message;
+}
 
 class ProfileCubit extends Cubit<ProfileState> {
   ProfileCubit({
     required GetUserByIdUseCase getUserById,
     required UpdateUserUseCase updateUser,
-    required FirebaseAuth auth,
+    required GetCurrentUserUseCase getCurrentUser,
+    required ReloadUserUseCase reloadUser,
+    required SignOutUseCase signOut,
+    required DeleteAccountUseCase deleteAccount,
   }) : _getUserById = getUserById,
        _updateUser = updateUser,
-       _auth = auth,
+       _getCurrentUser = getCurrentUser,
+       _reloadUser = reloadUser,
+       _signOut = signOut,
+       _deleteAccount = deleteAccount,
        super(const ProfileState());
 
   final GetUserByIdUseCase _getUserById;
   final UpdateUserUseCase _updateUser;
-  final FirebaseAuth _auth;
+  final GetCurrentUserUseCase _getCurrentUser;
+  final ReloadUserUseCase _reloadUser;
+  final SignOutUseCase _signOut;
+  final DeleteAccountUseCase _deleteAccount;
 
   Future<void> load() async {
     if (isClosed) return;
     emit(state.copyWith(status: ProfileStatus.loading, errorMessage: null));
-    final user = _auth.currentUser;
+    final user = _getCurrentUser();
     if (user == null) {
       if (isClosed) return;
       emit(
@@ -35,9 +61,9 @@ class ProfileCubit extends Cubit<ProfileState> {
       return;
     }
     try {
-      await user.reload();
+      await _reloadUser(user);
       if (isClosed) return;
-      final refreshedUser = _auth.currentUser;
+      final refreshedUser = _getCurrentUser();
       if (refreshedUser == null) {
         if (isClosed) return;
         emit(
@@ -73,6 +99,44 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  Future<String?> signOut() async {
+    try {
+      await _signOut();
+      return null;
+    } catch (_) {
+      return 'Unable to log out right now. Please try again.';
+    }
+  }
+
+  Future<ProfileAccountActionResult> deleteAccount() async {
+    try {
+      await _deleteAccount();
+      await _signOut();
+      return const ProfileAccountActionResult(
+        status: ProfileAccountActionStatus.success,
+        message: 'Your account has been deleted.',
+      );
+    } on FirebaseFunctionsException catch (error) {
+      if (_isReauthRequired(error)) {
+        await _signOut();
+        return const ProfileAccountActionResult(
+          status: ProfileAccountActionStatus.reauthRequired,
+          message:
+              'Please log in again to confirm your identity, then retry deleting your account.',
+        );
+      }
+      return ProfileAccountActionResult(
+        status: ProfileAccountActionStatus.failure,
+        message: error.message ?? 'Unable to delete account. Please try again.',
+      );
+    } catch (_) {
+      return const ProfileAccountActionResult(
+        status: ProfileAccountActionStatus.failure,
+        message: 'Unable to delete account. Please try again.',
+      );
+    }
+  }
+
   Future<UserEntity> _syncEmailFromAuth(
     UserEntity profile,
     User authUser,
@@ -100,5 +164,14 @@ class ProfileCubit extends Cubit<ProfileState> {
     );
     await _updateUser(updated);
     return updated;
+  }
+
+  bool _isReauthRequired(FirebaseFunctionsException error) {
+    final message = (error.message ?? '').toLowerCase();
+    return error.code == 'unauthenticated' ||
+        error.code == 'failed-precondition' ||
+        error.code == 'permission-denied' ||
+        message.contains('recent') ||
+        message.contains('reauth');
   }
 }

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -15,6 +14,7 @@ import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_ca
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_offer_form_content.dart';
+import 'package:jood/features/attractions/domain/usecases/get_all_attractions_usecase.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 import 'package:jood/features/restaurants/domain/usecases/get_all_restaurants_usecase.dart';
 
@@ -108,17 +108,15 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
   Future<void> _loadVenueNames() async {
     try {
       final restaurants = await getIt<GetAllRestaurantsUseCase>()();
-      final attractionsSnapshot = await FirebaseFirestore.instance
-          .collection('attractions')
-          .get();
+      final attractions = await getIt<GetAllAttractionsUseCase>()();
       if (!mounted) return;
       setState(() {
         _venueNames = {
           for (final restaurant in restaurants) restaurant.id: restaurant.name,
-          for (final doc in attractionsSnapshot.docs)
-            doc.id: (doc.data()['name'] as String?)?.trim().isNotEmpty == true
-                ? (doc.data()['name'] as String).trim()
-                : doc.id,
+          for (final attraction in attractions)
+            attraction.id: attraction.name.trim().isNotEmpty
+                ? attraction.name
+                : attraction.id,
         };
       });
     } catch (_) {

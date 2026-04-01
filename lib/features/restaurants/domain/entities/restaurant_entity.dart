@@ -29,6 +29,8 @@ class RestaurantEntity extends Equatable {
     this.slotsLeft = '',
     this.priceFromValue = 0,
     this.discountValue = 0,
+    this.supportsBuffet = true,
+    this.supportsSetMenu = false,
   });
 
   final String id;
@@ -58,35 +60,39 @@ class RestaurantEntity extends Equatable {
   final String slotsLeft;
   final double priceFromValue;
   final double discountValue;
+  final bool supportsBuffet;
+  final bool supportsSetMenu;
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        cityId,
-        area,
-        rating,
-        reviewsCount,
-        coverImageUrl,
-        about,
-        phone,
-        address,
-        geoLat,
-        geoLng,
-        openFrom,
-        openTo,
-        highlights,
-        inclusions,
-        exclusions,
-        cancellationPolicy,
-        knowBeforeYouGo,
-        isActive,
-        createdAt,
-        badge,
-        priceFrom,
-        discount,
-        slotsLeft,
-        priceFromValue,
-        discountValue,
-      ];
+    id,
+    name,
+    cityId,
+    area,
+    rating,
+    reviewsCount,
+    coverImageUrl,
+    about,
+    phone,
+    address,
+    geoLat,
+    geoLng,
+    openFrom,
+    openTo,
+    highlights,
+    inclusions,
+    exclusions,
+    cancellationPolicy,
+    knowBeforeYouGo,
+    isActive,
+    createdAt,
+    badge,
+    priceFrom,
+    discount,
+    slotsLeft,
+    priceFromValue,
+    discountValue,
+    supportsBuffet,
+    supportsSetMenu,
+  ];
 }

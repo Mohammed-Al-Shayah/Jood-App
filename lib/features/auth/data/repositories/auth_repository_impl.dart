@@ -66,6 +66,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<void> deleteAccount() async {
+    await _functions.httpsCallable('deleteAccount').call();
+  }
+
+  @override
   Future<void> reloadUser(User user) {
     return user.reload();
   }

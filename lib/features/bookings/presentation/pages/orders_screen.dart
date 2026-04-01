@@ -1,16 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:jood/core/di/service_locator.dart';
+import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
-import 'package:jood/core/routing/routes.dart';
-import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/utils/extensions.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
-import '../models/order_item_view_model.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
+import '../../domain/entities/booking_entity.dart';
+import '../../domain/services/booking_order_policy.dart';
+import '../cubit/orders_cubit.dart';
+import '../cubit/orders_state.dart';
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
@@ -29,32 +33,36 @@ class OrdersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      return const SafeArea(child: Center(child: Text('Please login first.')));
-    }
+    return BlocProvider(
+      create: (_) => getIt<OrdersCubit>()..initialize(),
+      child: const _OrdersView(),
+    );
+  }
+}
 
-    final stream = FirebaseFirestore.instance
-        .collection('bookings')
-        .where('userId', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
-        .snapshots();
+class _OrdersView extends StatelessWidget {
+  const _OrdersView();
 
+  @override
+  Widget build(BuildContext context) {
     return SafeArea(
-      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: stream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      child: BlocBuilder<OrdersCubit, OrdersState>(
+        builder: (context, state) {
+          if (state.status == OrdersStatus.initial ||
+              state.status == OrdersStatus.loading) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
+          if (state.status == OrdersStatus.unauthenticated) {
             return Center(
-              child: Text('Failed to load orders: ${snapshot.error}'),
+              child: Text(state.errorMessage ?? 'Please login first.'),
             );
           }
-
-          final docs = snapshot.data?.docs ?? const [];
-          if (docs.isEmpty) {
+          if (state.status == OrdersStatus.failure) {
+            return Center(
+              child: Text(state.errorMessage ?? 'Failed to load orders.'),
+            );
+          }
+          if (state.orders.isEmpty) {
             return const _OrdersEmptyState();
           }
 
@@ -69,7 +77,7 @@ class OrdersTab extends StatelessWidget {
                       Text('My Orders', style: AppTextStyles.headingMedium),
                       SizedBox(height: 4.h),
                       Text(
-                        '${docs.length} bookings',
+                        '${state.orders.length} bookings',
                         style: AppTextStyles.cardMeta,
                       ),
                       SizedBox(height: 16.h),
@@ -80,12 +88,17 @@ class OrdersTab extends StatelessWidget {
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
                 sliver: SliverList.builder(
-                  itemCount: docs.length,
+                  itemCount: state.orders.length,
                   itemBuilder: (context, index) {
-                    final order = OrderItemViewModel.fromDoc(docs[index]);
+                    final order = state.orders[index];
+                    final venue = _resolveVenueDetails(order, state);
                     return Padding(
                       padding: EdgeInsets.only(bottom: 14.h),
-                      child: _OrderCard(order: order),
+                      child: _OrderCard(
+                        order: order,
+                        restaurantName: venue.name,
+                        restaurantImageUrl: venue.coverImageUrl,
+                      ),
                     );
                   },
                 ),
@@ -95,6 +108,32 @@ class OrdersTab extends StatelessWidget {
         },
       ),
     );
+  }
+
+  OrderVenueDetails _resolveVenueDetails(
+    BookingEntity order,
+    OrdersState state,
+  ) {
+    final snapshotName = (order.restaurantNameSnapshot ?? '').trim();
+    final snapshotImage = (order.coverImageUrlSnapshot ?? '').trim();
+    final hydratedVenue = state.venueDetailsByKey[_venueKey(order)];
+
+    final displayName = snapshotName.isNotEmpty
+        ? snapshotName
+        : (hydratedVenue?.name.trim().isNotEmpty == true
+              ? hydratedVenue!.name
+              : 'Booking');
+    final displayImage = snapshotImage.isNotEmpty
+        ? snapshotImage
+        : (hydratedVenue?.coverImageUrl ?? '');
+
+    return OrderVenueDetails(name: displayName, coverImageUrl: displayImage);
+  }
+
+  String _venueKey(BookingEntity order) {
+    final type = (order.bookableType ?? '').trim().toLowerCase();
+    final collection = type == 'attraction' ? 'attractions' : 'restaurants';
+    return '$collection:${order.restaurantId}';
   }
 }
 
@@ -268,11 +307,15 @@ class _OrdersEmptyChip extends StatelessWidget {
 }
 
 class _OrderCard extends StatelessWidget {
-  const _OrderCard({required this.order});
+  const _OrderCard({
+    required this.order,
+    required this.restaurantName,
+    required this.restaurantImageUrl,
+  });
 
-  final OrderItemViewModel order;
-
-  static const List<String> _cancelledStatuses = ['cancelled', 'canceled'];
+  final BookingEntity order;
+  final String restaurantName;
+  final String restaurantImageUrl;
 
   Color _statusColor(String statusValue) {
     final normalized = statusValue.toLowerCase();
@@ -280,7 +323,7 @@ class _OrderCard extends StatelessWidget {
     if (normalized == 'paid' || normalized == 'confirmed') {
       return const Color(0xFF20C997);
     }
-    if (_cancelledStatuses.contains(normalized)) {
+    if (BookingOrderPolicy.isCancelledStatus(normalized)) {
       return const Color(0xFF868E96);
     }
     return const Color(0xFFFA5252);
@@ -292,125 +335,17 @@ class _OrderCard extends StatelessWidget {
         statusValue.substring(1).toLowerCase();
   }
 
-  bool _isCancelled(String statusValue) {
-    return _cancelledStatuses.contains(statusValue.trim().toLowerCase());
-  }
-
-  bool _isCompleted(String statusValue) {
-    final normalized = statusValue.trim().toLowerCase();
-    return normalized == 'completed' || normalized == 'complete';
-  }
-
-  bool _canShowQr(String statusValue) {
-    final normalized = statusValue.trim().toLowerCase();
-    return normalized == 'paid' || normalized == 'confirmed';
-  }
-
-  DateTime? _parseBookingDate(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return null;
-    final parsed = DateTime.tryParse(trimmed);
-    if (parsed == null) return null;
-    return DateTime(parsed.year, parsed.month, parsed.day);
-  }
-
-  int? _parseTimeToMinutes(String value) {
-    final trimmed = value.trim().toLowerCase();
-    if (trimmed.isEmpty) return null;
-    final amPmMatch = RegExp(
-      r'^(\d{1,2})(?::(\d{2}))?\s*([ap]m)$',
-    ).firstMatch(trimmed);
-    if (amPmMatch != null) {
-      final hour = int.tryParse(amPmMatch.group(1) ?? '');
-      final minute = int.tryParse(amPmMatch.group(2) ?? '0') ?? 0;
-      final period = amPmMatch.group(3);
-      if (hour == null) return null;
-      var h = hour % 12;
-      if (period == 'pm') h += 12;
-      return h * 60 + minute;
-    }
-    final match24 = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(trimmed);
-    if (match24 != null) {
-      final hour = int.tryParse(match24.group(1) ?? '');
-      final minute = int.tryParse(match24.group(2) ?? '');
-      if (hour == null || minute == null) return null;
-      return hour * 60 + minute;
-    }
-    return null;
-  }
-
-  DateTime? _buildDateTimeFromMinutes(String date, int? minutes) {
-    if (minutes == null) return null;
-    final baseDate = _parseBookingDate(date);
-    if (baseDate == null) return null;
-    return baseDate.add(Duration(minutes: minutes));
-  }
-
-  bool _isCancellationAllowed() {
-    final endMinutes = _parseTimeToMinutes(order.endTime);
-    final startMinutes = _parseTimeToMinutes(order.startTime);
-    if (endMinutes == null && startMinutes == null) return false;
-    var endDate = _buildDateTimeFromMinutes(
-      order.date,
-      endMinutes ?? startMinutes,
-    );
-    if (endDate == null) return false;
-    if (endMinutes != null &&
-        startMinutes != null &&
-        endMinutes <= startMinutes) {
-      endDate = endDate.add(const Duration(days: 1));
-    }
-    return DateTime.now().isBefore(endDate);
-  }
-
   String _formattedDate() {
-    if (order.date.isNotEmpty) return order.date;
-    final createdAt = order.createdAt;
-    if (createdAt != null) {
-      return DateFormat('MMM d, yyyy').format(createdAt.toDate());
-    }
-    return '-';
+    if (order.date.trim().isNotEmpty) return order.date;
+    return DateFormat('MMM d, yyyy').format(order.createdAt);
   }
 
   @override
   Widget build(BuildContext context) {
-    final snapshotName = order.restaurantNameSnapshot.isEmpty
-        ? 'Booking'
-        : order.restaurantNameSnapshot;
-    if (order.restaurantId.isEmpty || order.coverImageUrlSnapshot.isNotEmpty) {
-      return _buildCard(
-        context: context,
-        restaurantName: snapshotName,
-        restaurantImageUrl: order.coverImageUrlSnapshot,
-      );
-    }
-
-    final sourceCollection = order.bookableType.toLowerCase() == 'attraction'
-        ? 'attractions'
-        : 'restaurants';
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance
-          .collection(sourceCollection)
-          .doc(order.restaurantId)
-          .get(),
-      builder: (context, snapshot) {
-        final restaurant = RestaurantSummaryViewModel.fromDoc(
-          data: snapshot.data?.data(),
-          fallbackId: order.restaurantId,
-        );
-        final displayName = order.restaurantNameSnapshot.isNotEmpty
-            ? order.restaurantNameSnapshot
-            : restaurant.name;
-        final displayImage = order.coverImageUrlSnapshot.isNotEmpty
-            ? order.coverImageUrlSnapshot
-            : restaurant.coverImageUrl;
-
-        return _buildCard(
-          context: context,
-          restaurantName: displayName,
-          restaurantImageUrl: displayImage,
-        );
-      },
+    return _buildCard(
+      context: context,
+      restaurantName: restaurantName,
+      restaurantImageUrl: restaurantImageUrl,
     );
   }
 
@@ -422,9 +357,9 @@ class _OrderCard extends StatelessWidget {
     final badgeColor = _statusColor(order.status);
     final showQr =
         order.qrPayload.isNotEmpty &&
-        _canShowQr(order.status) &&
-        !_isCompleted(order.status) &&
-        !_isCancelled(order.status);
+        BookingOrderPolicy.canShowQr(order.status) &&
+        !BookingOrderPolicy.isCompletedStatus(order.status) &&
+        !BookingOrderPolicy.isCancelledStatus(order.status);
     return InkWell(
       borderRadius: BorderRadius.circular(18.r),
       onTap: () => _showDetailsSheet(
@@ -523,10 +458,16 @@ class _OrderCard extends StatelessWidget {
   }) {
     final badgeColor = _statusColor(order.status);
     final showCancel =
-        !_isCancelled(order.status) &&
-        !_isCompleted(order.status) &&
-        _isCancellationAllowed();
-    final showQr = order.qrPayload.isNotEmpty && _canShowQr(order.status);
+        !BookingOrderPolicy.isCancelledStatus(order.status) &&
+        !BookingOrderPolicy.isCompletedStatus(order.status) &&
+        BookingOrderPolicy.isCancellationAllowed(
+          date: order.date,
+          startTime: order.startTime,
+          endTime: order.endTime,
+        );
+    final showQr =
+        order.qrPayload.isNotEmpty &&
+        BookingOrderPolicy.canShowQr(order.status);
     final viewInsetsBottom = MediaQuery.of(context).viewInsets.bottom;
     showModalBottomSheet<void>(
       context: context,
@@ -589,12 +530,13 @@ class _OrderCard extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 12.h),
-              if (order.offerTitleSnapshot.isNotEmpty)
+              if ((order.offerTitleSnapshot ?? '').isNotEmpty)
                 Text(
-                  order.offerTitleSnapshot,
+                  order.offerTitleSnapshot!,
                   style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
                 ),
-              if (order.offerTitleSnapshot.isNotEmpty) SizedBox(height: 6.h),
+              if ((order.offerTitleSnapshot ?? '').isNotEmpty)
+                SizedBox(height: 6.h),
               Text(
                 'Code: ${order.bookingCode}',
                 style: AppTextStyles.cardMeta.copyWith(
@@ -628,12 +570,12 @@ class _OrderCard extends StatelessWidget {
               _DetailRow(
                 label: 'Adults',
                 value:
-                    '${order.adults} × ${formatCurrency(order.currency, order.unitPriceAdult)}',
+                    '${order.adults} x ${formatCurrency(order.currency, order.unitPriceAdult)}',
               ),
               _DetailRow(
                 label: 'Children',
                 value:
-                    '${order.children} × ${formatCurrency(order.currency, order.unitPriceChild)}',
+                    '${order.children} x ${formatCurrency(order.currency, order.unitPriceChild)}',
               ),
               _DetailRow(
                 label: 'Subtotal',
@@ -691,19 +633,17 @@ class _OrderCard extends StatelessWidget {
   }
 
   Future<void> _handleCancel(BuildContext context) async {
-    if (!_isCancellationAllowed()) {
+    if (!BookingOrderPolicy.isCancellationAllowed(
+      date: order.date,
+      startTime: order.startTime,
+      endTime: order.endTime,
+    )) {
       showAppSnackBar(
         context,
         'Cancellation window has ended.',
         type: SnackBarType.info,
         fromTop: true,
       );
-      return;
-    }
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      showAppSnackBar(context, 'Please login first.', type: SnackBarType.error);
       return;
     }
 
@@ -714,103 +654,40 @@ class _OrderCard extends StatelessWidget {
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
+    String? errorMessage;
     try {
-      await FirebaseFirestore.instance.runTransaction((tx) async {
-        final bookingRef = FirebaseFirestore.instance
-            .collection('bookings')
-            .doc(order.id);
-        final bookingSnap = await tx.get(bookingRef);
-        if (!bookingSnap.exists) {
-          throw Exception('Booking not found.');
-        }
-
-        final data = bookingSnap.data() ?? const <String, dynamic>{};
-        final status = (data['status'] as String? ?? '').toLowerCase();
-        if (_cancelledStatuses.contains(status)) {
-          throw Exception('Booking already cancelled.');
-        }
-        if (status == 'completed') {
-          throw Exception('Completed booking cannot be cancelled.');
-        }
-
-        final bookingUserId = (data['userId'] as String? ?? '').trim();
-        if (bookingUserId.isNotEmpty && bookingUserId != user.uid) {
-          throw Exception('Not authorized.');
-        }
-
-        final date = (data['date'] as String? ?? '').trim();
-        final startTime = (data['startTime'] as String? ?? '').trim();
-        final endTime = (data['endTime'] as String? ?? '').trim();
-        final endMinutes = _parseTimeToMinutes(endTime);
-        final startMinutes = _parseTimeToMinutes(startTime);
-        var endDate = _buildDateTimeFromMinutes(
-          date,
-          endMinutes ?? startMinutes,
-        );
-        if (endDate != null &&
-            endMinutes != null &&
-            startMinutes != null &&
-            endMinutes <= startMinutes) {
-          endDate = endDate.add(const Duration(days: 1));
-        }
-        if (endDate == null || !DateTime.now().isBefore(endDate)) {
-          throw Exception('CANCELLATION_EXPIRED');
-        }
-
-        final offerId = (data['offerId'] as String? ?? '').trim();
-        final adults = (data['adults'] as num?)?.toInt() ?? 0;
-        final children = (data['children'] as num?)?.toInt() ?? 0;
-
-        tx.update(bookingRef, {
-          'status': 'cancelled',
-          'qrPayload': '',
-          'cancelledAt': FieldValue.serverTimestamp(),
-          'cancelledBy': user.uid,
-          'cancelledByRole': 'user',
-          'refundStatus': 'pending',
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        if (offerId.isNotEmpty) {
-          final offerRef = FirebaseFirestore.instance
-              .collection('offers')
-              .doc(offerId);
-          tx.update(offerRef, {
-            'bookedAdult': FieldValue.increment(-adults),
-            'bookedChild': FieldValue.increment(-children),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-        }
-      });
-
+      errorMessage = await context.read<OrdersCubit>().cancelBooking(order);
+    } catch (_) {
+      errorMessage = 'Failed to cancel booking. Please try again.';
+    } finally {
       if (context.mounted) {
         final rootNav = Navigator.of(context, rootNavigator: true);
-        if (rootNav.canPop()) rootNav.pop();
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
+        if (rootNav.canPop()) {
+          rootNav.pop();
         }
-        showAppSnackBar(
-          context,
-          'Booking cancelled successfully.',
-          type: SnackBarType.success,
-          fromTop: true,
-        );
-      }
-    } catch (error) {
-      if (context.mounted) {
-        final rootNav = Navigator.of(context, rootNavigator: true);
-        if (rootNav.canPop()) rootNav.pop();
-        final message = error.toString().contains('CANCELLATION_EXPIRED')
-            ? 'Cancellation window has ended.'
-            : 'Failed to cancel booking. Please try again.';
-        showAppSnackBar(
-          context,
-          message,
-          type: SnackBarType.error,
-          fromTop: true,
-        );
       }
     }
+
+    if (!context.mounted) return;
+    if (errorMessage == null) {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      showAppSnackBar(
+        context,
+        'Booking cancelled successfully.',
+        type: SnackBarType.success,
+        fromTop: true,
+      );
+      return;
+    }
+
+    showAppSnackBar(
+      context,
+      errorMessage,
+      type: SnackBarType.error,
+      fromTop: true,
+    );
   }
 
   void _showQrSheet(BuildContext context, String qrValue, String code) {

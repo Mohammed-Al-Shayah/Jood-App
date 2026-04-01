@@ -30,6 +30,8 @@ abstract class AuthRepository {
 
   Future<void> signOut();
 
+  Future<void> deleteAccount();
+
   Future<void> reloadUser(User user);
 
   Future<void> linkEmailPassword({

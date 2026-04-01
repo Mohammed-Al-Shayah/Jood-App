@@ -1,14 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/utils/date_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_input_decoration.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
+import 'package:jood/features/attractions/domain/usecases/get_all_attractions_usecase.dart';
 import 'package:jood/features/offers/data/models/offer_model.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
+import 'package:jood/features/restaurants/domain/usecases/get_all_restaurants_usecase.dart';
 
 class AdminOfferFormContent extends StatefulWidget {
   const AdminOfferFormContent({
@@ -551,37 +553,33 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
   Future<void> _loadVenues() async {
     try {
-      final restaurantsSnapshot = await FirebaseFirestore.instance
-          .collection('restaurants')
-          .get();
-      final attractionsSnapshot = await FirebaseFirestore.instance
-          .collection('attractions')
-          .get();
+      final restaurants = await getIt<GetAllRestaurantsUseCase>()();
+      final attractions = await getIt<GetAllAttractionsUseCase>()();
       if (!mounted) return;
       _restaurantVenues
         ..clear()
         ..addAll(
-          restaurantsSnapshot.docs.map((doc) {
-            final data = doc.data();
-            final name = (data['name'] as String?)?.trim();
+          restaurants.map((restaurant) {
             return _VenueOption(
-              id: doc.id,
-              name: name == null || name.isEmpty ? doc.id : name,
+              id: restaurant.id,
+              name: restaurant.name.trim().isEmpty
+                  ? restaurant.id
+                  : restaurant.name,
             );
           }),
         );
       _restaurantSupportById
         ..clear()
         ..addEntries(
-          restaurantsSnapshot.docs.map((doc) {
-            final data = doc.data();
-            final name = (data['name'] as String?)?.trim();
+          restaurants.map((restaurant) {
             return MapEntry(
-              doc.id,
+              restaurant.id,
               _RestaurantCategorySupport(
-                name: name == null || name.isEmpty ? doc.id : name,
-                supportsBuffet: _restaurantSupportsCategory(data, 'buffet'),
-                supportsSetMenu: _restaurantSupportsCategory(data, 'set_menu'),
+                name: restaurant.name.trim().isEmpty
+                    ? restaurant.id
+                    : restaurant.name,
+                supportsBuffet: restaurant.supportsBuffet,
+                supportsSetMenu: restaurant.supportsSetMenu,
               ),
             );
           }),
@@ -589,12 +587,12 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       _attractionVenues
         ..clear()
         ..addAll(
-          attractionsSnapshot.docs.map((doc) {
-            final data = doc.data();
-            final name = (data['name'] as String?)?.trim();
+          attractions.map((attraction) {
             return _VenueOption(
-              id: doc.id,
-              name: name == null || name.isEmpty ? doc.id : name,
+              id: attraction.id,
+              name: attraction.name.trim().isEmpty
+                  ? attraction.id
+                  : attraction.name,
             );
           }),
         );
@@ -673,32 +671,6 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     if (!exists) {
       _venueId = venues.isEmpty ? null : venues.first.id;
     }
-  }
-
-  bool _restaurantSupportsCategory(Map<String, dynamic> data, String category) {
-    final bookingCatalog = _asMap(data['bookingCatalog']);
-    final supportedCategories = _normalizedStringList(
-      bookingCatalog['supportedCategories'],
-    );
-
-    if (category == 'buffet') {
-      if (supportedCategories.isEmpty) return true;
-      return supportedCategories.contains('buffet');
-    }
-
-    if (category == 'set_menu') {
-      final setMenuConfig = _asMap(bookingCatalog['setMenu']);
-      if (supportedCategories.contains('set_menu') ||
-          supportedCategories.contains('setmenu')) {
-        return true;
-      }
-      if (setMenuConfig.isNotEmpty) {
-        return setMenuConfig['enabled'] as bool? ?? true;
-      }
-      return false;
-    }
-
-    return true;
   }
 
   String? get _restaurantCategoryWarning {
@@ -1047,24 +1019,6 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       );
     }
     return offers;
-  }
-
-  Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) return value;
-    if (value is Map) {
-      return value.map((key, item) => MapEntry(key.toString(), item));
-    }
-    return const <String, dynamic>{};
-  }
-
-  List<String> _normalizedStringList(dynamic value) {
-    if (value is! List) return const [];
-    return value
-        .map(
-          (item) => item.toString().trim().toLowerCase().replaceAll(' ', '_'),
-        )
-        .where((item) => item.isNotEmpty)
-        .toList(growable: false);
   }
 }
 

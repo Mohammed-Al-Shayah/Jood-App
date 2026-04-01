@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/errors/exceptions.dart';
+import '../../domain/services/booking_order_policy.dart';
+import '../../domain/services/booking_redemption_policy.dart';
 import '../models/booking_model.dart';
 import '../../../../core/utils/number_utils.dart';
 
@@ -73,9 +75,12 @@ class BookingRemoteDataSource {
         final collection = bookableType == 'attraction'
             ? 'attractions'
             : 'restaurants';
-        final restaurantRef = firestore.collection(collection).doc(restaurantId);
+        final restaurantRef = firestore
+            .collection(collection)
+            .doc(restaurantId);
         final restaurantSnap = await transaction.get(restaurantRef);
-        final restaurantData = restaurantSnap.data() ?? const <String, dynamic>{};
+        final restaurantData =
+            restaurantSnap.data() ?? const <String, dynamic>{};
         restaurantNameSnapshot = (restaurantData['name'] as String? ?? '')
             .trim();
         coverImageUrlSnapshot =
@@ -157,9 +162,160 @@ class BookingRemoteDataSource {
     return snapshot.docs.map(BookingModel.fromDoc).toList();
   }
 
+  Stream<List<BookingModel>> watchMyBookings(String userId) {
+    return firestore
+        .collection('bookings')
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(BookingModel.fromDoc).toList());
+  }
+
+  Future<List<BookingModel>> getAllBookings() async {
+    final snapshot = await firestore
+        .collection('bookings')
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snapshot.docs.map(BookingModel.fromDoc).toList();
+  }
+
+  Stream<List<BookingModel>> watchAllBookings() {
+    return firestore
+        .collection('bookings')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(BookingModel.fromDoc).toList());
+  }
+
   Future<BookingModel> getBookingById(String id) async {
     final doc = await firestore.collection('bookings').doc(id).get();
     return BookingModel.fromDoc(doc);
+  }
+
+  Future<BookingModel> getBookingByCode(String code) async {
+    final cleanedCode = code.trim();
+    final query = await firestore
+        .collection('bookings')
+        .where('bookingCode', isEqualTo: cleanedCode)
+        .limit(1)
+        .get();
+    if (query.docs.isEmpty) {
+      throw BookingException('Order not found.');
+    }
+    return BookingModel.fromDoc(query.docs.first);
+  }
+
+  Future<void> cancelBooking({
+    required String bookingId,
+    required String actorUserId,
+  }) async {
+    await firestore.runTransaction((transaction) async {
+      final bookingRef = firestore.collection('bookings').doc(bookingId);
+      final bookingSnap = await transaction.get(bookingRef);
+      if (!bookingSnap.exists) {
+        throw BookingException('Booking not found.');
+      }
+
+      final data = bookingSnap.data() ?? const <String, dynamic>{};
+      final status = (data['status'] as String? ?? '').trim().toLowerCase();
+      if (BookingOrderPolicy.isCancelledStatus(status)) {
+        throw BookingException('Booking already cancelled.');
+      }
+      if (BookingOrderPolicy.isCompletedStatus(status)) {
+        throw BookingException('Completed booking cannot be cancelled.');
+      }
+
+      final bookingUserId = (data['userId'] as String? ?? '').trim();
+      if (bookingUserId.isNotEmpty && bookingUserId != actorUserId) {
+        throw BookingException('Not authorized.');
+      }
+
+      final date = (data['date'] as String? ?? '').trim();
+      final startTime = (data['startTime'] as String? ?? '').trim();
+      final endTime = (data['endTime'] as String? ?? '').trim();
+      if (!BookingOrderPolicy.isCancellationAllowed(
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
+      )) {
+        throw BookingException('CANCELLATION_EXPIRED');
+      }
+
+      final offerId = (data['offerId'] as String? ?? '').trim();
+      final adults = (data['adults'] as num?)?.toInt() ?? 0;
+      final children = (data['children'] as num?)?.toInt() ?? 0;
+
+      transaction.update(bookingRef, {
+        'status': 'cancelled',
+        'qrPayload': '',
+        'cancelledAt': FieldValue.serverTimestamp(),
+        'cancelledBy': actorUserId,
+        'cancelledByRole': 'user',
+        'refundStatus': 'pending',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (offerId.isNotEmpty) {
+        final offerRef = firestore.collection('offers').doc(offerId);
+        transaction.update(offerRef, {
+          'bookedAdult': FieldValue.increment(-adults),
+          'bookedChild': FieldValue.increment(-children),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    });
+  }
+
+  Future<void> completeBooking({
+    required String bookingId,
+    required String staffRestaurantId,
+    required String actorUserId,
+  }) async {
+    await firestore.runTransaction((transaction) async {
+      final bookingRef = firestore.collection('bookings').doc(bookingId);
+      final bookingSnap = await transaction.get(bookingRef);
+      if (!bookingSnap.exists) {
+        throw BookingException('Order not found.');
+      }
+
+      final booking = BookingModel.fromDoc(bookingSnap);
+      BookingRedemptionPolicy.validateBookingForStaff(
+        bookingRestaurantId: booking.restaurantId,
+        staffRestaurantId: staffRestaurantId,
+        status: booking.status,
+      );
+
+      transaction.update(bookingRef, {
+        'status': 'completed',
+        'qrRedeemedAt': FieldValue.serverTimestamp(),
+        'redeemedBy': actorUserId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
+
+  Future<void> updateRefundStatus({
+    required String bookingId,
+    required String status,
+    required String actorUserId,
+  }) async {
+    final payload = <String, dynamic>{
+      'refundStatus': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+    if (status == 'checked') {
+      payload['refundCheckedAt'] = FieldValue.serverTimestamp();
+      payload['refundCheckedBy'] = actorUserId;
+    }
+    if (status == 'refunded') {
+      payload['refundedAt'] = FieldValue.serverTimestamp();
+      payload['refundedBy'] = actorUserId;
+    }
+
+    await firestore
+        .collection('bookings')
+        .doc(bookingId)
+        .set(payload, SetOptions(merge: true));
   }
 
   // Number parsing moved to NumberUtils

@@ -4,11 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get_it/get_it.dart';
 
+import '../payments/payment_completion_service.dart';
 import '../../features/home/data/datasources/restaurant_remote_data_source.dart';
 import '../../features/home/data/repositories/restaurant_repository_impl.dart';
 import '../../features/home/domain/repositories/restaurant_repository.dart';
 import '../../features/home/presentation/cubit/home_cubit.dart';
 import '../../features/bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
+import '../../features/bookings/booking_flow/presentation/cubit/payment_screen_cubit.dart';
 import '../../features/booking_catalog/data/datasources/catalog_remote_data_source.dart';
 import '../../features/booking_catalog/data/repositories/catalog_repository_impl.dart';
 import '../../features/booking_catalog/domain/repositories/catalog_repository.dart';
@@ -19,6 +21,7 @@ import '../../features/offers/data/repositories/offer_repository_impl.dart';
 import '../../features/offers/domain/repositories/offer_repository.dart';
 import '../../features/offers/domain/usecases/get_offers_for_date_usecase.dart';
 import '../../features/offers/domain/usecases/get_offers_for_range_usecase.dart';
+import '../../features/offers/domain/usecases/get_offer_by_id_usecase.dart';
 import '../../features/offers/domain/usecases/get_offers_usecase.dart';
 import '../../features/offers/domain/usecases/create_offer_usecase.dart';
 import '../../features/offers/domain/usecases/update_offer_usecase.dart';
@@ -30,6 +33,7 @@ import '../../features/auth/presentation/registration/logic/register_cubit.dart'
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/check_email_in_use_usecase.dart';
+import '../../features/auth/domain/usecases/delete_account_usecase.dart';
 import '../../features/auth/domain/usecases/get_current_user_usecase.dart';
 import '../../features/auth/domain/usecases/link_email_password_usecase.dart';
 import '../../features/auth/domain/usecases/login_with_email_usecase.dart';
@@ -62,7 +66,16 @@ import '../../features/bookings/data/repositories/booking_repository_impl.dart'
     as bookings_repo;
 import '../../features/bookings/domain/repositories/booking_repository.dart'
     as bookings_domain;
+import '../../features/bookings/domain/usecases/complete_booking_usecase.dart';
 import '../../features/bookings/domain/usecases/create_booking_usecase.dart';
+import '../../features/bookings/domain/usecases/cancel_booking_usecase.dart';
+import '../../features/bookings/domain/usecases/get_all_bookings_usecase.dart';
+import '../../features/bookings/domain/usecases/get_booking_by_code_usecase.dart';
+import '../../features/bookings/domain/usecases/watch_all_bookings_usecase.dart';
+import '../../features/bookings/domain/usecases/watch_my_bookings_usecase.dart';
+import '../../features/bookings/domain/usecases/update_booking_refund_status_usecase.dart';
+import '../../features/bookings/presentation/cubit/order_qr_scanner_cubit.dart';
+import '../../features/bookings/presentation/cubit/orders_cubit.dart';
 import '../../features/restaurants/presentation/cubit/restaurant_detail_cubit.dart';
 import '../../features/restaurants/data/datasources/restaurant_remote_data_source.dart'
     as restaurants_ds;
@@ -87,6 +100,7 @@ import '../../features/admin/presentation/cubit/admin_attractions_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_offers_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_users_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_orders_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_overview_cubit.dart';
 import '../../features/admin/data/datasources/admin_storage_remote_data_source.dart';
 import '../../features/admin/domain/usecases/delete_storage_file_usecase.dart';
 import '../../features/admin/domain/usecases/upload_attraction_image_usecase.dart';
@@ -147,6 +161,9 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<GetOffersUseCase>(
     () => GetOffersUseCase(getIt()),
   );
+  getIt.registerLazySingleton<GetOfferByIdUseCase>(
+    () => GetOfferByIdUseCase(getIt()),
+  );
   getIt.registerLazySingleton<CreateOfferUseCase>(
     () => CreateOfferUseCase(getIt()),
   );
@@ -182,6 +199,9 @@ Future<void> setupServiceLocator() async {
     () => SendEmailVerificationUseCase(getIt()),
   );
   getIt.registerLazySingleton<SignOutUseCase>(() => SignOutUseCase(getIt()));
+  getIt.registerLazySingleton<DeleteAccountUseCase>(
+    () => DeleteAccountUseCase(getIt()),
+  );
   getIt.registerLazySingleton<GetCurrentUserUseCase>(
     () => GetCurrentUserUseCase(getIt()),
   );
@@ -271,6 +291,12 @@ Future<void> setupServiceLocator() async {
   getIt.registerLazySingleton<CreatePaymentUseCase>(
     () => CreatePaymentUseCase(getIt()),
   );
+  getIt.registerLazySingleton<PaymentCompletionService>(
+    () => PaymentCompletionService(
+      createBooking: getIt(),
+      createPayment: getIt(),
+    ),
+  );
   getIt.registerLazySingleton<BookingRemoteDataSource>(
     () => BookingRemoteDataSource(getIt()),
   );
@@ -279,6 +305,29 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<CreateBookingUseCase>(
     () => CreateBookingUseCase(getIt<bookings_domain.BookingRepository>()),
+  );
+  getIt.registerLazySingleton<WatchMyBookingsUseCase>(
+    () => WatchMyBookingsUseCase(getIt<bookings_domain.BookingRepository>()),
+  );
+  getIt.registerLazySingleton<CancelBookingUseCase>(
+    () => CancelBookingUseCase(getIt<bookings_domain.BookingRepository>()),
+  );
+  getIt.registerLazySingleton<GetBookingByCodeUseCase>(
+    () => GetBookingByCodeUseCase(getIt<bookings_domain.BookingRepository>()),
+  );
+  getIt.registerLazySingleton<CompleteBookingUseCase>(
+    () => CompleteBookingUseCase(getIt<bookings_domain.BookingRepository>()),
+  );
+  getIt.registerLazySingleton<GetAllBookingsUseCase>(
+    () => GetAllBookingsUseCase(getIt<bookings_domain.BookingRepository>()),
+  );
+  getIt.registerLazySingleton<WatchAllBookingsUseCase>(
+    () => WatchAllBookingsUseCase(getIt<bookings_domain.BookingRepository>()),
+  );
+  getIt.registerLazySingleton<UpdateBookingRefundStatusUseCase>(
+    () => UpdateBookingRefundStatusUseCase(
+      getIt<bookings_domain.BookingRepository>(),
+    ),
   );
   getIt.registerLazySingleton<restaurants_ds.RestaurantRemoteDataSource>(
     () => restaurants_ds.RestaurantRemoteDataSource(getIt()),
@@ -322,9 +371,40 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<RestaurantDetailCubit>(
     () => RestaurantDetailCubit(getRestaurantDetails: getIt()),
   );
+  getIt.registerFactory<OrdersCubit>(
+    () => OrdersCubit(
+      getCurrentUser: getIt(),
+      watchMyBookings: getIt(),
+      cancelBooking: getIt(),
+      getAllRestaurants: getIt(),
+      getAllAttractions: getIt(),
+    ),
+  );
+  getIt.registerFactory<OrderQrScannerCubit>(
+    () => OrderQrScannerCubit(
+      getCurrentUser: getIt(),
+      getUserById: getIt(),
+      getBookingByCode: getIt(),
+      completeBooking: getIt(),
+      getRestaurantDetails: getIt(),
+      getOfferById: getIt(),
+    ),
+  );
+  getIt.registerFactory<PaymentScreenCubit>(
+    () => PaymentScreenCubit(
+      getCurrentUser: getIt(),
+      paymentCompletionService: getIt(),
+    ),
+  );
   getIt.registerFactory<ProfileCubit>(
-    () =>
-        ProfileCubit(getUserById: getIt(), updateUser: getIt(), auth: getIt()),
+    () => ProfileCubit(
+      getUserById: getIt(),
+      updateUser: getIt(),
+      getCurrentUser: getIt(),
+      reloadUser: getIt(),
+      signOut: getIt(),
+      deleteAccount: getIt(),
+    ),
   );
   getIt.registerFactory<AdminRestaurantsCubit>(
     () => AdminRestaurantsCubit(
@@ -359,6 +439,14 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerFactory<AdminOrdersCubit>(
     () => AdminOrdersCubit(getAllRestaurants: getIt()),
+  );
+  getIt.registerFactory<AdminOverviewCubit>(
+    () => AdminOverviewCubit(
+      getAllRestaurants: getIt(),
+      getOffers: getIt(),
+      getUsers: getIt(),
+      getAllBookings: getIt(),
+    ),
   );
   getIt.registerLazySingleton<UploadRestaurantImageUseCase>(
     () => UploadRestaurantImageUseCase(getIt()),

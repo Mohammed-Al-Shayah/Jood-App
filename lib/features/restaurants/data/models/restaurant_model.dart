@@ -32,6 +32,8 @@ class RestaurantModel extends RestaurantEntity {
     super.slotsLeft,
     super.priceFromValue,
     super.discountValue,
+    super.supportsBuffet,
+    super.supportsSetMenu,
   });
 
   factory RestaurantModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -45,6 +47,7 @@ class RestaurantModel extends RestaurantEntity {
   }) {
     final geo = (data['geo'] as Map?) ?? {};
     final openHours = (data['openHours'] as Map?) ?? {};
+    final bookingCatalog = _asMap(data['bookingCatalog']);
     return RestaurantModel(
       id: id,
       name: data['name'] as String? ?? '',
@@ -73,6 +76,8 @@ class RestaurantModel extends RestaurantEntity {
       slotsLeft: _stringValue(data['slotsLeft']),
       priceFromValue: NumberUtils.toDouble(data['priceFromValue']),
       discountValue: NumberUtils.toDouble(data['discountValue']),
+      supportsBuffet: _supportsCategory(bookingCatalog, 'buffet'),
+      supportsSetMenu: _supportsCategory(bookingCatalog, 'set_menu'),
     );
   }
 
@@ -117,6 +122,51 @@ class RestaurantModel extends RestaurantEntity {
   static String _stringValue(dynamic value) {
     if (value == null) return '';
     return value.toString();
+  }
+
+  static Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map((key, item) => MapEntry(key.toString(), item));
+    }
+    return const <String, dynamic>{};
+  }
+
+  static bool _supportsCategory(
+    Map<String, dynamic> bookingCatalog,
+    String category,
+  ) {
+    final supported = _normalizedStringList(
+      bookingCatalog['supportedCategories'],
+    );
+
+    if (category == 'buffet') {
+      if (supported.isEmpty) return true;
+      return supported.contains('buffet');
+    }
+
+    if (category == 'set_menu') {
+      final setMenuConfig = _asMap(bookingCatalog['setMenu']);
+      if (supported.contains('set_menu') || supported.contains('setmenu')) {
+        return true;
+      }
+      if (setMenuConfig.isNotEmpty) {
+        return setMenuConfig['enabled'] as bool? ?? true;
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  static List<String> _normalizedStringList(dynamic value) {
+    if (value is! List) return const [];
+    return value
+        .map(
+          (item) => item.toString().trim().toLowerCase().replaceAll(' ', '_'),
+        )
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
   }
 
   // Number parsing moved to NumberUtils

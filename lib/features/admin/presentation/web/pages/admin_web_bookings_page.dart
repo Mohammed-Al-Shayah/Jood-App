@@ -1,15 +1,15 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 
+import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
-import 'package:jood/features/bookings/data/models/booking_model.dart';
 import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
+import 'package:jood/features/bookings/domain/usecases/watch_all_bookings_usecase.dart';
 
 class AdminWebBookingsPage extends StatefulWidget {
   const AdminWebBookingsPage({super.key, this.initialRequest});
@@ -145,12 +145,9 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final stream = FirebaseFirestore.instance
-        .collection('bookings')
-        .orderBy('createdAt', descending: true)
-        .snapshots();
+    final stream = getIt<WatchAllBookingsUseCase>()();
 
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<List<BookingEntity>>(
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -165,9 +162,7 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
           );
         }
 
-        final bookings = (snapshot.data?.docs ?? const [])
-            .map(BookingModel.fromDoc)
-            .toList(growable: false);
+        final bookings = snapshot.data ?? const <BookingEntity>[];
         final timeFilteredItems = _applyTimeFilter(bookings);
         final venueOptions =
             timeFilteredItems
