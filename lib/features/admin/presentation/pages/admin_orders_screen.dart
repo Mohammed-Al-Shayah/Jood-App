@@ -12,7 +12,7 @@ import 'package:jood/features/admin/presentation/cubit/admin_orders_cubit.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_orders_state.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
-import 'package:jood/features/bookings/presentation/models/order_item_view_model.dart';
+import 'package:jood/features/bookings/data/models/order_item_view_model.dart';
 import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
 
 class AdminOrdersScreen extends StatelessWidget {
@@ -30,9 +30,7 @@ class AdminOrdersScreen extends StatelessWidget {
               children: [
                 _FiltersCard(state: state),
                 SizedBox(height: 12.h),
-                Expanded(
-                  child: _OrdersList(state: state),
-                ),
+                Expanded(child: _OrdersList(state: state)),
               ],
             ),
           );
@@ -116,7 +114,8 @@ class _FiltersCard extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () async {
                   final now = DateTime.now();
-                  final initial = state.dateRange ??
+                  final initial =
+                      state.dateRange ??
                       DateTimeRange(
                         start: DateTime(now.year, now.month, now.day - 7),
                         end: DateTime(now.year, now.month, now.day),
@@ -227,10 +226,7 @@ class _OrdersList extends StatelessWidget {
 
         if (orders.isEmpty) {
           return Center(
-            child: Text(
-              'No orders found.',
-              style: AppTextStyles.cardMeta,
-            ),
+            child: Text('No orders found.', style: AppTextStyles.cardMeta),
           );
         }
 
@@ -250,8 +246,7 @@ class _OrdersList extends StatelessWidget {
                 children: [
                   for (var i = 0; i < group.orders.length; i++) ...[
                     _OrderTile(order: group.orders[i]),
-                    if (i != group.orders.length - 1)
-                      SizedBox(height: 10.h),
+                    if (i != group.orders.length - 1) SizedBox(height: 10.h),
                   ],
                 ],
               ),
@@ -288,7 +283,11 @@ class _OrdersList extends StatelessWidget {
   }
 
   bool _isOutsideRange(DateTime date, DateTimeRange range) {
-    final start = DateTime(range.start.year, range.start.month, range.start.day);
+    final start = DateTime(
+      range.start.year,
+      range.start.month,
+      range.start.day,
+    );
     final end = DateTime(range.end.year, range.end.month, range.end.day);
     return date.isBefore(start) || date.isAfter(end);
   }
@@ -303,7 +302,7 @@ class _OrdersList extends StatelessWidget {
       final name = order.restaurantNameSnapshot.isNotEmpty
           ? order.restaurantNameSnapshot
           : restaurantNames[restaurantId] ??
-              (restaurantId.isNotEmpty ? restaurantId : 'Restaurant');
+                (restaurantId.isNotEmpty ? restaurantId : 'Restaurant');
       final key = restaurantId.isNotEmpty ? restaurantId : name;
       groups.putIfAbsent(key, () => _OrderGroup(restaurantName: name));
       groups[key]!.orders.add(order);
