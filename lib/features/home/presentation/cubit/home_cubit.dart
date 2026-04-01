@@ -1,60 +1,38 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/number_utils.dart';
+import '../../../auth/domain/usecases/get_current_user_usecase.dart';
 import '../../../booking_catalog/domain/entities/catalog_category_type.dart';
 import '../../../booking_catalog/domain/entities/catalog_item_entity.dart';
 import '../../../booking_catalog/domain/usecases/get_catalog_items_usecase.dart';
+import '../../../booking_catalog/domain/usecases/watch_catalog_changes_usecase.dart';
 import '../../../users/domain/usecases/get_user_by_id_usecase.dart';
 import 'home_state.dart';
-import '../../../../core/utils/number_utils.dart';
 
 class HomeCubit extends Cubit<HomeState> {
   HomeCubit({
     required GetCatalogItemsUseCase getCatalogItems,
+    required WatchCatalogChangesUseCase watchCatalogChanges,
     required GetUserByIdUseCase getUserById,
-    required FirebaseAuth auth,
-    required FirebaseFirestore firestore,
+    required GetCurrentUserUseCase getCurrentUser,
   }) : _getCatalogItems = getCatalogItems,
+       _watchCatalogChanges = watchCatalogChanges,
        _getUserById = getUserById,
-       _auth = auth,
-       _firestore = firestore,
+       _getCurrentUser = getCurrentUser,
        super(const HomeState());
 
   final GetCatalogItemsUseCase _getCatalogItems;
+  final WatchCatalogChangesUseCase _watchCatalogChanges;
   final GetUserByIdUseCase _getUserById;
-  final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _restaurantsSub;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _attractionsSub;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _offersSub;
+  final GetCurrentUserUseCase _getCurrentUser;
+  StreamSubscription<void>? _catalogChangesSubscription;
   bool _isFetchingRestaurants = false;
 
   void startListening() {
-    _restaurantsSub?.cancel();
-    _attractionsSub?.cancel();
-    _offersSub?.cancel();
-    _restaurantsSub = _firestore
-        .collection('restaurants')
-        .snapshots()
-        .skip(1)
-        .listen((_) {
-          if (isClosed) return;
-          unawaited(fetchHomeItems(showLoading: false, shuffleResults: false));
-        });
-    _attractionsSub = _firestore
-        .collection('attractions')
-        .snapshots()
-        .skip(1)
-        .listen((_) {
-          if (isClosed) return;
-          unawaited(fetchHomeItems(showLoading: false, shuffleResults: false));
-        });
-    _offersSub = _firestore.collection('offers').snapshots().skip(1).listen((
-      _,
-    ) {
+    _catalogChangesSubscription?.cancel();
+    _catalogChangesSubscription = _watchCatalogChanges().listen((_) {
       if (isClosed) return;
       unawaited(fetchHomeItems(showLoading: false, shuffleResults: false));
     });
@@ -121,7 +99,7 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   Future<void> fetchUserLocation() async {
-    final user = _auth.currentUser;
+    final user = _getCurrentUser();
     if (user == null || isClosed) return;
     try {
       final profile = await _getUserById(user.uid);
@@ -331,9 +309,7 @@ class HomeCubit extends Cubit<HomeState> {
 
   @override
   Future<void> close() async {
-    await _restaurantsSub?.cancel();
-    await _attractionsSub?.cancel();
-    await _offersSub?.cancel();
+    await _catalogChangesSubscription?.cancel();
     await super.close();
   }
 }

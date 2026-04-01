@@ -12,4 +12,9 @@ class CatalogRepositoryImpl implements CatalogRepository {
   Future<List<CatalogItemEntity>> getItems(CatalogCategoryType category) {
     return remoteDataSource.getItems(category);
   }
+
+  @override
+  Stream<void> watchCatalogChanges() {
+    return remoteDataSource.watchCatalogChanges();
+  }
 }

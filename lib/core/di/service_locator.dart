@@ -15,6 +15,7 @@ import '../../features/booking_catalog/data/datasources/catalog_remote_data_sour
 import '../../features/booking_catalog/data/repositories/catalog_repository_impl.dart';
 import '../../features/booking_catalog/domain/repositories/catalog_repository.dart';
 import '../../features/booking_catalog/domain/usecases/get_catalog_items_usecase.dart';
+import '../../features/booking_catalog/domain/usecases/watch_catalog_changes_usecase.dart';
 import '../../features/booking_catalog/presentation/cubit/catalog_list_cubit.dart';
 import '../../features/offers/data/datasources/offer_remote_data_source.dart';
 import '../../features/offers/data/repositories/offer_repository_impl.dart';
@@ -43,6 +44,7 @@ import '../../features/auth/domain/usecases/send_password_reset_email_usecase.da
 import '../../features/auth/domain/usecases/send_phone_otp_usecase.dart';
 import '../../features/auth/domain/usecases/sign_out_usecase.dart';
 import '../../features/auth/domain/usecases/update_password_usecase.dart';
+import '../../features/auth/domain/usecases/verify_before_update_email_usecase.dart';
 import '../../features/auth/domain/usecases/verify_otp_usecase.dart';
 import '../../features/users/data/datasources/user_remote_data_source.dart';
 import '../../features/users/data/repositories/user_repository_impl.dart';
@@ -129,9 +131,9 @@ Future<void> setupServiceLocator() async {
   getIt.registerFactory<HomeCubit>(
     () => HomeCubit(
       getCatalogItems: getIt(),
+      watchCatalogChanges: getIt(),
       getUserById: getIt(),
-      auth: getIt(),
-      firestore: getIt(),
+      getCurrentUser: getIt(),
     ),
   );
   getIt.registerLazySingleton<CatalogRemoteDataSource>(
@@ -142,6 +144,9 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<GetCatalogItemsUseCase>(
     () => GetCatalogItemsUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<WatchCatalogChangesUseCase>(
+    () => WatchCatalogChangesUseCase(getIt()),
   );
   getIt.registerFactory<CatalogListCubit>(
     () => CatalogListCubit(getCatalogItems: getIt()),
@@ -213,6 +218,9 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<UpdatePasswordUseCase>(
     () => UpdatePasswordUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<VerifyBeforeUpdateEmailUseCase>(
+    () => VerifyBeforeUpdateEmailUseCase(getIt()),
   );
   getIt.registerFactory<LoginCubit>(
     () => LoginCubit(

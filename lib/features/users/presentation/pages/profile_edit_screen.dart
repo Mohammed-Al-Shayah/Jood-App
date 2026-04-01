@@ -82,7 +82,10 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         getUserByPhone: getIt(),
         sendPhoneOtp: getIt(),
         verifyOtp: getIt(),
-        auth: getIt(),
+        getCurrentUser: getIt(),
+        reloadUser: getIt(),
+        signOut: getIt(),
+        verifyBeforeUpdateEmail: getIt(),
         user: widget.user,
       ),
       child: Scaffold(

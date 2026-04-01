@@ -6,7 +6,11 @@ import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jood/core/errors/auth_error_mapper.dart';
 import 'package:jood/core/utils/auth_validators.dart';
 import 'package:jood/features/auth/domain/entities/otp_mode.dart';
+import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
+import 'package:jood/features/auth/domain/usecases/reload_user_usecase.dart';
 import 'package:jood/features/auth/domain/usecases/send_phone_otp_usecase.dart';
+import 'package:jood/features/auth/domain/usecases/sign_out_usecase.dart';
+import 'package:jood/features/auth/domain/usecases/verify_before_update_email_usecase.dart';
 import 'package:jood/features/auth/domain/usecases/verify_otp_usecase.dart';
 
 import '../../domain/entities/user_entity.dart';
@@ -20,13 +24,19 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
     required GetUserByPhoneUseCase getUserByPhone,
     required SendPhoneOtpUseCase sendPhoneOtp,
     required VerifyOtpUseCase verifyOtp,
-    required FirebaseAuth auth,
+    required GetCurrentUserUseCase getCurrentUser,
+    required ReloadUserUseCase reloadUser,
+    required SignOutUseCase signOut,
+    required VerifyBeforeUpdateEmailUseCase verifyBeforeUpdateEmail,
     required UserEntity user,
   }) : _updateUser = updateUser,
        _getUserByPhone = getUserByPhone,
        _sendPhoneOtpUseCase = sendPhoneOtp,
        _verifyOtp = verifyOtp,
-       _auth = auth,
+       _getCurrentUser = getCurrentUser,
+       _reloadUser = reloadUser,
+       _signOut = signOut,
+       _verifyBeforeUpdateEmail = verifyBeforeUpdateEmail,
        _user = user,
        super(
          ProfileEditState.initial(
@@ -44,7 +54,10 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
   final GetUserByPhoneUseCase _getUserByPhone;
   final SendPhoneOtpUseCase _sendPhoneOtpUseCase;
   final VerifyOtpUseCase _verifyOtp;
-  final FirebaseAuth _auth;
+  final GetCurrentUserUseCase _getCurrentUser;
+  final ReloadUserUseCase _reloadUser;
+  final SignOutUseCase _signOut;
+  final VerifyBeforeUpdateEmailUseCase _verifyBeforeUpdateEmail;
   final UserEntity _user;
   Timer? _timer;
 
@@ -90,7 +103,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
       ),
     );
     try {
-      final current = _auth.currentUser;
+      final current = _getCurrentUser();
       if (current == null) {
         emit(
           state.copyWith(
@@ -129,7 +142,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
       );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        await _auth.signOut();
+        await _signOut();
       }
       emit(
         state.copyWith(
@@ -191,7 +204,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
     }
     emit(state.copyWith(status: ProfileEditStatus.otpVerifying));
     try {
-      final current = _auth.currentUser;
+      final current = _getCurrentUser();
       if (current == null) {
         emit(
           state.copyWith(
@@ -207,8 +220,8 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         smsCode: state.otpCode.trim(),
         mode: OtpMode.updatePhone,
       );
-      await current.reload();
-      final refreshed = _auth.currentUser;
+      await _reloadUser(current);
+      final refreshed = _getCurrentUser();
       if (refreshed == null) {
         emit(
           state.copyWith(
@@ -302,8 +315,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
     final newEmail = state.email.trim();
     final emailChanged = newEmail.isNotEmpty && newEmail != _user.email.trim();
     if (emailChanged) {
-      // Require inbox confirmation before applying email change.
-      await current.verifyBeforeUpdateEmail(newEmail);
+      await _verifyBeforeUpdateEmail(user: current, newEmail: newEmail);
     }
     final authEmail = current.email?.trim() ?? '';
     final persistedEmail = emailChanged

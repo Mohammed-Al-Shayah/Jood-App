@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/utils/date_utils.dart';
@@ -9,6 +11,49 @@ class CatalogRemoteDataSource {
   CatalogRemoteDataSource(this.firestore);
 
   final FirebaseFirestore firestore;
+
+  Stream<void> watchCatalogChanges() {
+    late final StreamController<void> controller;
+    late final StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
+    restaurantsSubscription;
+    late final StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
+    attractionsSubscription;
+    late final StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
+    offersSubscription;
+
+    controller = StreamController<void>(
+      onListen: () {
+        void emitChange(QuerySnapshot<Map<String, dynamic>> _) {
+          if (!controller.isClosed) {
+            controller.add(null);
+          }
+        }
+
+        restaurantsSubscription = firestore
+            .collection('restaurants')
+            .snapshots()
+            .skip(1)
+            .listen(emitChange, onError: (_, _) {});
+        attractionsSubscription = firestore
+            .collection('attractions')
+            .snapshots()
+            .skip(1)
+            .listen(emitChange, onError: (_, _) {});
+        offersSubscription = firestore
+            .collection('offers')
+            .snapshots()
+            .skip(1)
+            .listen(emitChange, onError: (_, _) {});
+      },
+      onCancel: () async {
+        await restaurantsSubscription.cancel();
+        await attractionsSubscription.cancel();
+        await offersSubscription.cancel();
+      },
+    );
+
+    return controller.stream;
+  }
 
   Future<List<CatalogItemModel>> getItems(CatalogCategoryType category) async {
     final offersByVenue = await _loadUpcomingOffers();
