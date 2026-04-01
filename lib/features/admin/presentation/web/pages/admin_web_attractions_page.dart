@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -14,13 +13,7 @@ import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_ca
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_attraction_form_content.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
-import 'package:jood/features/attractions/data/datasources/attraction_remote_data_source.dart';
-import 'package:jood/features/attractions/data/repositories/attraction_repository_impl.dart';
 import 'package:jood/features/attractions/domain/entities/attraction_entity.dart';
-import 'package:jood/features/attractions/domain/usecases/create_attraction_usecase.dart';
-import 'package:jood/features/attractions/domain/usecases/delete_attraction_usecase.dart';
-import 'package:jood/features/attractions/domain/usecases/get_all_attractions_usecase.dart';
-import 'package:jood/features/attractions/domain/usecases/update_attraction_usecase.dart';
 
 class AdminWebAttractionsPage extends StatefulWidget {
   const AdminWebAttractionsPage({super.key});
@@ -42,7 +35,7 @@ class _AdminWebAttractionsPageState extends State<AdminWebAttractionsPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = _resolveAdminAttractionsCubit()..load();
+    _cubit = getIt<AdminAttractionsCubit>()..load();
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -320,22 +313,6 @@ class _AdminWebAttractionsPageState extends State<AdminWebAttractionsPage> {
 enum _AttractionsView { list, create, edit }
 
 enum _AttractionsSort { nameAsc, nameDesc, cityAsc, ratingHigh, ratingLow }
-
-AdminAttractionsCubit _resolveAdminAttractionsCubit() {
-  if (getIt.isRegistered<AdminAttractionsCubit>()) {
-    return getIt<AdminAttractionsCubit>();
-  }
-  final remoteDataSource = AttractionRemoteDataSource(
-    FirebaseFirestore.instance,
-  );
-  final repository = AttractionRepositoryImpl(remoteDataSource);
-  return AdminAttractionsCubit(
-    getAllAttractions: GetAllAttractionsUseCase(repository),
-    createAttraction: CreateAttractionUseCase(repository),
-    updateAttraction: UpdateAttractionUseCase(repository),
-    deleteAttraction: DeleteAttractionUseCase(repository),
-  );
-}
 
 class _AttractionFormView extends StatelessWidget {
   const _AttractionFormView({

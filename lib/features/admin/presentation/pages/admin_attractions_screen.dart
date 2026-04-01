@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -13,13 +12,7 @@ import 'package:jood/features/admin/presentation/cubit/admin_attractions_state.d
 import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_list_tile.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
-import 'package:jood/features/attractions/data/datasources/attraction_remote_data_source.dart';
-import 'package:jood/features/attractions/data/repositories/attraction_repository_impl.dart';
 import 'package:jood/features/attractions/domain/entities/attraction_entity.dart';
-import 'package:jood/features/attractions/domain/usecases/create_attraction_usecase.dart';
-import 'package:jood/features/attractions/domain/usecases/delete_attraction_usecase.dart';
-import 'package:jood/features/attractions/domain/usecases/get_all_attractions_usecase.dart';
-import 'package:jood/features/attractions/domain/usecases/update_attraction_usecase.dart';
 
 class AdminAttractionsScreen extends StatelessWidget {
   const AdminAttractionsScreen({super.key});
@@ -27,7 +20,7 @@ class AdminAttractionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => _resolveAdminAttractionsCubit()..load(),
+      create: (_) => getIt<AdminAttractionsCubit>()..load(),
       child: Builder(
         builder: (context) {
           return AdminShell(
@@ -213,20 +206,4 @@ class AdminAttractionFormArgs {
   const AdminAttractionFormArgs({this.attraction});
 
   final AttractionEntity? attraction;
-}
-
-AdminAttractionsCubit _resolveAdminAttractionsCubit() {
-  if (getIt.isRegistered<AdminAttractionsCubit>()) {
-    return getIt<AdminAttractionsCubit>();
-  }
-  final remoteDataSource = AttractionRemoteDataSource(
-    FirebaseFirestore.instance,
-  );
-  final repository = AttractionRepositoryImpl(remoteDataSource);
-  return AdminAttractionsCubit(
-    getAllAttractions: GetAllAttractionsUseCase(repository),
-    createAttraction: CreateAttractionUseCase(repository),
-    updateAttraction: UpdateAttractionUseCase(repository),
-    deleteAttraction: DeleteAttractionUseCase(repository),
-  );
 }
