@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../domain/entities/booking_entity.dart';
 import '../../../../core/utils/number_utils.dart';
+import '../../domain/entities/booking_entity.dart';
 
 class BookingModel extends BookingEntity {
   const BookingModel({
@@ -32,6 +32,9 @@ class BookingModel extends BookingEntity {
     super.bookableType,
     super.coverImageUrlSnapshot,
     super.refundStatus,
+    super.cancelledAt,
+    super.cancelledBy,
+    super.cancelledByRole,
   });
 
   factory BookingModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -64,10 +67,11 @@ class BookingModel extends BookingEntity {
       bookableType: data['bookableType'] as String?,
       coverImageUrlSnapshot: data['coverImageUrlSnapshot'] as String?,
       refundStatus: data['refundStatus'] as String?,
+      cancelledAt: _toDateTimeNullable(data['cancelledAt']),
+      cancelledBy: data['cancelledBy'] as String?,
+      cancelledByRole: data['cancelledByRole'] as String?,
     );
   }
-
-  // Number parsing moved to NumberUtils
 
   static DateTime _toDateTime(dynamic value) {
     if (value is Timestamp) return value.toDate();

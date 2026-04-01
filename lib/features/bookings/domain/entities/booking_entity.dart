@@ -29,6 +29,9 @@ class BookingEntity extends Equatable {
     this.bookableType,
     this.coverImageUrlSnapshot,
     this.refundStatus,
+    this.cancelledAt,
+    this.cancelledBy,
+    this.cancelledByRole,
   });
 
   final String id;
@@ -58,6 +61,9 @@ class BookingEntity extends Equatable {
   final String? bookableType;
   final String? coverImageUrlSnapshot;
   final String? refundStatus;
+  final DateTime? cancelledAt;
+  final String? cancelledBy;
+  final String? cancelledByRole;
 
   @override
   List<Object?> get props => [
@@ -88,5 +94,8 @@ class BookingEntity extends Equatable {
     bookableType,
     coverImageUrlSnapshot,
     refundStatus,
+    cancelledAt,
+    cancelledBy,
+    cancelledByRole,
   ];
 }

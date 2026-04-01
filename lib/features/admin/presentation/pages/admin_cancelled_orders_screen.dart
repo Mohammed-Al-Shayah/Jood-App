@@ -1,26 +1,28 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
+import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
+import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
+import 'package:jood/features/bookings/domain/usecases/update_booking_refund_status_usecase.dart';
+import 'package:jood/features/bookings/domain/usecases/watch_all_bookings_usecase.dart';
+import 'package:jood/features/users/domain/entities/user_entity.dart';
+import 'package:jood/features/users/domain/usecases/get_user_by_id_usecase.dart';
 
 class AdminCancelledOrdersScreen extends StatelessWidget {
   const AdminCancelledOrdersScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final stream = FirebaseFirestore.instance
-        .collection('bookings')
-        .where('status', whereIn: const ['cancelled', 'canceled'])
-        .snapshots();
+    final stream = getIt<WatchAllBookingsUseCase>()();
 
     return AdminShell(
       title: 'Cancelled Orders',
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      body: StreamBuilder<List<BookingEntity>>(
         stream: stream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -32,15 +34,17 @@ class AdminCancelledOrdersScreen extends StatelessWidget {
             );
           }
 
-          final docs = (snapshot.data?.docs ?? const []).toList()
-            ..sort((a, b) {
-              final aTime = (a.data()['cancelledAt'] as Timestamp?)?.toDate();
-              final bTime = (b.data()['cancelledAt'] as Timestamp?)?.toDate();
-              if (aTime == null && bTime == null) return 0;
-              if (aTime == null) return 1;
-              if (bTime == null) return -1;
-              return bTime.compareTo(aTime);
-            });
+          final docs =
+              List<BookingEntity>.from(
+                (snapshot.data ?? const <BookingEntity>[]).where((booking) {
+                  final status = booking.status.trim().toLowerCase();
+                  return status == 'cancelled' || status == 'canceled';
+                }),
+              )..sort((a, b) {
+                final aTime = a.cancelledAt ?? a.createdAt;
+                final bTime = b.cancelledAt ?? b.createdAt;
+                return bTime.compareTo(aTime);
+              });
           if (docs.isEmpty) {
             return const Center(child: Text('No cancelled orders yet.'));
           }
@@ -49,23 +53,28 @@ class AdminCancelledOrdersScreen extends StatelessWidget {
             itemCount: docs.length,
             separatorBuilder: (_, _) => SizedBox(height: 12.h),
             itemBuilder: (context, index) {
-              final doc = docs[index];
-              final data = doc.data();
+              final booking = docs[index];
+              final restaurantName =
+                  (booking.restaurantNameSnapshot ?? '').trim().isNotEmpty
+                  ? booking.restaurantNameSnapshot!.trim()
+                  : booking.restaurantId;
               return _CancelledOrderCard(
-                bookingId: doc.id,
-                restaurantName:
-                    (data['restaurantNameSnapshot'] as String?)?.trim() ??
-                    (data['restaurantId'] as String? ?? 'Restaurant'),
-                bookingCode: (data['bookingCode'] as String?) ?? '',
-                date: (data['date'] as String?) ?? '',
-                startTime: (data['startTime'] as String?) ?? '',
-                total: (data['total'] as num?)?.toDouble() ?? 0,
-                currency: (data['currency'] as String?) ?? 'USD',
-                userId: (data['userId'] as String?) ?? '',
-                cancelledBy: (data['cancelledBy'] as String?) ?? '-',
-                cancelledByRole: (data['cancelledByRole'] as String?) ?? '',
-                cancelledAt: data['cancelledAt'] as Timestamp?,
-                refundStatus: (data['refundStatus'] as String?) ?? 'pending',
+                bookingId: booking.id,
+                restaurantName: restaurantName.isEmpty
+                    ? 'Restaurant'
+                    : restaurantName,
+                bookingCode: booking.bookingCode,
+                date: booking.date,
+                startTime: booking.startTime,
+                total: booking.total,
+                currency: booking.currency,
+                userId: booking.userId,
+                cancelledBy: (booking.cancelledBy ?? '').trim().isEmpty
+                    ? '-'
+                    : booking.cancelledBy!.trim(),
+                cancelledByRole: (booking.cancelledByRole ?? '').trim(),
+                cancelledAt: booking.cancelledAt,
+                refundStatus: (booking.refundStatus ?? 'pending').trim(),
               );
             },
           );
@@ -101,12 +110,12 @@ class _CancelledOrderCard extends StatelessWidget {
   final String userId;
   final String cancelledBy;
   final String cancelledByRole;
-  final Timestamp? cancelledAt;
+  final DateTime? cancelledAt;
   final String refundStatus;
 
-  String _formatTimestamp(Timestamp? timestamp) {
+  String _formatTimestamp(DateTime? timestamp) {
     if (timestamp == null) return '-';
-    return DateFormat('MMM d, yyyy • h:mm a').format(timestamp.toDate());
+    return DateFormat('MMM d, yyyy - h:mm a').format(timestamp);
   }
 
   String _refundLabel(String status) {
@@ -123,29 +132,15 @@ class _CancelledOrderCard extends StatelessWidget {
   bool _isRefunded(String status) => status.toLowerCase() == 'refunded';
   bool _isChecked(String status) => status.toLowerCase() == 'checked';
 
-  Future<void> _updateRefundStatus(
-    BuildContext context,
-    String status,
-  ) async {
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'admin';
+  Future<void> _updateRefundStatus(BuildContext context, String status) async {
+    final currentUser = getIt<GetCurrentUserUseCase>()();
+    final userId = currentUser?.uid ?? 'admin';
     try {
-      final payload = <String, dynamic>{
-        'refundStatus': status,
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
-      if (status == 'checked') {
-        payload['refundCheckedAt'] = FieldValue.serverTimestamp();
-        payload['refundCheckedBy'] = userId;
-      }
-      if (status == 'refunded') {
-        payload['refundedAt'] = FieldValue.serverTimestamp();
-        payload['refundedBy'] = userId;
-      }
-
-      await FirebaseFirestore.instance
-          .collection('bookings')
-          .doc(bookingId)
-          .set(payload, SetOptions(merge: true));
+      await getIt<UpdateBookingRefundStatusUseCase>()(
+        bookingId: bookingId,
+        status: status,
+        actorUserId: userId,
+      );
 
       if (context.mounted) {
         showAppSnackBar(
@@ -154,7 +149,7 @@ class _CancelledOrderCard extends StatelessWidget {
           type: SnackBarType.success,
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (context.mounted) {
         showAppSnackBar(
           context,
@@ -168,11 +163,12 @@ class _CancelledOrderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final refundLabel = _refundLabel(refundStatus);
-    final disabledChecked = _isChecked(refundStatus) || _isRefunded(refundStatus);
+    final disabledChecked =
+        _isChecked(refundStatus) || _isRefunded(refundStatus);
     final disabledRefunded = _isRefunded(refundStatus);
     final userFuture = userId.trim().isEmpty
         ? null
-        : FirebaseFirestore.instance.collection('users').doc(userId).get();
+        : getIt<GetUserByIdUseCase>()(userId);
 
     return Container(
       padding: EdgeInsets.all(14.w),
@@ -181,7 +177,7 @@ class _CancelledOrderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadowColor.withOpacity(0.12),
+            color: AppColors.shadowColor.withValues(alpha: 0.12),
             blurRadius: 12.r,
             offset: const Offset(0, 6),
           ),
@@ -208,14 +204,11 @@ class _CancelledOrderCard extends StatelessWidget {
           if (userFuture == null)
             Text('Customer: -', style: AppTextStyles.cardMeta)
           else
-            FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            FutureBuilder<UserEntity?>(
               future: userFuture,
               builder: (context, snapshot) {
-                final data = snapshot.data?.data();
-                final fullName = (data?['fullName'] as String?)?.trim();
-                final displayName = (fullName != null && fullName.isNotEmpty)
-                    ? fullName
-                    : userId;
+                final fullName = (snapshot.data?.fullName ?? '').trim();
+                final displayName = fullName.isNotEmpty ? fullName : userId;
                 return Text(
                   'Customer: $displayName',
                   style: AppTextStyles.cardMeta,

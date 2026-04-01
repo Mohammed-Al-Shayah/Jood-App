@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -12,7 +11,8 @@ import 'package:jood/features/admin/presentation/cubit/admin_orders_cubit.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_orders_state.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
-import 'package:jood/features/bookings/data/models/order_item_view_model.dart';
+import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
+import 'package:jood/features/bookings/domain/usecases/watch_all_bookings_usecase.dart';
 import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
 
 class AdminOrdersScreen extends StatelessWidget {
@@ -197,12 +197,9 @@ class _OrdersList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stream = FirebaseFirestore.instance
-        .collection('bookings')
-        .orderBy('createdAt', descending: true)
-        .snapshots();
+    final stream = getIt<WatchAllBookingsUseCase>()();
 
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+    return StreamBuilder<List<BookingEntity>>(
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -218,11 +215,9 @@ class _OrdersList extends StatelessWidget {
           );
         }
 
-        final docs = snapshot.data?.docs ?? const [];
-        final orders = docs
-            .map(OrderItemViewModel.fromDoc)
+        final orders = (snapshot.data ?? const <BookingEntity>[])
             .where((order) => _matchesFilters(order, state))
-            .toList();
+            .toList(growable: false);
 
         if (orders.isEmpty) {
           return Center(
@@ -257,7 +252,7 @@ class _OrdersList extends StatelessWidget {
     );
   }
 
-  bool _matchesFilters(OrderItemViewModel order, AdminOrdersState state) {
+  bool _matchesFilters(BookingEntity order, AdminOrdersState state) {
     final selectedRestaurant = state.selectedRestaurantId.trim();
     if (selectedRestaurant.isNotEmpty &&
         order.restaurantId != selectedRestaurant) {
@@ -270,16 +265,18 @@ class _OrdersList extends StatelessWidget {
     return !_isOutsideRange(bookingDate, range);
   }
 
-  DateTime? _parseOrderDate(OrderItemViewModel order) {
+  DateTime? _parseOrderDate(BookingEntity order) {
     if (order.date.trim().isNotEmpty) {
       final parsed = DateTime.tryParse(order.date.trim());
       if (parsed != null) {
         return DateTime(parsed.year, parsed.month, parsed.day);
       }
     }
-    final created = order.createdAt?.toDate();
-    if (created == null) return null;
-    return DateTime(created.year, created.month, created.day);
+    return DateTime(
+      order.createdAt.year,
+      order.createdAt.month,
+      order.createdAt.day,
+    );
   }
 
   bool _isOutsideRange(DateTime date, DateTimeRange range) {
@@ -293,14 +290,15 @@ class _OrdersList extends StatelessWidget {
   }
 
   List<_OrderGroup> _groupOrders(
-    List<OrderItemViewModel> orders,
+    List<BookingEntity> orders,
     Map<String, String> restaurantNames,
   ) {
     final Map<String, _OrderGroup> groups = {};
     for (final order in orders) {
       final restaurantId = order.restaurantId.trim();
-      final name = order.restaurantNameSnapshot.isNotEmpty
-          ? order.restaurantNameSnapshot
+      final snapshotName = (order.restaurantNameSnapshot ?? '').trim();
+      final name = snapshotName.isNotEmpty
+          ? snapshotName
           : restaurantNames[restaurantId] ??
                 (restaurantId.isNotEmpty ? restaurantId : 'Restaurant');
       final key = restaurantId.isNotEmpty ? restaurantId : name;
@@ -315,7 +313,7 @@ class _OrdersList extends StatelessWidget {
 class _OrderTile extends StatelessWidget {
   const _OrderTile({required this.order});
 
-  final OrderItemViewModel order;
+  final BookingEntity order;
 
   Color _statusColor(String status) {
     final normalized = status.toLowerCase();
@@ -338,16 +336,13 @@ class _OrderTile extends StatelessWidget {
     if (order.date.trim().isNotEmpty) {
       return order.date.toFormattedDate();
     }
-    final createdAt = order.createdAt;
-    if (createdAt != null) {
-      return DateFormat('yyyy-MM-dd').format(createdAt.toDate());
-    }
-    return '-';
+    return DateFormat('yyyy-MM-dd').format(order.createdAt);
   }
 
   @override
   Widget build(BuildContext context) {
     final badgeColor = _statusColor(order.status);
+    final offerTitle = (order.offerTitleSnapshot ?? '').trim();
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
       decoration: BoxDecoration(
@@ -373,10 +368,10 @@ class _OrderTile extends StatelessWidget {
                   '${_displayDate()}  ${order.startTime}',
                   style: AppTextStyles.cardMeta,
                 ),
-                if (order.offerTitleSnapshot.isNotEmpty) ...[
+                if (offerTitle.isNotEmpty) ...[
                   SizedBox(height: 4.h),
                   Text(
-                    order.offerTitleSnapshot,
+                    offerTitle,
                     style: AppTextStyles.cardMeta.copyWith(
                       color: AppColors.textMuted,
                     ),
@@ -420,5 +415,5 @@ class _OrderGroup {
   _OrderGroup({required this.restaurantName}) : orders = [];
 
   final String restaurantName;
-  final List<OrderItemViewModel> orders;
+  final List<BookingEntity> orders;
 }
