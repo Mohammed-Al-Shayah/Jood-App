@@ -1,4 +1,6 @@
-import '../../../../core/utils/payment_amount_utils.dart';
+import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
+
 import '../../../offers/domain/entities/offer_entity.dart';
 import '../../domain/entities/catalog_category_type.dart';
 import '../../domain/entities/catalog_item_entity.dart';
@@ -36,8 +38,9 @@ List<CatalogBookingOption> buildMealOptions(
           ? ''
           : '${offer.startTime}${offer.endTime.trim().isEmpty ? '' : ' - ${offer.endTime}'}',
       primaryPriceLabel: formatCurrency(offer.currency, offer.priceAdult),
-      secondaryPriceLabel:
-          'Child ${formatCurrency(offer.currency, offer.priceChild)}',
+      secondaryPriceLabel: AppStrings.childPrice(
+        formatCurrency(offer.currency, offer.priceChild),
+      ),
       statusLabel: offerStatusLabel(offer),
       offerIndex: selectedEntry.key,
       isEnabled: enabled,
@@ -81,15 +84,15 @@ List<CatalogBookingOption> buildTimeSlotOptions(List<OfferEntity> offers) {
       key: entry.key,
       label: timeSlotLabel(reference),
       subtitle: availableOffers.isEmpty
-          ? 'All packages are currently unavailable.'
-          : 'From ${formatCurrency(reference.currency, minAdult)}',
+          ? AppStrings.allPackagesCurrentlyUnavailable
+          : AppStrings.fromPrice(formatCurrency(reference.currency, minAdult)),
       primaryPriceLabel: availableOffers.isEmpty
-          ? 'Unavailable'
-          : 'Packages ${availableOffers.length}',
+          ? AppStrings.unavailable
+          : AppStrings.packagesCount(availableOffers.length),
       secondaryPriceLabel: '',
       statusLabel: availableOffers.isEmpty
-          ? 'Sold out'
-          : '${availableOffers.length} available',
+          ? AppStrings.soldOut
+          : AppStrings.availableCount(availableOffers.length),
       offerIndex: availableOffers.isEmpty
           ? entry.value.first.key
           : availableOffers.first.key,
@@ -131,8 +134,9 @@ List<CatalogBookingOption> buildPackageOptions(
       label: entry.key,
       subtitle: offer.packageDescription,
       primaryPriceLabel: formatCurrency(offer.currency, offer.priceAdult),
-      secondaryPriceLabel:
-          'Child ${formatCurrency(offer.currency, offer.priceChild)}',
+      secondaryPriceLabel: AppStrings.childPrice(
+        formatCurrency(offer.currency, offer.priceChild),
+      ),
       statusLabel: offerStatusLabel(offer),
       offerIndex: selectedEntry.key,
       isEnabled: !isOfferUnavailable(offer),
@@ -168,7 +172,9 @@ List<String> buildTimeSlotDetails(List<MapEntry<int, OfferEntity>> offers) {
   final details = <String>[];
   for (final entry in offers) {
     final package = packageLabel(entry.value).trim();
-    if (package.isEmpty || package == 'Package' || details.contains(package)) {
+    if (package.isEmpty ||
+        package == AppStrings.packageDefault ||
+        details.contains(package)) {
       continue;
     }
     details.add(package);
@@ -187,12 +193,18 @@ String mealOptionLabel(OfferEntity offer, CatalogCategoryType category) {
   } else if (offer.startTime.trim().isNotEmpty) {
     label = timeSlotLabel(offer);
   } else {
-    label = category == CatalogCategoryType.setMenu ? 'Set Menu' : 'Meal';
+    label = category == CatalogCategoryType.setMenu
+        ? AppStrings.setMenu
+        : AppStrings.meal;
   }
 
+  final normalizedLabel = label.toLowerCase();
+  final localizedSetMenu = AppStrings.setMenu;
+  final normalizedSetMenu = localizedSetMenu.toLowerCase();
   if (category == CatalogCategoryType.setMenu &&
-      !label.toLowerCase().contains('set menu')) {
-    return '$label Set Menu';
+      !normalizedLabel.contains('set menu') &&
+      !normalizedLabel.contains(normalizedSetMenu)) {
+    return '$label $localizedSetMenu';
   }
   return label;
 }
@@ -202,7 +214,7 @@ String packageLabel(OfferEntity offer) {
   if (packageName.isNotEmpty) return packageName;
   final title = offer.title.trim();
   if (title.isNotEmpty) return title;
-  return 'Package';
+  return AppStrings.packageDefault;
 }
 
 String timeSlotKey(OfferEntity offer) {
@@ -212,7 +224,7 @@ String timeSlotKey(OfferEntity offer) {
 String timeSlotLabel(OfferEntity offer) {
   final start = offer.startTime.trim();
   final end = offer.endTime.trim();
-  if (start.isEmpty && end.isEmpty) return 'Time';
+  if (start.isEmpty && end.isEmpty) return AppStrings.time;
   if (start.isEmpty) return end;
   if (end.isEmpty) return start;
   return '$start - $end';
@@ -230,7 +242,7 @@ String selectionLabel({
     final package = selectedPackageKey ?? packageLabel(selectedOffer);
     if (slot.isEmpty) return package;
     if (package.isEmpty) return slot;
-    return '$slot • $package';
+    return '$slot - $package';
   }
   return mealOptionLabel(selectedOffer, item.category);
 }
@@ -238,11 +250,11 @@ String selectionLabel({
 String headerTitle(CatalogCategoryType category) {
   switch (category) {
     case CatalogCategoryType.buffet:
-      return 'Book Buffet';
+      return AppStrings.bookBuffet;
     case CatalogCategoryType.setMenu:
-      return 'Book Set Menu';
+      return AppStrings.bookSetMenu;
     case CatalogCategoryType.attraction:
-      return 'Book Attraction';
+      return AppStrings.bookAttraction;
   }
 }
 
@@ -258,13 +270,13 @@ String offerStatusLabel(OfferEntity offer) {
   final availability = availabilityFor(offer);
   switch (availability) {
     case OfferAvailability.available:
-      return '$remaining available';
+      return AppStrings.availableStatus(remaining);
     case OfferAvailability.low:
-      return 'Only $remaining left';
+      return AppStrings.onlyLeftCount(remaining);
     case OfferAvailability.soldOut:
-      return 'Sold out';
+      return AppStrings.soldOut;
     case OfferAvailability.expired:
-      return 'Ended';
+      return AppStrings.ended;
   }
 }
 
@@ -273,6 +285,8 @@ bool isOfferUnavailable(OfferEntity offer) {
   return availability == OfferAvailability.soldOut ||
       availability == OfferAvailability.expired;
 }
+
+enum OfferAvailability { available, low, soldOut, expired }
 
 OfferAvailability availabilityFor(OfferEntity offer) {
   if (isOfferExpired(offer)) return OfferAvailability.expired;
@@ -300,8 +314,6 @@ int availabilityRank(OfferEntity offer) {
   }
 }
 
-enum OfferAvailability { available, low, soldOut, expired }
-
 bool isOfferExpired(OfferEntity offer) {
   final date = DateTime.tryParse(offer.date);
   if (date == null) return false;
@@ -320,31 +332,39 @@ bool isOfferExpired(OfferEntity offer) {
 int? parseTimeToMinutes(String value) {
   final trimmed = value.trim().toLowerCase();
   if (trimmed.isEmpty) return null;
-  final amPmMatch = RegExp(
-    r'^(\d{1,2})(?::(\d{2}))?\s*([ap]m)$',
-  ).firstMatch(trimmed);
-  if (amPmMatch != null) {
-    final hour = int.tryParse(amPmMatch.group(1) ?? '');
-    final minute = int.tryParse(amPmMatch.group(2) ?? '0') ?? 0;
-    final period = amPmMatch.group(3);
+
+  String? suffix;
+  if (trimmed.endsWith('am')) {
+    suffix = 'am';
+  } else if (trimmed.endsWith('pm')) {
+    suffix = 'pm';
+  }
+
+  if (suffix != null) {
+    final timePart = trimmed
+        .substring(0, trimmed.length - suffix.length)
+        .trim();
+    final pieces = timePart.split(':');
+    final hour = int.tryParse(pieces.isEmpty ? '' : pieces[0]);
+    final minute = pieces.length > 1 ? int.tryParse(pieces[1]) ?? 0 : 0;
     if (hour == null) return null;
-    var h = hour % 12;
-    if (period == 'pm') h += 12;
-    return h * 60 + minute;
+    var normalizedHour = hour % 12;
+    if (suffix == 'pm') normalizedHour += 12;
+    return normalizedHour * 60 + minute;
   }
-  final match24 = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(trimmed);
-  if (match24 != null) {
-    final hour = int.tryParse(match24.group(1) ?? '');
-    final minute = int.tryParse(match24.group(2) ?? '');
-    if (hour == null || minute == null) return null;
-    return hour * 60 + minute;
-  }
-  return null;
+
+  final pieces = trimmed.split(':');
+  if (pieces.length != 2) return null;
+  final hour = int.tryParse(pieces[0]);
+  final minute = int.tryParse(pieces[1]);
+  if (hour == null || minute == null) return null;
+  return hour * 60 + minute;
 }
 
 String titleize(String value) {
   return value
-      .split(RegExp(r'[_\s]+'))
+      .replaceAll('_', ' ')
+      .split(' ')
       .where((part) => part.isNotEmpty)
       .map(
         (part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',

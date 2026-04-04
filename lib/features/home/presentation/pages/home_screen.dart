@@ -95,7 +95,7 @@ class _HomeTabState extends State<HomeTab> {
             if (state.status == HomeStatus.failure) {
               return Center(
                 child: Text(
-                  state.errorMessage ?? 'Failed to load discovery items.',
+                  state.errorMessage ?? AppStrings.failedToLoadDiscoveryItems,
                   style: AppTextStyles.cardMeta,
                 ),
               );
@@ -105,7 +105,8 @@ class _HomeTabState extends State<HomeTab> {
             final items = isLoading ? _skeletonItems() : state.filteredItems;
             final showEmptyFilter =
                 !isLoading && state.items.isNotEmpty && items.isEmpty;
-            final showEmptyState = !isLoading && state.status == HomeStatus.empty;
+            final showEmptyState =
+                !isLoading && state.status == HomeStatus.empty;
             final locationText = _locationLabel(
               state.userCity,
               state.userCountry,
@@ -151,12 +152,12 @@ class _HomeTabState extends State<HomeTab> {
                                     ),
                                     SizedBox(height: 24.h),
                                     Text(
-                                      'Book by category',
+                                      AppStrings.bookByCategory,
                                       style: AppTextStyles.sectionTitle,
                                     ),
                                     SizedBox(height: 6.h),
                                     Text(
-                                      'Start with buffet, set menu, or attractions without changing the existing payment flow.',
+                                      AppStrings.bookByCategorySubtitle,
                                       style: AppTextStyles.cardMeta.copyWith(
                                         color: AppColors.textSecondary,
                                       ),
@@ -175,9 +176,10 @@ class _HomeTabState extends State<HomeTab> {
                                                 Routes.catalogListScreen,
                                                 arguments:
                                                     const CatalogListArgs(
-                                                  category: CatalogCategoryType
-                                                      .buffet,
-                                                ),
+                                                      category:
+                                                          CatalogCategoryType
+                                                              .buffet,
+                                                    ),
                                               );
                                             },
                                           ),
@@ -190,9 +192,10 @@ class _HomeTabState extends State<HomeTab> {
                                                 Routes.catalogListScreen,
                                                 arguments:
                                                     const CatalogListArgs(
-                                                  category: CatalogCategoryType
-                                                      .setMenu,
-                                                ),
+                                                      category:
+                                                          CatalogCategoryType
+                                                              .setMenu,
+                                                    ),
                                               );
                                             },
                                           ),
@@ -205,9 +208,10 @@ class _HomeTabState extends State<HomeTab> {
                                                 Routes.catalogListScreen,
                                                 arguments:
                                                     const CatalogListArgs(
-                                                  category: CatalogCategoryType
-                                                      .attraction,
-                                                ),
+                                                      category:
+                                                          CatalogCategoryType
+                                                              .attraction,
+                                                    ),
                                               );
                                             },
                                           ),
@@ -220,11 +224,11 @@ class _HomeTabState extends State<HomeTab> {
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          'Discover for you',
+                                          AppStrings.discoverForYou,
                                           style: AppTextStyles.sectionTitle,
                                         ),
                                         Text(
-                                          '${items.length} found',
+                                          AppStrings.itemsFound(items.length),
                                           style: AppTextStyles.sectionCount,
                                         ),
                                       ],
@@ -234,7 +238,7 @@ class _HomeTabState extends State<HomeTab> {
                                       Padding(
                                         padding: EdgeInsets.only(top: 12.h),
                                         child: Text(
-                                          'No items match your search.',
+                                          AppStrings.noItemsMatchSearch,
                                           style: AppTextStyles.cardMeta,
                                         ),
                                       ),
@@ -243,7 +247,7 @@ class _HomeTabState extends State<HomeTab> {
                                         padding: EdgeInsets.only(top: 12.h),
                                         child: Center(
                                           child: Text(
-                                            'No items available right now.',
+                                            AppStrings.noItemsAvailableRightNow,
                                             style: AppTextStyles.cardMeta,
                                           ),
                                         ),
@@ -306,9 +310,7 @@ class _HomeTabState extends State<HomeTab> {
                         child: AnimatedOpacity(
                           duration: const Duration(milliseconds: 200),
                           opacity: _showScrollToTopButton ? 1 : 0,
-                          child: _ScrollToTopButton(
-                            onTap: _scrollToTop,
-                          ),
+                          child: _ScrollToTopButton(onTap: _scrollToTop),
                         ),
                       ),
                     ),
@@ -350,7 +352,7 @@ class _ScrollToTopButton extends StatelessWidget {
               ),
               SizedBox(width: 4.w),
               Text(
-                'Top',
+                AppStrings.top,
                 style: AppTextStyles.cardMeta.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
@@ -379,11 +381,7 @@ class _HomeTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
-          Icons.location_on_outlined,
-          color: AppColors.primary,
-          size: 24.sp,
-        ),
+        Icon(Icons.location_on_outlined, color: AppColors.primary, size: 24.sp),
         SizedBox(width: 12.w),
         Expanded(
           child: Column(
@@ -459,11 +457,7 @@ class _HomeActionButton extends StatelessWidget {
           color: AppColors.iconStroke,
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          icon,
-          color: AppColors.textPrimary,
-          size: iconSize,
-        ),
+        child: Icon(icon, color: AppColors.textPrimary, size: iconSize),
       ),
     );
   }
@@ -536,13 +530,24 @@ String _locationLabel(String? city, String? country) {
 }
 
 String _discoveryMetaLabel(CatalogItemEntity item) {
-  final parts = <String>[item.category.title];
+  final parts = <String>[_localizedCategoryTitle(item.category)];
   if (item.area.isNotEmpty) parts.add(item.area);
   if (item.cityId.isNotEmpty) parts.add(item.cityId);
   if (parts.isNotEmpty) {
     return parts.join(' | ');
   }
   return item.address;
+}
+
+String _localizedCategoryTitle(CatalogCategoryType category) {
+  switch (category) {
+    case CatalogCategoryType.buffet:
+      return AppStrings.buffet;
+    case CatalogCategoryType.setMenu:
+      return AppStrings.setMenu;
+    case CatalogCategoryType.attraction:
+      return AppStrings.attractions;
+  }
 }
 
 List<CatalogItemEntity> _skeletonItems() {
@@ -563,7 +568,11 @@ List<CatalogItemEntity> _skeletonItems() {
       description: '',
       highlights: [],
       inclusions: [],
-      availableMeals: const ['Breakfast', 'Lunch', 'Dinner'],
+      availableMeals: [
+        AppStrings.breakfast,
+        AppStrings.lunch,
+        AppStrings.dinner,
+      ],
       packageOverview: const [],
       bookingNotes: const [],
       requiresMenuItemSelection: false,
@@ -589,7 +598,7 @@ List<CatalogItemEntity> _skeletonItems() {
       description: '',
       highlights: [],
       inclusions: [],
-      availableMeals: const ['Breakfast Set Menu', 'Lunch Set Menu'],
+      availableMeals: [AppStrings.breakfastSetMenu, AppStrings.lunchSetMenu],
       packageOverview: const [],
       bookingNotes: const [],
       requiresMenuItemSelection: true,
@@ -616,7 +625,7 @@ List<CatalogItemEntity> _skeletonItems() {
       highlights: [],
       inclusions: [],
       availableMeals: const [],
-      packageOverview: const ['Package A', 'Package B'],
+      packageOverview: [AppStrings.packageA, AppStrings.packageB],
       bookingNotes: const [],
       requiresMenuItemSelection: false,
       badge: '10% off',
@@ -650,12 +659,11 @@ void _showSortSheet(BuildContext context) {
                 CatalogCategoryType? selectedCategory,
               })
             >(
-              selector: (state) =>
-                  (
-                    sortField: state.sortField,
-                    sortOrder: state.sortOrder,
-                    selectedCategory: state.selectedCategory,
-                  ),
+              selector: (state) => (
+                sortField: state.sortField,
+                sortOrder: state.sortOrder,
+                selectedCategory: state.selectedCategory,
+              ),
               builder: (context, state) {
                 return SafeArea(
                   top: false,
@@ -671,29 +679,33 @@ void _showSortSheet(BuildContext context) {
                         children: [
                           Row(
                             children: [
-                          Expanded(
-                            child: Text(
-                              'Sort & filter',
-                              style: AppTextStyles.sectionTitle,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(sheetContext),
-                            child: Text(
-                              'Done',
-                              style: AppTextStyles.cardMeta.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
+                              Expanded(
+                                child: Text(
+                                  AppStrings.sortAndFilter,
+                                  style: AppTextStyles.sectionTitle,
+                                ),
                               ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              context.read<HomeCubit>().updateCategoryFilter(null);
-                              context.read<HomeCubit>().updateSort(field: null);
-                            },
-                            child: Text(
-                              'Reset',
+                              TextButton(
+                                onPressed: () => Navigator.pop(sheetContext),
+                                child: Text(
+                                  AppStrings.done,
+                                  style: AppTextStyles.cardMeta.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  context
+                                      .read<HomeCubit>()
+                                      .updateCategoryFilter(null);
+                                  context.read<HomeCubit>().updateSort(
+                                    field: null,
+                                  );
+                                },
+                                child: Text(
+                                  AppStrings.reset,
                                   style: AppTextStyles.cardMeta.copyWith(
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w600,
@@ -703,12 +715,12 @@ void _showSortSheet(BuildContext context) {
                             ],
                           ),
                           Text(
-                            'Filter by type, then pick the sort order you want.',
+                            AppStrings.filterByTypeThenPickSort,
                             style: AppTextStyles.cardMeta,
                           ),
                           SizedBox(height: 16.h),
                           Text(
-                            'Type',
+                            AppStrings.type,
                             style: AppTextStyles.sectionTitle.copyWith(
                               fontSize: 14.sp,
                             ),
@@ -719,14 +731,16 @@ void _showSortSheet(BuildContext context) {
                             runSpacing: 8.h,
                             children: [
                               _TypeChip(
-                                label: 'All',
+                                label: AppStrings.all,
                                 selected: state.selectedCategory == null,
                                 onTap: () => context
                                     .read<HomeCubit>()
                                     .updateCategoryFilter(null),
                               ),
                               _TypeChip(
-                                label: CatalogCategoryType.buffet.title,
+                                label: _localizedCategoryTitle(
+                                  CatalogCategoryType.buffet,
+                                ),
                                 selected:
                                     state.selectedCategory ==
                                     CatalogCategoryType.buffet,
@@ -737,7 +751,9 @@ void _showSortSheet(BuildContext context) {
                                     ),
                               ),
                               _TypeChip(
-                                label: CatalogCategoryType.setMenu.title,
+                                label: _localizedCategoryTitle(
+                                  CatalogCategoryType.setMenu,
+                                ),
                                 selected:
                                     state.selectedCategory ==
                                     CatalogCategoryType.setMenu,
@@ -748,7 +764,9 @@ void _showSortSheet(BuildContext context) {
                                     ),
                               ),
                               _TypeChip(
-                                label: CatalogCategoryType.attraction.title,
+                                label: _localizedCategoryTitle(
+                                  CatalogCategoryType.attraction,
+                                ),
                                 selected:
                                     state.selectedCategory ==
                                     CatalogCategoryType.attraction,
@@ -763,8 +781,8 @@ void _showSortSheet(BuildContext context) {
                           SizedBox(height: 16.h),
                           _SortGroup(
                             icon: Icons.attach_money,
-                            title: 'Price',
-                            subtitle: 'From lowest to highest or the opposite',
+                            title: AppStrings.price,
+                            subtitle: AppStrings.priceSortSubtitle,
                             isSelected: state.sortField == SortField.price,
                             order: state.sortOrder,
                             onSelect: (order) {
@@ -777,8 +795,8 @@ void _showSortSheet(BuildContext context) {
                           SizedBox(height: 12.h),
                           _SortGroup(
                             icon: Icons.percent,
-                            title: 'Discount',
-                            subtitle: 'Based on percent or computed savings',
+                            title: AppStrings.discount,
+                            subtitle: AppStrings.discountSortSubtitle,
                             isSelected: state.sortField == SortField.discount,
                             order: state.sortOrder,
                             onSelect: (order) {
@@ -791,8 +809,8 @@ void _showSortSheet(BuildContext context) {
                           SizedBox(height: 12.h),
                           _SortGroup(
                             icon: Icons.star_outline,
-                            title: 'Rating',
-                            subtitle: 'Higher rated experiences first or last',
+                            title: AppStrings.rating,
+                            subtitle: AppStrings.ratingSortSubtitle,
                             isSelected: state.sortField == SortField.rating,
                             order: state.sortOrder,
                             onSelect: (order) {
@@ -867,13 +885,13 @@ class _SortGroup extends StatelessWidget {
                 Row(
                   children: [
                     _SortChip(
-                      label: 'Low -> High',
+                      label: AppStrings.lowToHigh,
                       selected: isSelected && order == SortOrder.asc,
                       onTap: () => onSelect(SortOrder.asc),
                     ),
                     SizedBox(width: 8.w),
                     _SortChip(
-                      label: 'High -> Low',
+                      label: AppStrings.highToLow,
                       selected: isSelected && order == SortOrder.desc,
                       onTap: () => onSelect(SortOrder.desc),
                     ),

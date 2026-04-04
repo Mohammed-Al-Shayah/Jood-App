@@ -7,6 +7,7 @@ import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/auth_validators.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import '../../domain/entities/user_entity.dart';
@@ -91,7 +92,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text('Edit profile'),
+          title: Text(AppStrings.editProfile),
           centerTitle: true,
           backgroundColor: Colors.white,
           foregroundColor: AppColors.textPrimary,
@@ -155,94 +156,94 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                    _Label(text: 'Full name'),
-                    _Field(
-                      initialValue: state.fullName,
-                      onChanged: context
-                          .read<ProfileEditCubit>()
-                          .updateFullName,
-                    ),
-                    _Label(text: 'Email'),
-                    _Field(
-                      initialValue: state.email,
-                      keyboardType: TextInputType.emailAddress,
-                      onChanged: context.read<ProfileEditCubit>().updateEmail,
-                    ),
-                    _Label(text: 'Phone'),
-                    InternationalPhoneNumberInput(
-                      initialValue: PhoneNumber(
-                        isoCode: state.phoneIso,
-                      ),
-                      textFieldController: _phoneController,
-                      onInputChanged: (number) {
-                        context.read<ProfileEditCubit>().updatePhone(
-                          number.phoneNumber ?? '',
-                        );
-                        final iso = number.isoCode;
-                        if (iso != null && iso.isNotEmpty) {
-                          context.read<ProfileEditCubit>().updatePhoneIso(iso);
-                        }
-                      },
-                      selectorConfig: const SelectorConfig(
-                        selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-                      ),
-                      keyboardType: TextInputType.phone,
-                      inputDecoration: InputDecoration(
-                        filled: true,
-                        fillColor: const Color(0xFFF6F7FB),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 14.h,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30.r),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                    _Label(text: 'Country'),
-                    _PickerField(
-                      hintText: 'Select country',
-                      value: state.country,
-                      onTap: () => _showCountryPicker(
-                        context,
-                        (country) => context
+                      _Label(text: AppStrings.fullName),
+                      _Field(
+                        initialValue: state.fullName,
+                        onChanged: context
                             .read<ProfileEditCubit>()
-                            .updateCountry(country.name),
+                            .updateFullName,
                       ),
-                    ),
-                    _Label(text: 'City'),
-                    _Field(
-                      initialValue: state.city,
-                      onChanged: context.read<ProfileEditCubit>().updateCity,
-                    ),
-                    SizedBox(height: 20.h),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isSaving
-                            ? null
-                            : () => context.read<ProfileEditCubit>().save(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: EdgeInsets.symmetric(vertical: 14.h),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14.r),
-                          ),
-                          elevation: 0,
+                      _Label(text: AppStrings.email),
+                      _Field(
+                        initialValue: state.email,
+                        keyboardType: TextInputType.emailAddress,
+                        onChanged: context.read<ProfileEditCubit>().updateEmail,
+                      ),
+                      _Label(text: AppStrings.phone),
+                      InternationalPhoneNumberInput(
+                        initialValue: PhoneNumber(isoCode: state.phoneIso),
+                        textFieldController: _phoneController,
+                        onInputChanged: (number) {
+                          context.read<ProfileEditCubit>().updatePhone(
+                            number.phoneNumber ?? '',
+                          );
+                          final iso = number.isoCode;
+                          if (iso != null && iso.isNotEmpty) {
+                            context.read<ProfileEditCubit>().updatePhoneIso(
+                              iso,
+                            );
+                          }
+                        },
+                        selectorConfig: const SelectorConfig(
+                          selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
                         ),
-                        child: isSaving
-                            ? SizedBox(
-                                height: 18.h,
-                                width: 18.h,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text('Save', style: AppTextStyles.cta),
+                        keyboardType: TextInputType.phone,
+                        inputDecoration: InputDecoration(
+                          filled: true,
+                          fillColor: const Color(0xFFF6F7FB),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 14.h,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30.r),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
                       ),
-                    ),
+                      _Label(text: AppStrings.country),
+                      _PickerField(
+                        hintText: AppStrings.selectCountry,
+                        value: state.country,
+                        onTap: () => _showCountryPicker(
+                          context,
+                          (country) => context
+                              .read<ProfileEditCubit>()
+                              .updateCountry(country.name),
+                        ),
+                      ),
+                      _Label(text: AppStrings.city),
+                      _Field(
+                        initialValue: state.city,
+                        onChanged: context.read<ProfileEditCubit>().updateCity,
+                      ),
+                      SizedBox(height: 20.h),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: isSaving
+                              ? null
+                              : () => context.read<ProfileEditCubit>().save(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: EdgeInsets.symmetric(vertical: 14.h),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14.r),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: isSaving
+                              ? SizedBox(
+                                  height: 18.h,
+                                  width: 18.h,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(AppStrings.save, style: AppTextStyles.cta),
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -290,24 +291,27 @@ Future<void> _showOtpSheet(BuildContext context, ProfileEditCubit cubit) {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      Center(
-                        child: Container(
-                          width: 40.w,
-                          height: 4.h,
-                          margin: EdgeInsets.only(bottom: 12.h),
-                          decoration: BoxDecoration(
-                            color: AppColors.shadowColor,
-                            borderRadius: BorderRadius.circular(10.r),
+                        Center(
+                          child: Container(
+                            width: 40.w,
+                            height: 4.h,
+                            margin: EdgeInsets.only(bottom: 12.h),
+                            decoration: BoxDecoration(
+                              color: AppColors.shadowColor,
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
                           ),
                         ),
-                      ),
-                      Text('Verify phone', style: AppTextStyles.cardTitle),
-                      SizedBox(height: 6.h),
-                      Text(
-                        'Enter the OTP sent to your phone.',
-                        style: AppTextStyles.cardMeta,
-                      ),
-                      SizedBox(height: 14.h),
+                        Text(
+                          AppStrings.verifyPhone,
+                          style: AppTextStyles.cardTitle,
+                        ),
+                        SizedBox(height: 6.h),
+                        Text(
+                          AppStrings.enterOtpSentToYourPhone,
+                          style: AppTextStyles.cardMeta,
+                        ),
+                        SizedBox(height: 14.h),
                         TextField(
                           autofocus: true,
                           keyboardType: TextInputType.number,
@@ -315,78 +319,82 @@ Future<void> _showOtpSheet(BuildContext context, ProfileEditCubit cubit) {
                           maxLength: 6,
                           onTapOutside: (_) =>
                               FocusManager.instance.primaryFocus?.unfocus(),
-                          onChanged:
-                              context.read<ProfileEditCubit>().updateOtpCode,
+                          onChanged: context
+                              .read<ProfileEditCubit>()
+                              .updateOtpCode,
                           decoration: InputDecoration(
-                          counterText: '',
-                          hintText: '000000',
-                          filled: true,
-                          fillColor: const Color(0xFFF6F7FB),
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 14.h,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14.r),
-                            borderSide: BorderSide.none,
-                          ),
+                            counterText: '',
+                            hintText: '000000',
+                            filled: true,
+                            fillColor: const Color(0xFFF6F7FB),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16.w,
+                              vertical: 14.h,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14.r),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
                         ),
-                      SizedBox(height: 6.h),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          TextButton(
-                            onPressed: state.canResend
-                                ? context.read<ProfileEditCubit>().resendOtp
-                                : null,
-                            child: Text(
-                              'Resend',
-                              style: TextStyle(
-                                color: state.canResend
-                                    ? AppColors.primary
-                                    : AppColors.textMuted,
+                        SizedBox(height: 6.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton(
+                              onPressed: state.canResend
+                                  ? context.read<ProfileEditCubit>().resendOtp
+                                  : null,
+                              child: Text(
+                                AppStrings.resend,
+                                style: TextStyle(
+                                  color: state.canResend
+                                      ? AppColors.primary
+                                      : AppColors.textMuted,
+                                ),
                               ),
                             ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            '00:${state.secondsLeft.toString().padLeft(2, '0')}',
-                            style: AppTextStyles.cardMeta.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
+                            SizedBox(width: 8.w),
+                            Text(
+                              '00:${state.secondsLeft.toString().padLeft(2, '0')}',
+                              style: AppTextStyles.cardMeta.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12.h),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: isVerifying
-                              ? null
-                              : () => context
-                                    .read<ProfileEditCubit>()
-                                    .verifyPhoneOtp(),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            padding: EdgeInsets.symmetric(vertical: 14.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30.r),
-                            ),
-                          ),
-                          child: isVerifying
-                              ? SizedBox(
-                                  height: 18.h,
-                                  width: 18.h,
-                                  child: const CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text('Verify', style: AppTextStyles.cta),
+                          ],
                         ),
-                      ),
+                        SizedBox(height: 12.h),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: isVerifying
+                                ? null
+                                : () => context
+                                      .read<ProfileEditCubit>()
+                                      .verifyPhoneOtp(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: EdgeInsets.symmetric(vertical: 14.h),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30.r),
+                              ),
+                            ),
+                            child: isVerifying
+                                ? SizedBox(
+                                    height: 18.h,
+                                    width: 18.h,
+                                    child: const CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    AppStrings.verify,
+                                    style: AppTextStyles.cta,
+                                  ),
+                          ),
+                        ),
                       ],
                     );
                   },
@@ -502,7 +510,7 @@ void _showCountryPicker(BuildContext context, ValueChanged<Country> onSelect) {
         color: AppColors.textPrimary,
       ),
       inputDecoration: InputDecoration(
-        hintText: 'Search country',
+        hintText: AppStrings.searchCountry,
         filled: true,
         fillColor: const Color(0xFFF6F7FB),
         contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),

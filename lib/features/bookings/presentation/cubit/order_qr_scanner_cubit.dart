@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/app_strings.dart';
 import '../../../auth/domain/usecases/get_current_user_usecase.dart';
 import '../../../offers/domain/usecases/get_offer_by_id_usecase.dart';
 import '../../../restaurants/domain/usecases/get_restaurant_details_usecase.dart';
@@ -41,7 +42,7 @@ class OrderQrScannerCubit extends Cubit<OrderQrScannerState> {
   Future<BookingReviewViewModel> loadBookingForCode(String rawCode) async {
     final code = _normalizeCode(rawCode);
     if (code.isEmpty) {
-      throw BookingException('Invalid QR code.');
+      throw BookingException(AppStrings.invalidQrCode);
     }
 
     emit(
@@ -55,12 +56,12 @@ class OrderQrScannerCubit extends Cubit<OrderQrScannerState> {
     try {
       final authUser = _getCurrentUser();
       if (authUser == null) {
-        throw BookingException('No signed-in user.');
+        throw BookingException(AppStrings.noSignedInUser);
       }
 
       final staff = await _getUserById(authUser.uid);
       if (staff == null) {
-        throw BookingException('Staff account not found.');
+        throw BookingException(AppStrings.staffAccountNotFound);
       }
 
       final staffRestaurantId = (staff.restaurantId ?? '').trim();
@@ -106,17 +107,17 @@ class OrderQrScannerCubit extends Cubit<OrderQrScannerState> {
   Future<String> completeCurrentBooking() async {
     final booking = state.booking;
     if (booking == null) {
-      throw BookingException('Order not found.');
+      throw BookingException(AppStrings.orderNotFound);
     }
 
     final authUser = _getCurrentUser();
     if (authUser == null) {
-      throw BookingException('No signed-in user.');
+      throw BookingException(AppStrings.noSignedInUser);
     }
 
     final staffRestaurantId = (state.staffRestaurantId ?? '').trim();
     if (staffRestaurantId.isEmpty) {
-      throw BookingException('Staff account missing restaurant id.');
+      throw BookingException(AppStrings.staffAccountMissingRestaurantId);
     }
 
     emit(
@@ -129,7 +130,7 @@ class OrderQrScannerCubit extends Cubit<OrderQrScannerState> {
         staffRestaurantId: staffRestaurantId,
         actorUserId: authUser.uid,
       );
-      const message = 'Order completed successfully.';
+      final message = AppStrings.orderCompletedSuccessfully;
       if (isClosed) return message;
       emit(
         state.copyWith(status: OrderQrScannerStatus.success, message: message),
@@ -227,6 +228,6 @@ class OrderQrScannerCubit extends Cubit<OrderQrScannerState> {
   String _messageFrom(Object error) {
     if (error is BookingException) return error.message;
     final message = error.toString().replaceFirst('Exception: ', '').trim();
-    return message.isEmpty ? 'Something went wrong.' : message;
+    return message.isEmpty ? AppStrings.somethingWentWrong : message;
   }
 }

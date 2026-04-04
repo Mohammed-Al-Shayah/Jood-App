@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
+import '../../../../core/utils/app_strings.dart';
 import '../../../../core/widgets/bottom_cta_bar.dart';
 import '../../../bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
 import '../../../bookings/booking_flow/presentation/cubit/booking_flow_state.dart';
@@ -68,8 +69,8 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
             backgroundColor: Colors.white,
             bottomNavigationBar: BottomCtaBar(
               label: selectedOffer == null
-                  ? 'Select an option to continue'
-                  : 'Next',
+                  ? AppStrings.selectOptionToContinue
+                  : AppStrings.next,
               onPressed: canProceed ? () => _goToGuests(context) : null,
               backgroundColor: Colors.white,
               shadowColor: AppColors.shadowColor,
@@ -114,7 +115,7 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
                               padding: EdgeInsets.only(top: 16.h),
                               child: Text(
                                 state.errorMessage ??
-                                    'Failed to load booking options.',
+                                    AppStrings.failedToLoadBookingOptions,
                                 style: AppTextStyles.cardMeta,
                               ),
                             ),
@@ -289,8 +290,8 @@ class _MealBasedSection extends StatelessWidget {
         padding: EdgeInsets.only(top: 20.h),
         child: Text(
           item.category == CatalogCategoryType.setMenu
-              ? 'No set menu options are available for this date.'
-              : 'No meals are available for this date.',
+              ? AppStrings.noSetMenuOptionsForDate
+              : AppStrings.noMealsAvailableForDate,
           style: AppTextStyles.cardMeta.copyWith(
             fontSize: 13.sp,
             color: AppColors.textSecondary,
@@ -301,11 +302,11 @@ class _MealBasedSection extends StatelessWidget {
 
     return _OptionsSection(
       title: item.category == CatalogCategoryType.setMenu
-          ? 'Choose Set Menu'
-          : 'Choose Meal Type',
+          ? AppStrings.chooseSetMenu
+          : AppStrings.chooseMealType,
       subtitle: item.category == CatalogCategoryType.setMenu
-          ? 'Each set menu option can carry its own adult and child pricing.'
-          : 'Select the meal that should be booked for the chosen date.',
+          ? AppStrings.setMenuOptionPricingSubtitle
+          : AppStrings.mealTypeBookingSubtitle,
       options: options,
       selectedIndex: state.selectedOfferIndex,
       onSelected: (index) =>
@@ -343,7 +344,7 @@ class _AttractionSection extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(top: 20.h),
             child: Text(
-              'No time slots are available for this date.',
+              AppStrings.noTimeSlotsAvailableForDate,
               style: AppTextStyles.cardMeta.copyWith(
                 fontSize: 13.sp,
                 color: AppColors.textSecondary,
@@ -352,9 +353,8 @@ class _AttractionSection extends StatelessWidget {
           )
         else ...[
           _OptionsSection(
-            title: 'Select Time',
-            subtitle:
-                'Different time slots can carry different pricing and package availability.',
+            title: AppStrings.selectTime,
+            subtitle: AppStrings.selectTimeSubtitle,
             options: timeSlots,
             selectedKey: selectedTimeSlotKey,
             onSelectedKey: onTimeSlotSelected,
@@ -362,9 +362,8 @@ class _AttractionSection extends StatelessWidget {
           ),
           SizedBox(height: 16.h),
           _OptionsSection(
-            title: 'Select Package',
-            subtitle:
-                'Only packages available for the selected time slot are shown.',
+            title: AppStrings.selectPackage,
+            subtitle: AppStrings.selectPackageSubtitle,
             options: packageOptions,
             selectedKey: selectedPackageKey,
             onSelectedKey: onPackageSelected,
@@ -430,7 +429,7 @@ class _OptionsSection extends StatelessWidget {
           SizedBox(height: 14.h),
           if (options.isEmpty)
             Text(
-              'No options available right now.',
+              AppStrings.noOptionsAvailableRightNow,
               style: AppTextStyles.cardMeta.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -453,8 +452,8 @@ class _OptionsSection extends StatelessWidget {
                                 ? selectedIndex == option.offerIndex
                                 : selectedKey == option.key;
                             return Padding(
-                              padding: EdgeInsets.only(
-                                right: index == options.length - 1
+                              padding: EdgeInsetsDirectional.only(
+                                end: index == options.length - 1
                                     ? 0
                                     : cardSpacing,
                               ),
@@ -733,7 +732,7 @@ class _OptionCardState extends State<_OptionCard> {
 
   Widget _buildDetailsToggle({required bool compact}) {
     return Align(
-      alignment: Alignment.centerRight,
+      alignment: AlignmentDirectional.centerEnd,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _toggleDetails,
@@ -741,7 +740,7 @@ class _OptionCardState extends State<_OptionCard> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              _detailsVisible ? 'Hide details' : 'Show details',
+              _detailsVisible ? AppStrings.hideDetails : AppStrings.showDetails,
               style: AppTextStyles.cardMeta.copyWith(
                 color: AppColors.primaryDark,
                 fontSize: compact ? 10.5.sp : 11.5.sp,
@@ -788,9 +787,9 @@ class _OptionCardState extends State<_OptionCard> {
                     Container(
                       width: 5.r,
                       height: 5.r,
-                      margin: EdgeInsets.only(
+                      margin: EdgeInsetsDirectional.only(
                         top: compact ? 5.h : 6.h,
-                        right: 8.w,
+                        end: 8.w,
                       ),
                       decoration: const BoxDecoration(
                         color: AppColors.primary,

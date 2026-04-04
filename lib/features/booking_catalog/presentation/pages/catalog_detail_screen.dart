@@ -5,6 +5,7 @@ import '../../../../core/routing/catalog_route_args.dart';
 import '../../../../core/routing/routes.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
+import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../../core/widgets/bottom_cta_bar.dart';
 import '../../domain/entities/catalog_category_type.dart';
@@ -26,7 +27,7 @@ class CatalogDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       bottomNavigationBar: BottomCtaBar(
-        label: 'Continue to Booking',
+        label: AppStrings.continueToBooking,
         onPressed: () {
           context.pushNamed(
             Routes.catalogBookingScreen,
@@ -55,9 +56,10 @@ class CatalogDetailScreen extends StatelessWidget {
                 final topPadding = MediaQuery.of(context).padding.top;
                 final minHeight = kToolbarHeight + topPadding;
                 final maxHeight = 252.h;
-                final progress = ((constraints.biggest.height - minHeight) /
-                        (maxHeight - minHeight))
-                    .clamp(0.0, 1.0);
+                final progress =
+                    ((constraints.biggest.height - minHeight) /
+                            (maxHeight - minHeight))
+                        .clamp(0.0, 1.0);
                 final collapsedOpacity = 1.0 - progress;
 
                 return Stack(
@@ -87,21 +89,23 @@ class CatalogDetailScreen extends StatelessWidget {
                       height: minHeight + 12.h,
                       child: IgnorePointer(
                         child: ColoredBox(
-                          color: Colors.white.withValues(alpha: collapsedOpacity),
+                          color: Colors.white.withValues(
+                            alpha: collapsedOpacity,
+                          ),
                         ),
                       ),
                     ),
-                    Positioned(
+                    PositionedDirectional(
                       top: topPadding + 8.h,
-                      left: 12.w,
+                      start: 12.w,
                       child: _HeaderBackButton(
                         onTap: () => Navigator.of(context).pop(),
                       ),
                     ),
-                    Positioned(
+                    PositionedDirectional(
                       top: topPadding + 16.h,
-                      left: 60.w,
-                      right: 16.w,
+                      start: 60.w,
+                      end: 16.w,
                       child: Opacity(
                         opacity: collapsedOpacity,
                         child: Text(
@@ -115,9 +119,9 @@ class CatalogDetailScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Positioned(
-                      left: 16.w,
-                      right: 16.w,
+                    PositionedDirectional(
+                      start: 16.w,
+                      end: 16.w,
                       bottom: 16.h,
                       child: Opacity(
                         opacity: progress,
@@ -143,7 +147,7 @@ class CatalogDetailScreen extends StatelessWidget {
                                 ),
                                 SizedBox(width: 4.w),
                                 Text(
-                                  '${item.ratingLabel} (${item.reviewsCount} reviews)',
+                                  '${item.ratingLabel} (${AppStrings.reviewsCount(item.reviewsCount)})',
                                   style: AppTextStyles.cardMeta.copyWith(
                                     color: Colors.white,
                                     fontSize: 12.sp,
@@ -166,7 +170,9 @@ class CatalogDetailScreen extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTextStyles.cardMeta.copyWith(
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -203,28 +209,29 @@ class CatalogDetailScreen extends StatelessWidget {
                   CatalogInfoSection(
                     title: _highlightsTitle(item.category),
                     items: item.highlights,
-                    emptyLabel: 'Highlights will appear here once configured.',
+                    emptyLabel:
+                        AppStrings.highlightsWillAppearHereOnceConfigured,
                   ),
                   SizedBox(height: 12.h),
                   CatalogInfoSection(
-                    title: "What's Included",
+                    title: AppStrings.whatsIncluded,
                     items: item.inclusions,
-                    emptyLabel: 'Included details will appear here.',
+                    emptyLabel: AppStrings.includedDetailsWillAppearHere,
                   ),
                   SizedBox(height: 12.h),
                   if (item.category == CatalogCategoryType.attraction)
                     CatalogInfoSection(
-                      title: 'Packages Overview',
+                      title: AppStrings.packagesOverview,
                       items: item.packageOverview,
-                      emptyLabel:
-                          'Packages will be loaded from attraction configuration.',
+                      emptyLabel: AppStrings
+                          .packagesWillBeLoadedFromAttractionConfiguration,
                     )
                   else
                     CatalogInfoSection(
-                      title: 'Available Options',
+                      title: AppStrings.availableOptions,
                       items: item.availableMeals,
-                      emptyLabel:
-                          'Options will appear automatically when configured.',
+                      emptyLabel: AppStrings
+                          .optionsWillAppearAutomaticallyWhenConfigured,
                     ),
                   if (item.requiresMenuItemSelection ||
                       item.bookingNotes.isNotEmpty) ...[
@@ -239,7 +246,7 @@ class CatalogDetailScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Booking Notes',
+                            AppStrings.bookingNotes,
                             style: AppTextStyles.sectionTitle.copyWith(
                               fontSize: 14.sp,
                             ),
@@ -247,7 +254,7 @@ class CatalogDetailScreen extends StatelessWidget {
                           SizedBox(height: 8.h),
                           if (item.requiresMenuItemSelection)
                             Text(
-                              'Set menu selection is currently treated as the priced booking option. Actual item choices can be completed later.',
+                              AppStrings.bookingFlowSetMenuSelectionNote,
                               style: AppTextStyles.cardMeta.copyWith(
                                 color: AppColors.textSecondary,
                                 fontSize: 12.5.sp,
@@ -294,10 +301,9 @@ class _HeaderBackButton extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: EdgeInsets.all(8.w),
-          child: Icon(
-            Icons.arrow_back,
-            size: 18.sp,
-            color: AppColors.textPrimary,
+          child: IconTheme(
+            data: IconThemeData(size: 18.sp, color: AppColors.textPrimary),
+            child: const BackButtonIcon(),
           ),
         ),
       ),
@@ -308,22 +314,22 @@ class _HeaderBackButton extends StatelessWidget {
 String _fallbackDescription(CatalogCategoryType category) {
   switch (category) {
     case CatalogCategoryType.buffet:
-      return 'Explore a premium buffet experience with flexible meal-based booking and live availability.';
+      return AppStrings.buffetFallbackDescription;
     case CatalogCategoryType.setMenu:
-      return 'Choose a fixed set menu experience with clear pricing and a smooth booking flow.';
+      return AppStrings.setMenuFallbackDescription;
     case CatalogCategoryType.attraction:
-      return 'Discover attraction experiences with time-based entry and package selection.';
+      return AppStrings.attractionFallbackDescription;
   }
 }
 
 String _aboutTitle(CatalogCategoryType category) {
   return category == CatalogCategoryType.setMenu
-      ? 'Set Menu Concept'
-      : 'Description';
+      ? AppStrings.setMenuConcept
+      : AppStrings.description;
 }
 
 String _highlightsTitle(CatalogCategoryType category) {
   return category == CatalogCategoryType.attraction
-      ? 'Highlights'
-      : 'Experience Highlights';
+      ? AppStrings.highlightsTitle
+      : AppStrings.experienceHighlights;
 }

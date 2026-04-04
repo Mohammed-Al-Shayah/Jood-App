@@ -34,7 +34,7 @@ class RestaurantCard extends StatelessWidget {
     final trimmedPrice = price.trim();
     final lowerPrice = trimmedPrice.toLowerCase();
     final hasFromLabel = lowerPrice.startsWith('from ');
-    final priceLabel = hasFromLabel ? 'From' : '';
+    final priceLabel = hasFromLabel ? AppStrings.from : '';
     final priceValue = hasFromLabel
         ? trimmedPrice.substring(5).trim()
         : trimmedPrice;

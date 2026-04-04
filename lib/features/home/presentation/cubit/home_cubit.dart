@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jood/core/utils/app_strings.dart';
 
 import '../../../../core/utils/number_utils.dart';
 import '../../../auth/domain/usecases/get_current_user_usecase.dart';
@@ -247,13 +248,24 @@ class HomeCubit extends Cubit<HomeState> {
 
   String _metaLabel(CatalogItemEntity item) {
     final parts = <String>[];
-    parts.add(item.category.title);
+    parts.add(_localizedCategoryTitle(item.category));
     if (item.area.isNotEmpty) parts.add(item.area);
     if (item.cityId.isNotEmpty) parts.add(item.cityId);
     if (parts.isNotEmpty) {
       return parts.join(' | ');
     }
     return item.address;
+  }
+
+  String _localizedCategoryTitle(CatalogCategoryType category) {
+    switch (category) {
+      case CatalogCategoryType.buffet:
+        return AppStrings.buffet;
+      case CatalogCategoryType.setMenu:
+        return AppStrings.setMenu;
+      case CatalogCategoryType.attraction:
+        return AppStrings.attractions;
+    }
   }
 
   List<CatalogItemEntity> _deduplicateVenueItems(

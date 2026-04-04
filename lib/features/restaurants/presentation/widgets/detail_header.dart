@@ -39,10 +39,10 @@ class DetailHeader extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(
+        PositionedDirectional(
           top: 12.h,
-          left: 12.w,
-          child: _CircleIconButton(icon: Icons.arrow_back, onTap: onBack),
+          start: 12.w,
+          child: _CircleBackButton(onTap: onBack),
         ),
 
         Positioned(
@@ -100,10 +100,9 @@ class DetailHeader extends StatelessWidget {
   }
 }
 
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({required this.icon, required this.onTap});
+class _CircleBackButton extends StatelessWidget {
+  const _CircleBackButton({required this.onTap});
 
-  final IconData icon;
   final VoidCallback onTap;
 
   @override
@@ -116,10 +115,12 @@ class _CircleIconButton extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: EdgeInsets.all(8.w),
-          child: Icon(icon, size: 18.sp),
+          child: IconTheme(
+            data: IconThemeData(size: 18.sp, color: AppColors.textPrimary),
+            child: const BackButtonIcon(),
+          ),
         ),
       ),
     );
   }
 }
-

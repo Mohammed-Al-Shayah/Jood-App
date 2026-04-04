@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jood/core/errors/auth_error_mapper.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/auth_validators.dart';
 import 'package:jood/features/auth/domain/entities/otp_mode.dart';
 import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
@@ -108,7 +109,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         emit(
           state.copyWith(
             status: ProfileEditStatus.failure,
-            errorMessage: 'No signed-in user found.',
+            errorMessage: AppStrings.noSignedInUserFound,
           ),
         );
         return;
@@ -123,7 +124,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
           emit(
             state.copyWith(
               status: ProfileEditStatus.failure,
-              errorMessage: 'Phone number already in use.',
+              errorMessage: AppStrings.phoneNumberAlreadyInUse,
             ),
           );
           return;
@@ -136,7 +137,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         state.copyWith(
           status: ProfileEditStatus.success,
           successMessage: sentVerificationEmail
-              ? 'Verification link sent to your new email. Please confirm it.'
+              ? AppStrings.verificationLinkSentToYourNewEmail
               : null,
         ),
       );
@@ -151,10 +152,9 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
               ? mapAuthError(
                   error,
                   operationNotAllowedMessage:
-                      'Email/Password sign-in is disabled in Firebase.',
-                  requiresRecentLoginMessage:
-                      'For security, please sign in again and retry.',
-                  fallbackMessage: 'Update failed. Please try again.',
+                      AppStrings.emailPasswordSignInDisabled,
+                  requiresRecentLoginMessage: AppStrings.signInAgainAndRetry,
+                  fallbackMessage: AppStrings.updateFailedPleaseTryAgain,
                 )
               : error.toString(),
           successMessage: null,
@@ -203,7 +203,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         emit(
           state.copyWith(
             status: ProfileEditStatus.failure,
-            errorMessage: 'No signed-in user found.',
+            errorMessage: AppStrings.noSignedInUserFound,
           ),
         );
         return;
@@ -220,7 +220,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         emit(
           state.copyWith(
             status: ProfileEditStatus.failure,
-            errorMessage: 'No signed-in user found.',
+            errorMessage: AppStrings.noSignedInUserFound,
           ),
         );
         return;
@@ -230,7 +230,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         state.copyWith(
           status: ProfileEditStatus.success,
           successMessage: sentVerificationEmail
-              ? 'Verification link sent to your new email. Please confirm it.'
+              ? AppStrings.verificationLinkSentToYourNewEmail
               : null,
         ),
       );
@@ -242,7 +242,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
               ? mapAuthError(
                   error,
                   fallbackMessage:
-                      'Phone verification failed. Please try again.',
+                      AppStrings.phoneVerificationFailedPleaseTryAgain,
                 )
               : error.toString(),
           successMessage: null,
@@ -286,7 +286,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
               ? mapAuthError(
                   error,
                   fallbackMessage:
-                      'Phone verification failed. Please try again.',
+                      AppStrings.phoneVerificationFailedPleaseTryAgain,
                 )
               : error.toString(),
           successMessage: null,

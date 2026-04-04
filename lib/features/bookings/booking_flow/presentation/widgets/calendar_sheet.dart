@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+import 'package:jood/core/localization/app_localization_controller.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/date_utils.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
 
@@ -80,7 +83,7 @@ class _CalendarSheetState extends State<CalendarSheet> {
               ),
               SizedBox(height: 12.h),
               Text(
-                'Select date',
+                AppStrings.selectDate,
                 style: AppTextStyles.sectionTitle.copyWith(fontSize: 16.sp),
               ),
               SizedBox(height: 12.h),
@@ -133,7 +136,7 @@ class _CalendarSheetState extends State<CalendarSheet> {
                         ),
                       ),
                       child: Text(
-                        'Previous',
+                        AppStrings.previous,
                         style: AppTextStyles.cardTitle.copyWith(
                           color: AppColors.primary,
                           fontSize: 14.sp,
@@ -153,7 +156,7 @@ class _CalendarSheetState extends State<CalendarSheet> {
                         ),
                       ),
                       child: Text(
-                        'Next',
+                        AppStrings.next,
                         style: AppTextStyles.cardTitle.copyWith(
                           color: AppColors.primary,
                           fontSize: 14.sp,
@@ -245,7 +248,13 @@ class _MonthSection extends StatelessWidget {
 class _WeekdaysRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    final labels = List<String>.generate(7, (index) {
+      final date = DateTime(2026, 1, 4 + index);
+      return DateFormat(
+        'EEE',
+        AppLocalizationController.instance.localeName,
+      ).format(date);
+    });
     return Row(
       children: labels
           .map(
@@ -326,21 +335,10 @@ class _DayCell extends StatelessWidget {
 }
 
 String _monthLabel(DateTime date) {
-  const months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December',
-  ];
-  return '${months[date.month - 1]} ${date.year}';
+  return DateFormat(
+    'MMMM yyyy',
+    AppLocalizationController.instance.localeName,
+  ).format(date);
 }
 
 bool _isSameDay(DateTime a, DateTime b) {

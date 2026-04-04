@@ -6,6 +6,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import '../../otp/verify_otp_args.dart';
@@ -22,7 +23,7 @@ class ForgetPasswordPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text('Forget Password'),
+          title: Text(AppStrings.forgetPassword),
           centerTitle: true,
           elevation: 0,
           backgroundColor: Colors.white,
@@ -42,7 +43,7 @@ class ForgetPasswordPage extends StatelessWidget {
               if (state.status == ForgetPasswordStatus.success) {
                 showAppSnackBar(
                   context,
-                  'Reset email sent. Please check your inbox.',
+                  AppStrings.resetEmailSentCheckInbox,
                   type: SnackBarType.success,
                 );
                 context.pushNamed(Routes.loginScreen);
@@ -68,15 +69,15 @@ class ForgetPasswordPage extends StatelessWidget {
                   children: [
                     Text(
                       state.method == ForgetPasswordMethod.email
-                          ? 'Enter your email to receive a reset link.'
-                          : 'Enter your phone to verify with OTP and set a new password.',
+                          ? AppStrings.enterEmailForReset
+                          : AppStrings.enterPhoneForOtpReset,
                       style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp),
                     ),
                     SizedBox(height: 24.h),
                     Text(
                       state.method == ForgetPasswordMethod.phone
-                          ? 'Phone Number'
-                          : 'Email Address',
+                          ? AppStrings.phoneNumber
+                          : AppStrings.emailAddress,
                       style: AppTextStyles.sectionTitle.copyWith(
                         fontSize: 14.sp,
                       ),
@@ -101,7 +102,7 @@ class ForgetPasswordPage extends StatelessWidget {
                         ),
                         keyboardType: TextInputType.phone,
                         inputDecoration: InputDecoration(
-                          hintText: 'Enter your phone number',
+                          hintText: AppStrings.enterPhoneNumber,
                           filled: true,
                           fillColor: const Color(0xFFF6F7FB),
                           contentPadding: EdgeInsets.symmetric(
@@ -121,7 +122,7 @@ class ForgetPasswordPage extends StatelessWidget {
                             .read<ForgetPasswordCubit>()
                             .updateIdentifier,
                         decoration: InputDecoration(
-                          hintText: 'Enter your email',
+                          hintText: AppStrings.enterEmail,
                           filled: true,
                           fillColor: const Color(0xFFF6F7FB),
                           contentPadding: EdgeInsets.symmetric(
@@ -161,8 +162,8 @@ class ForgetPasswordPage extends StatelessWidget {
                                 )
                               : Text(
                                   state.method == ForgetPasswordMethod.phone
-                                      ? 'Verify'
-                                      : 'Send reset link',
+                                      ? AppStrings.verify
+                                      : AppStrings.sendResetLink,
                                   style: AppTextStyles.cta,
                                 ),
                         ),
@@ -174,7 +175,10 @@ class ForgetPasswordPage extends StatelessWidget {
                         const Expanded(child: Divider()),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8.w),
-                          child: Text('OR', style: AppTextStyles.cardMeta),
+                          child: Text(
+                            AppStrings.or,
+                            style: AppTextStyles.cardMeta,
+                          ),
                         ),
                         const Expanded(child: Divider()),
                       ],
@@ -205,8 +209,8 @@ class ForgetPasswordPage extends StatelessWidget {
                         ),
                         child: Text(
                           state.method == ForgetPasswordMethod.phone
-                              ? 'Use email instead'
-                              : 'Use phone instead',
+                              ? AppStrings.useEmailInstead
+                              : AppStrings.usePhoneInstead,
                           textAlign: TextAlign.center,
                           style: AppTextStyles.cardTitle.copyWith(
                             color: AppColors.primary,

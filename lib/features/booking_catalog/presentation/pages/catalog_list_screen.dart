@@ -3,10 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/localization/app_localization_controller.dart';
 import '../../../../core/routing/catalog_route_args.dart';
 import '../../../../core/routing/routes.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
+import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../home/presentation/widgets/restaurant_card.dart';
 import '../../domain/entities/catalog_category_type.dart';
@@ -37,23 +39,21 @@ class CatalogListScreen extends StatelessWidget {
             titleSpacing: 0,
             leading: IconButton(
               onPressed: () => Navigator.of(context).pop(),
-              icon: Icon(
-                Icons.arrow_back,
-                size: 18.sp,
-                color: AppColors.textPrimary,
-              ),
+              color: AppColors.textPrimary,
+              iconSize: 18.sp,
+              icon: const BackButtonIcon(),
             ),
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  category.title,
+                  _categoryText(category, 'title'),
                   style: AppTextStyles.headingMedium,
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  category.shortDescription,
+                  _categoryText(category, 'short_description'),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.cardMeta.copyWith(
@@ -84,7 +84,7 @@ class CatalogListScreen extends StatelessWidget {
                             padding: EdgeInsets.only(top: 18.h),
                             child: Text(
                               state.errorMessage ??
-                                  'Failed to load category items.',
+                                  AppStrings.failedToLoadCategoryItems,
                               style: AppTextStyles.cardMeta,
                             ),
                           ),
@@ -94,7 +94,7 @@ class CatalogListScreen extends StatelessWidget {
                             padding: EdgeInsets.only(top: 24.h),
                             child: Center(
                               child: Text(
-                                category.emptyStateTitle,
+                                _categoryText(category, 'empty'),
                                 style: AppTextStyles.cardMeta.copyWith(
                                   fontSize: 14.sp,
                                   color: AppColors.textSecondary,
@@ -146,4 +146,10 @@ class CatalogListScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+String _categoryText(CatalogCategoryType category, String suffix) {
+  return AppLocalizationController.instance.tr(
+    'catalog_category_${category.routeKey}_$suffix',
+  );
 }

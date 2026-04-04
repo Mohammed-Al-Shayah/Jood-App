@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'admin_web_app.dart';
 import 'core/di/service_locator.dart';
 import 'core/firebase/firebase_initializer.dart';
+import 'core/localization/app_localization_controller.dart';
 import 'core/utils/seed_firestore.dart';
 import 'features/users/domain/usecases/sync_auth_user_usecase.dart';
 import 'core/routing/app_router.dart';
@@ -24,6 +25,7 @@ void main() async {
       await SeedFirestore.ensureSeeded();
     }
     await ScreenUtil.ensureScreenSize();
+    await AppLocalizationController.instance.initialize();
     await setupServiceLocator();
 
     final authUser = getIt<FirebaseAuth>().currentUser;

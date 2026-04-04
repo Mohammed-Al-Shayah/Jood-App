@@ -22,12 +22,18 @@ class BookingQrCard extends StatelessWidget {
       data: qrData,
       version: QrVersions.auto,
       gapless: true,
-      color: Colors.black,
-      emptyColor: Colors.white,
+      eyeStyle: const QrEyeStyle(
+        eyeShape: QrEyeShape.square,
+        color: Colors.black,
+      ),
+      dataModuleStyle: const QrDataModuleStyle(
+        dataModuleShape: QrDataModuleShape.square,
+        color: Colors.black,
+      ),
     );
     final imageData = await painter.toImageData(1024);
     if (imageData == null) {
-      throw Exception('Failed to generate QR image.');
+      throw Exception(AppStrings.failedToGenerateQrImage);
     }
     return imageData.buffer.asUint8List();
   }
@@ -39,12 +45,26 @@ class BookingQrCard extends StatelessWidget {
     if (!await folder.exists()) {
       await folder.create(recursive: true);
     }
-    final safeCode = code.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    final safeCode = _sanitizeFileName(code);
     final file = File(
       '${folder.path}/booking_qr_${safeCode}_${DateTime.now().millisecondsSinceEpoch}.png',
     );
     await file.writeAsBytes(bytes, flush: true);
     return file;
+  }
+
+  String _sanitizeFileName(String value) {
+    final buffer = StringBuffer();
+    for (final codeUnit in value.codeUnits) {
+      final isUppercase = codeUnit >= 65 && codeUnit <= 90;
+      final isLowercase = codeUnit >= 97 && codeUnit <= 122;
+      final isDigit = codeUnit >= 48 && codeUnit <= 57;
+      final isSafeSymbol = codeUnit == 45 || codeUnit == 95;
+      buffer.writeCharCode(
+        isUppercase || isLowercase || isDigit || isSafeSymbol ? codeUnit : 95,
+      );
+    }
+    return buffer.toString();
   }
 
   Future<void> _downloadQr(BuildContext context) async {
@@ -61,14 +81,16 @@ class BookingQrCard extends StatelessWidget {
       if (!context.mounted) return;
       showAppSnackBar(
         context,
-        isSaved ? 'QR saved to gallery.' : 'Could not save QR to gallery.',
+        isSaved
+            ? AppStrings.qrSavedToGallery
+            : AppStrings.couldNotSaveQrToGallery,
         type: isSaved ? SnackBarType.success : SnackBarType.error,
       );
     } catch (error) {
       if (!context.mounted) return;
       showAppSnackBar(
         context,
-        'Failed to save QR to gallery: $error',
+        AppStrings.failedToSaveQrToGallery(error),
         type: SnackBarType.error,
       );
     }
@@ -77,12 +99,14 @@ class BookingQrCard extends StatelessWidget {
   Future<void> _shareQr(BuildContext context) async {
     try {
       final file = await _saveQrToFile();
-      await Share.shareXFiles([XFile(file.path)], text: 'Booking Code: $code');
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: AppStrings.bookingCodeShareText(code));
     } catch (error) {
       if (!context.mounted) return;
       showAppSnackBar(
         context,
-        'Failed to share QR: $error',
+        AppStrings.failedToShareQr(error),
         type: SnackBarType.error,
       );
     }
@@ -146,12 +170,12 @@ class BookingQrCard extends StatelessWidget {
               TextButton.icon(
                 onPressed: () => _downloadQr(context),
                 icon: Icon(Icons.download, size: 16.sp),
-                label: const Text('Download'),
+                label: Text(AppStrings.download),
               ),
               TextButton.icon(
                 onPressed: () => _shareQr(context),
                 icon: Icon(Icons.share_outlined, size: 16.sp),
-                label: const Text('Share'),
+                label: Text(AppStrings.share),
               ),
             ],
           ),

@@ -6,6 +6,7 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
@@ -54,12 +55,12 @@ class _OrdersView extends StatelessWidget {
           }
           if (state.status == OrdersStatus.unauthenticated) {
             return Center(
-              child: Text(state.errorMessage ?? 'Please login first.'),
+              child: Text(state.errorMessage ?? AppStrings.pleaseLoginFirst),
             );
           }
           if (state.status == OrdersStatus.failure) {
             return Center(
-              child: Text(state.errorMessage ?? 'Failed to load orders.'),
+              child: Text(state.errorMessage ?? AppStrings.failedToLoadOrders),
             );
           }
           if (state.orders.isEmpty) {
@@ -74,10 +75,13 @@ class _OrdersView extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('My Orders', style: AppTextStyles.headingMedium),
+                      Text(
+                        AppStrings.orders,
+                        style: AppTextStyles.headingMedium,
+                      ),
                       SizedBox(height: 4.h),
                       Text(
-                        '${state.orders.length} bookings',
+                        AppStrings.bookingsCount(state.orders.length),
                         style: AppTextStyles.cardMeta,
                       ),
                       SizedBox(height: 16.h),
@@ -122,7 +126,7 @@ class _OrdersView extends StatelessWidget {
         ? snapshotName
         : (hydratedVenue?.name.trim().isNotEmpty == true
               ? hydratedVenue!.name
-              : 'Booking');
+              : AppStrings.booking);
     final displayImage = snapshotImage.isNotEmpty
         ? snapshotImage
         : (hydratedVenue?.coverImageUrl ?? '');
@@ -148,10 +152,10 @@ class _OrdersEmptyState extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('My Orders', style: AppTextStyles.headingMedium),
+            Text(AppStrings.orders, style: AppTextStyles.headingMedium),
             SizedBox(height: 4.h),
             Text(
-              'Your bookings and QR passes will appear here.',
+              AppStrings.yourBookingsAndQrPassesWillAppearHere,
               style: AppTextStyles.cardMeta.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -207,7 +211,7 @@ class _OrdersEmptyState extends StatelessWidget {
                       ),
                       SizedBox(height: 22.h),
                       Text(
-                        'No orders yet',
+                        AppStrings.noOrdersYet,
                         textAlign: TextAlign.center,
                         style: AppTextStyles.headingMedium.copyWith(
                           fontSize: 22.sp,
@@ -215,7 +219,7 @@ class _OrdersEmptyState extends StatelessWidget {
                       ),
                       SizedBox(height: 10.h),
                       Text(
-                        'Start your first booking and come back here to find your reservation details, pricing, and QR access in one place.',
+                        AppStrings.ordersEmptySubtitle,
                         textAlign: TextAlign.center,
                         style: AppTextStyles.body.copyWith(
                           color: AppColors.textSecondary,
@@ -227,18 +231,18 @@ class _OrdersEmptyState extends StatelessWidget {
                         alignment: WrapAlignment.center,
                         spacing: 8.w,
                         runSpacing: 8.h,
-                        children: const [
+                        children: [
                           _OrdersEmptyChip(
                             icon: Icons.restaurant_outlined,
-                            label: 'Buffet',
+                            label: AppStrings.buffet,
                           ),
                           _OrdersEmptyChip(
                             icon: Icons.menu_book_outlined,
-                            label: 'Set Menu',
+                            label: AppStrings.setMenu,
                           ),
                           _OrdersEmptyChip(
                             icon: Icons.local_activity_outlined,
-                            label: 'Attractions',
+                            label: AppStrings.attractions,
                           ),
                         ],
                       ),
@@ -249,7 +253,7 @@ class _OrdersEmptyState extends StatelessWidget {
                           onPressed: () =>
                               context.pushNamedAndRemoveAll(Routes.homeScreen),
                           icon: const Icon(Icons.explore_outlined),
-                          label: const Text('Explore Experiences'),
+                          label: Text(AppStrings.exploreExperiences),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
@@ -330,7 +334,7 @@ class _OrderCard extends StatelessWidget {
   }
 
   String _statusLabel(String statusValue) {
-    if (statusValue.isEmpty) return 'Unknown';
+    if (statusValue.isEmpty) return AppStrings.unknown;
     return statusValue[0].toUpperCase() +
         statusValue.substring(1).toLowerCase();
   }
@@ -398,7 +402,7 @@ class _OrderCard extends StatelessWidget {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        'Code: ${order.bookingCode}',
+                        AppStrings.bookingCodeValue(order.bookingCode),
                         style: AppTextStyles.cardMeta,
                       ),
                     ],
@@ -427,7 +431,9 @@ class _OrderCard extends StatelessWidget {
             ),
             SizedBox(height: 4.h),
             Text(
-              'Total: ${formatCurrency(order.currency, order.total)}',
+              AppStrings.totalValue(
+                formatCurrency(order.currency, order.total),
+              ),
               style: AppTextStyles.cardPrice,
             ),
             SizedBox(height: 10.h),
@@ -441,7 +447,7 @@ class _OrderCard extends StatelessWidget {
                         order.bookingCode,
                       ),
                       icon: const Icon(Icons.qr_code),
-                      label: const Text('View QR'),
+                      label: Text(AppStrings.viewQr),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -538,7 +544,7 @@ class _OrderCard extends StatelessWidget {
               if ((order.offerTitleSnapshot ?? '').isNotEmpty)
                 SizedBox(height: 6.h),
               Text(
-                'Code: ${order.bookingCode}',
+                AppStrings.bookingCodeValue(order.bookingCode),
                 style: AppTextStyles.cardMeta.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
@@ -553,14 +559,16 @@ class _OrderCard extends StatelessWidget {
               ),
               SizedBox(height: 6.h),
               Text(
-                'Total: ${formatCurrency(order.currency, order.total)}',
+                AppStrings.totalValue(
+                  formatCurrency(order.currency, order.total),
+                ),
                 style: AppTextStyles.cardPrice.copyWith(
                   color: AppColors.primary,
                 ),
               ),
               SizedBox(height: 6.h),
               Text(
-                'Status: ${_statusLabel(order.status)}',
+                AppStrings.statusValue(_statusLabel(order.status)),
                 style: AppTextStyles.cardMeta.copyWith(
                   color: badgeColor,
                   fontWeight: FontWeight.w600,
@@ -568,21 +576,21 @@ class _OrderCard extends StatelessWidget {
               ),
               SizedBox(height: 10.h),
               _DetailRow(
-                label: 'Adults',
+                label: AppStrings.adults,
                 value:
                     '${order.adults} x ${formatCurrency(order.currency, order.unitPriceAdult)}',
               ),
               _DetailRow(
-                label: 'Children',
+                label: AppStrings.children,
                 value:
                     '${order.children} x ${formatCurrency(order.currency, order.unitPriceChild)}',
               ),
               _DetailRow(
-                label: 'Subtotal',
+                label: AppStrings.subtotal,
                 value: formatCurrency(order.currency, order.subtotal),
               ),
               _DetailRow(
-                label: 'VAT',
+                label: AppStrings.vat,
                 value: formatCurrency(order.currency, order.tax),
               ),
               SizedBox(height: 14.h),
@@ -592,7 +600,7 @@ class _OrderCard extends StatelessWidget {
                   child: OutlinedButton.icon(
                     onPressed: () => _handleCancel(context),
                     icon: const Icon(Icons.cancel_outlined),
-                    label: const Text('Cancel booking'),
+                    label: Text(AppStrings.cancelBooking),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.redAccent,
                       side: const BorderSide(color: Colors.redAccent),
@@ -614,7 +622,7 @@ class _OrderCard extends StatelessWidget {
                       _showQrSheet(context, order.qrPayload, order.bookingCode);
                     },
                     icon: const Icon(Icons.qr_code),
-                    label: const Text('View QR'),
+                    label: Text(AppStrings.viewQr),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
@@ -640,7 +648,7 @@ class _OrderCard extends StatelessWidget {
     )) {
       showAppSnackBar(
         context,
-        'Cancellation window has ended.',
+        AppStrings.cancellationWindowEnded,
         type: SnackBarType.info,
         fromTop: true,
       );
@@ -658,7 +666,7 @@ class _OrderCard extends StatelessWidget {
     try {
       errorMessage = await context.read<OrdersCubit>().cancelBooking(order);
     } catch (_) {
-      errorMessage = 'Failed to cancel booking. Please try again.';
+      errorMessage = AppStrings.failedToCancelBooking;
     } finally {
       if (context.mounted) {
         final rootNav = Navigator.of(context, rootNavigator: true);
@@ -675,7 +683,7 @@ class _OrderCard extends StatelessWidget {
       }
       showAppSnackBar(
         context,
-        'Booking cancelled successfully.',
+        AppStrings.bookingCancelledSuccessfully,
         type: SnackBarType.success,
         fromTop: true,
       );
@@ -703,7 +711,7 @@ class _OrderCard extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Booking QR', style: AppTextStyles.headingMedium),
+              Text(AppStrings.bookingQr, style: AppTextStyles.headingMedium),
               SizedBox(height: 8.h),
               Text(code, style: AppTextStyles.cardMeta),
               SizedBox(height: 12.h),

@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
+import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/payment_amount_utils.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/bottom_cta_bar.dart';
@@ -66,8 +67,13 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
           backgroundColor: Colors.white,
           bottomNavigationBar: BottomCtaBar(
             label: selectedOffer == null
-                ? 'Select an option first'
-                : 'Proceed to Payment ${formatCurrency(selectedOffer.currency, amounts.totalPayable)}',
+                ? AppStrings.selectOptionFirst
+                : AppStrings.proceedToPaymentAmount(
+                    formatCurrency(
+                      selectedOffer.currency,
+                      amounts.totalPayable,
+                    ),
+                  ),
             onPressed: canProceed ? () => _proceedToPayment(context) : null,
             backgroundColor: Colors.white,
             shadowColor: AppColors.shadowColor,
@@ -78,7 +84,7 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
             child: Column(
               children: [
                 SelectDateHeader(
-                  title: 'Select Guests',
+                  title: AppStrings.selectGuestsTitle,
                   subtitle: widget.item.name,
                   onBack: () => Navigator.of(context).pop(),
                 ),
@@ -127,7 +133,7 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
     if (beforeOffer == null) {
       showAppSnackBar(
         context,
-        'Please choose an available option first.',
+        AppStrings.pleaseChooseAvailableOptionFirst,
         type: SnackBarType.error,
       );
       return;
@@ -135,7 +141,7 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
     if (guestCount == 0) {
       showAppSnackBar(
         context,
-        'Please add at least one guest.',
+        AppStrings.pleaseAddAtLeastOneGuest,
         type: SnackBarType.error,
       );
       return;
@@ -157,7 +163,7 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
     if (!stillSelected || afterOffer == null) {
       showAppSnackBar(
         context,
-        'The selected option is no longer available. Please choose again.',
+        AppStrings.selectedOptionNoLongerAvailable,
         type: SnackBarType.error,
       );
       return;
@@ -165,7 +171,7 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
     if ((after.adultCount + after.childCount) > remainingTotal(afterOffer)) {
       showAppSnackBar(
         context,
-        'Selected guests are no longer available. Please review your quantities.',
+        AppStrings.selectedGuestsNoLongerAvailable,
         type: SnackBarType.error,
       );
       return;
@@ -188,7 +194,7 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
     if (priceChanged) {
       showAppSnackBar(
         context,
-        'Pricing was updated. Review the refreshed total and continue again.',
+        AppStrings.pricingWasUpdated,
         type: SnackBarType.info,
       );
       return;
@@ -226,10 +232,10 @@ class _SelectedOptionSection extends StatelessWidget {
     );
 
     return SectionCard(
-      title: 'Selected Option',
+      title: AppStrings.selectedOption,
       child: selectedOffer == null
           ? Text(
-              'Go back and choose an available option first.',
+              AppStrings.goBackAndChooseAvailableOptionFirst,
               style: AppTextStyles.cardMeta.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -253,14 +259,22 @@ class _SelectedOptionSection extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      formatCurrency(selectedOffer!.currency, selectedOffer!.priceAdult),
+                      formatCurrency(
+                        selectedOffer!.currency,
+                        selectedOffer!.priceAdult,
+                      ),
                       style: AppTextStyles.cardPrice.copyWith(
                         color: AppColors.primary,
                       ),
                     ),
                     SizedBox(width: 10.w),
                     Text(
-                      'Child ${formatCurrency(selectedOffer!.currency, selectedOffer!.priceChild)}',
+                      AppStrings.childPrice(
+                        formatCurrency(
+                          selectedOffer!.currency,
+                          selectedOffer!.priceChild,
+                        ),
+                      ),
                       style: AppTextStyles.cardMeta.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -286,9 +300,12 @@ class _GuestsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final remaining = selectedOffer == null ? 0 : remainingTotal(selectedOffer!);
+    final remaining = selectedOffer == null
+        ? 0
+        : remainingTotal(selectedOffer!);
     final totalSelected = state.adultCount + state.childCount;
-    final canAddMore = selectedOffer != null &&
+    final canAddMore =
+        selectedOffer != null &&
         totalSelected < remaining &&
         totalSelected < maxGuests;
     final currency = selectedOffer?.currency ?? r'$';
@@ -297,12 +314,12 @@ class _GuestsSection extends StatelessWidget {
     final cubit = context.read<BookingFlowCubit>();
 
     return SectionCard(
-      title: 'Guests',
+      title: AppStrings.guests,
       child: Column(
         children: [
           TicketRow(
-            label: 'Adults',
-            ageLabel: '13+ years',
+            label: AppStrings.adults,
+            ageLabel: AppStrings.adultsAge,
             priceLabel: formatCurrency(currency, adultPrice),
             count: state.adultCount,
             onAdd: canAddMore
@@ -314,8 +331,8 @@ class _GuestsSection extends StatelessWidget {
           ),
           Divider(color: AppColors.shadowColor, height: 24.h),
           TicketRow(
-            label: 'Children',
-            ageLabel: '2-12 years',
+            label: AppStrings.children,
+            ageLabel: AppStrings.childrenAge,
             priceLabel: formatCurrency(currency, childPrice),
             count: state.childCount,
             onAdd: canAddMore
@@ -328,9 +345,9 @@ class _GuestsSection extends StatelessWidget {
           if (selectedOffer != null && remaining > 0) ...[
             SizedBox(height: 12.h),
             Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: Text(
-                '$remaining spots available for this selection.',
+                AppStrings.spotsAvailableForSelection(remaining),
                 style: AppTextStyles.cardMeta.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -367,7 +384,7 @@ class _SummarySection extends StatelessWidget {
     );
 
     return SectionCard(
-      title: 'Booking Summary',
+      title: AppStrings.bookingSummary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -385,13 +402,13 @@ class _SummarySection extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           SummaryRow(
-            label: 'Adults x${state.adultCount}',
+            label: AppStrings.adultsCountLabel(state.adultCount),
             value: formatCurrency(currency, amounts.adultTotal),
           ),
           if (state.childCount > 0) ...[
             SizedBox(height: 6.h),
             SummaryRow(
-              label: 'Children x${state.childCount}',
+              label: AppStrings.childrenCountLabel(state.childCount),
               value: formatCurrency(currency, amounts.childTotal),
             ),
           ],
@@ -399,29 +416,29 @@ class _SummarySection extends StatelessWidget {
           Divider(color: AppColors.shadowColor),
           SizedBox(height: 10.h),
           SummaryRow(
-            label: 'Before discount',
+            label: AppStrings.beforeDiscount,
             value: formatCurrency(currency, amounts.originalSubtotal),
           ),
           SizedBox(height: 6.h),
           SummaryRow(
-            label: 'Discount',
+            label: AppStrings.discount,
             value: formatCurrency(currency, -amounts.discountTotal),
           ),
           SizedBox(height: 6.h),
           SummaryRow(
-            label: 'VAT (5%)',
+            label: AppStrings.vatWithRate('5%'),
             value: formatCurrency(currency, amounts.tax),
           ),
           SizedBox(height: 6.h),
           SummaryRow(
-            label: 'Total Payable',
+            label: AppStrings.totalPayable,
             value: formatCurrency(currency, amounts.totalPayable),
             isBold: true,
           ),
           if (item.requiresMenuItemSelection) ...[
             SizedBox(height: 12.h),
             Text(
-              'Set menu item selection will be completed after the booking step.',
+              AppStrings.setMenuItemSelectionAfterBooking,
               style: AppTextStyles.cardMeta.copyWith(
                 color: AppColors.textSecondary,
               ),

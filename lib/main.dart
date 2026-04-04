@@ -6,6 +6,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 import 'core/di/service_locator.dart';
 import 'core/firebase/firebase_initializer.dart';
+import 'core/localization/app_localization_controller.dart';
 import 'core/firebase/firebase_messaging_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/utils/seed_firestore.dart';
@@ -24,6 +25,7 @@ void main() async {
   }
   // ThawaniConfig.validate();
   await ScreenUtil.ensureScreenSize();
+  await AppLocalizationController.instance.initialize();
   await setupServiceLocator();
   final authUser = getIt<FirebaseAuth>().currentUser;
   if (authUser != null) {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../localization/app_localization_controller.dart';
+
 extension Navigation on BuildContext {
   Future<dynamic> pushNamed(String routeName, {Object? arguments}) {
     return Navigator.of(this).pushNamed(routeName, arguments: arguments);
@@ -21,12 +23,10 @@ extension Navigation on BuildContext {
     ).pushNamedAndRemoveUntil(routeName, predicate, arguments: arguments);
   }
 
-  Future<dynamic> pushNamedAndRemoveAll(
-    String routeName, {
-    Object? arguments,
-  }) {
-    return Navigator.of(this)
-        .pushNamedAndRemoveUntil(routeName, (_) => false, arguments: arguments);
+  Future<dynamic> pushNamedAndRemoveAll(String routeName, {Object? arguments}) {
+    return Navigator.of(
+      this,
+    ).pushNamedAndRemoveUntil(routeName, (_) => false, arguments: arguments);
   }
 
   void pop() {
@@ -34,6 +34,29 @@ extension Navigation on BuildContext {
   }
 }
 
+extension LocalizationExtensions on BuildContext {
+  String tr(
+    String key, {
+    Map<String, Object?> params = const <String, Object?>{},
+    String? fallback,
+  }) {
+    return AppLocalizationController.instance.tr(
+      key,
+      params: params,
+      fallback: fallback,
+    );
+  }
+
+  Locale get appLocale => AppLocalizationController.instance.locale;
+
+  Future<void> setAppLocale(Locale locale) {
+    return AppLocalizationController.instance.setLocale(locale);
+  }
+
+  Future<void> toggleAppLocale() {
+    return AppLocalizationController.instance.toggleLocale();
+  }
+}
 
 extension StringDateFormatting on String {
   String toFormattedDate() {

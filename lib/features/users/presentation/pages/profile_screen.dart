@@ -5,6 +5,7 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 
@@ -39,7 +40,8 @@ class ProfileTab extends StatelessWidget {
               return const Center(child: CircularProgressIndicator());
             }
             if (state.status == ProfileStatus.failure) {
-              final message = state.errorMessage ?? 'Failed to load profile.';
+              final message =
+                  state.errorMessage ?? AppStrings.failedToLoadProfile;
               if (message.toLowerCase().contains('no signed-in user')) {
                 return Center(
                   child: Padding(
@@ -48,7 +50,7 @@ class ProfileTab extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Please log in to view your profile.',
+                          AppStrings.pleaseLogInToViewYourProfile,
                           style: AppTextStyles.cardMeta,
                           textAlign: TextAlign.center,
                         ),
@@ -67,7 +69,7 @@ class ProfileTab extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(14.r),
                               ),
                             ),
-                            child: const Text('Log in'),
+                            child: Text(AppStrings.login),
                           ),
                         ),
                       ],
@@ -90,7 +92,10 @@ class ProfileTab extends StatelessWidget {
             final user = state.user;
             if (user == null) {
               return Center(
-                child: Text('No profile data.', style: AppTextStyles.cardMeta),
+                child: Text(
+                  AppStrings.noProfileData,
+                  style: AppTextStyles.cardMeta,
+                ),
               );
             }
 
@@ -99,8 +104,8 @@ class ProfileTab extends StatelessWidget {
             final quickActions = <_ProfileQuickAction>[
               if (isAdmin)
                 _ProfileQuickAction(
-                  title: 'Admin Dashboard',
-                  subtitle: 'Manage offers, users, and activity.',
+                  title: AppStrings.adminDashboard,
+                  subtitle: AppStrings.manageOffersUsersAndActivity,
                   icon: Icons.admin_panel_settings_outlined,
                   tint: AppColors.primary,
                   onTap: () {
@@ -109,8 +114,8 @@ class ProfileTab extends StatelessWidget {
                 ),
               if (canScanOrders)
                 _ProfileQuickAction(
-                  title: 'Scan Order QR',
-                  subtitle: 'Verify customer bookings on the spot.',
+                  title: AppStrings.scanOrderQr,
+                  subtitle: AppStrings.verifyCustomerBookingsOnTheSpot,
                   icon: Icons.qr_code_scanner_rounded,
                   tint: const Color(0xFF0F9D92),
                   onTap: () {
@@ -124,10 +129,13 @@ class ProfileTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Profile', style: AppTextStyles.headingLarge),
+                  Text(
+                    AppStrings.profileTitle,
+                    style: AppTextStyles.headingLarge,
+                  ),
                   SizedBox(height: 6.h),
                   Text(
-                    'Manage your account details, access, and staff tools.',
+                    AppStrings.manageAccountDetailsAccessAndStaffTools,
                     style: AppTextStyles.bodySmall.copyWith(fontSize: 13.sp),
                   ),
                   SizedBox(height: 18.h),
@@ -151,53 +159,67 @@ class ProfileTab extends StatelessWidget {
                   ),
                   if (quickActions.isNotEmpty) ...[
                     SizedBox(height: 24.h),
-                    const _SectionHeading(
-                      title: 'Quick Actions',
-                      subtitle: 'Shortcuts available for your account role.',
+                    _SectionHeading(
+                      title: AppStrings.quickActions,
+                      subtitle: AppStrings.shortcutsAvailableForYourAccountRole,
                     ),
                     SizedBox(height: 12.h),
                     _QuickActionsGrid(actions: quickActions),
                   ],
                   SizedBox(height: 24.h),
-                  const _SectionHeading(
-                    title: 'Personal Info',
-                    subtitle: 'Your saved details across the account.',
+                  _SectionHeading(
+                    title: AppStrings.personalInfo,
+                    subtitle: AppStrings.yourSavedDetailsAcrossTheAccount,
                   ),
                   SizedBox(height: 12.h),
                   _ProfileInfoCard(
                     items: [
                       _ProfileInfoEntry(
                         icon: Icons.phone_rounded,
-                        label: 'Phone',
+                        label: AppStrings.phone,
                         value: _fieldValue(user.phone),
                       ),
                       _ProfileInfoEntry(
                         icon: Icons.mail_outline_rounded,
-                        label: 'Email',
+                        label: AppStrings.email,
                         value: _fieldValue(user.email),
                       ),
                       _ProfileInfoEntry(
                         icon: Icons.public_rounded,
-                        label: 'Country',
+                        label: AppStrings.country,
                         value: _fieldValue(user.country),
                       ),
                       _ProfileInfoEntry(
                         icon: Icons.location_city_rounded,
-                        label: 'City',
+                        label: AppStrings.city,
                         value: _fieldValue(user.city),
                       ),
                     ],
                   ),
                   SizedBox(height: 24.h),
-                  const _SectionHeading(
-                    title: 'Account',
-                    subtitle: 'Session and access settings.',
+                  _SectionHeading(
+                    title: AppStrings.account,
+                    subtitle: AppStrings.sessionAndAccessSettings,
+                  ),
+                  SizedBox(height: 12.h),
+                  _ProfileActionPanel(
+                    icon: Icons.language_rounded,
+                    title: AppStrings.language,
+                    subtitle: AppStrings.currentLanguageLabel(
+                      context.appLocale.languageCode == 'ar'
+                          ? AppStrings.currentLanguageArabic
+                          : AppStrings.currentLanguageEnglish,
+                    ),
+                    tint: AppColors.primary,
+                    onTap: () {
+                      context.toggleAppLocale();
+                    },
                   ),
                   SizedBox(height: 12.h),
                   _ProfileActionPanel(
                     icon: Icons.logout_rounded,
-                    title: 'Log out',
-                    subtitle: 'Sign out from this device and return to login.',
+                    title: AppStrings.logOut,
+                    subtitle: AppStrings.signOutFromThisDeviceAndReturnToLogin,
                     tint: AppColors.textPrimary,
                     onTap: () async {
                       final message = await context
@@ -218,9 +240,9 @@ class ProfileTab extends StatelessWidget {
                     },
                   ),
                   SizedBox(height: 24.h),
-                  const _SectionHeading(
-                    title: 'Danger Zone',
-                    subtitle: 'Permanent actions that remove your account.',
+                  _SectionHeading(
+                    title: AppStrings.dangerZone,
+                    subtitle: AppStrings.permanentActionsThatRemoveYourAccount,
                   ),
                   SizedBox(height: 12.h),
                   _DangerZoneCard(
@@ -371,7 +393,7 @@ class _HeroEditButton extends StatelessWidget {
               Icon(Icons.edit_outlined, size: 16.sp, color: AppColors.primary),
               SizedBox(width: 6.w),
               Text(
-                'Edit',
+                AppStrings.edit,
                 style: AppTextStyles.body.copyWith(
                   fontSize: 13.sp,
                   color: AppColors.primaryDark,
@@ -482,6 +504,7 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22.r),
@@ -528,7 +551,7 @@ class _QuickActionCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'Open',
+                    AppStrings.open,
                     style: AppTextStyles.body.copyWith(
                       fontSize: 13.sp,
                       color: action.tint,
@@ -536,7 +559,9 @@ class _QuickActionCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   Icon(
-                    Icons.arrow_forward_rounded,
+                    isRtl
+                        ? Icons.arrow_back_rounded
+                        : Icons.arrow_forward_rounded,
                     color: action.tint,
                     size: 18.sp,
                   ),
@@ -658,6 +683,7 @@ class _ProfileActionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(24.r),
@@ -702,7 +728,9 @@ class _ProfileActionPanel extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.arrow_forward_ios_rounded,
+                isRtl
+                    ? Icons.chevron_left_rounded
+                    : Icons.chevron_right_rounded,
                 size: 16.sp,
                 color: AppColors.textMuted,
               ),
@@ -749,7 +777,7 @@ class _DangerZoneCard extends StatelessWidget {
               SizedBox(width: 12.w),
               Expanded(
                 child: Text(
-                  'Delete account',
+                  AppStrings.deleteAccount,
                   style: AppTextStyles.sectionTitle.copyWith(color: Colors.red),
                 ),
               ),
@@ -757,7 +785,7 @@ class _DangerZoneCard extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           Text(
-            'This permanently removes your account and related data. You will not be able to recover it later.',
+            AppStrings.deleteAccountDescription,
             style: AppTextStyles.bodySmall.copyWith(
               fontSize: 12.sp,
               height: 1.45,
@@ -779,7 +807,7 @@ class _DangerZoneCard extends StatelessWidget {
               ),
               icon: const Icon(Icons.delete_forever),
               label: Text(
-                'Delete account',
+                AppStrings.deleteAccount,
                 style: AppTextStyles.body.copyWith(
                   fontSize: 14.sp,
                   color: Colors.red,
@@ -824,23 +852,22 @@ class _ProfileInfoEntry {
 Future<void> _handleDeleteAccount(BuildContext context) async {
   final step1 = await _showDeleteConfirmDialog(
     context,
-    title: 'Delete account?',
-    message:
-        'This will permanently remove your account and all related data. You will not be able to recover it.',
-    confirmLabel: 'Continue',
+    title: AppStrings.deleteAccountQuestion,
+    message: AppStrings.deleteAccountWarning,
+    confirmLabel: AppStrings.continueLabel,
   );
   if (step1 != true || !context.mounted) return;
 
   final step2 = await _showDeleteConfirmDialog(
     context,
-    title: 'Final confirmation',
-    message: 'Are you absolutely sure? This action is irreversible.',
-    confirmLabel: 'Delete account',
+    title: AppStrings.finalConfirmation,
+    message: AppStrings.areYouAbsolutelySure,
+    confirmLabel: AppStrings.deleteAccount,
     isDestructive: true,
   );
   if (step2 != true || !context.mounted) return;
 
-  _showBlockingLoading(context, 'Deleting your account...');
+  _showBlockingLoading(context, AppStrings.deletingYourAccount);
   final result = await context.read<ProfileCubit>().deleteAccount();
   if (!context.mounted) return;
   Navigator.of(context, rootNavigator: true).pop();
@@ -852,9 +879,9 @@ Future<void> _handleDeleteAccount(BuildContext context) async {
   if (result.status == ProfileAccountActionStatus.reauthRequired) {
     await _showDeleteConfirmDialog(
       context,
-      title: 'Re-authentication required',
+      title: AppStrings.reauthenticationRequired,
       message: result.message,
-      confirmLabel: 'Go to login',
+      confirmLabel: AppStrings.goToLogin,
       isDestructive: true,
     );
     if (context.mounted) {
@@ -901,7 +928,7 @@ Future<bool?> _showDeleteConfirmDialog(
                     ),
                   ),
                   child: Text(
-                    'Cancel',
+                    AppStrings.cancel,
                     style: AppTextStyles.cta.copyWith(
                       color: AppColors.textPrimary,
                     ),
@@ -974,7 +1001,7 @@ bool _isAdmin(String role) {
 
 String _fieldValue(String value) {
   final trimmed = value.trim();
-  return trimmed.isEmpty ? 'Not added yet' : trimmed;
+  return trimmed.isEmpty ? AppStrings.notAddedYet : trimmed;
 }
 
 String _locationLabel(String city, String country) {
@@ -989,13 +1016,13 @@ String _roleLabel(String role) {
   final normalized = role.trim().toLowerCase();
   switch (normalized) {
     case 'admin':
-      return 'Administrator';
+      return AppStrings.administrator;
     case 'restaurant_staff':
-      return 'Restaurant Staff';
+      return AppStrings.restaurantStaff;
     case 'staff':
-      return 'Staff';
+      return AppStrings.staff;
     case '':
-      return 'Member';
+      return AppStrings.member;
     default:
       final words = normalized.split('_');
       return words

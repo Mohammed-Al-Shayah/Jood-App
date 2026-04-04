@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -31,7 +32,7 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
   bool _isProcessing = false;
   bool _isSheetOpen = false;
   final ValueNotifier<String> _statusTextNotifier = ValueNotifier<String>(
-    'Scan order QR',
+    AppStrings.scanOrderQr,
   );
 
   @override
@@ -48,7 +49,7 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
     if (raw.isEmpty) return;
 
     _isProcessing = true;
-    _statusTextNotifier.value = 'Verifying order...';
+    _statusTextNotifier.value = AppStrings.verifyingOrder;
 
     try {
       final bookingView = await context
@@ -85,12 +86,12 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
       }
 
       if (confirm != true) {
-        _statusTextNotifier.value = 'Scan order QR';
+        _statusTextNotifier.value = AppStrings.scanOrderQr;
         return;
       }
 
       if (!mounted) return;
-      _statusTextNotifier.value = 'Completing order...';
+      _statusTextNotifier.value = AppStrings.completingOrder;
       final completeText = await context
           .read<OrderQrScannerCubit>()
           .completeCurrentBooking();
@@ -112,7 +113,7 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Scan Order QR')),
+      appBar: AppBar(title: Text(AppStrings.scanOrderQr)),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -184,20 +185,23 @@ class _BookingReviewSheet extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Order details',
+                AppStrings.orderDetails,
                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              _line('Code', bookingCode),
-              _line('Restaurant', restaurantName),
-              _line('Date', date),
-              _line('Time', startTime),
-              _line('Guests', '$adults adult(s), $children child(ren)'),
-              _line('Subtotal', subtotal.toStringAsFixed(2)),
-              _line('Tax', tax.toStringAsFixed(2)),
-              _line('Total', total.toStringAsFixed(2)),
-              _line('Coupon/Offer', offerTitle, maxLines: 2),
-              _line('Status', status),
+              _line(AppStrings.code, bookingCode),
+              _line(AppStrings.restaurant, restaurantName),
+              _line(AppStrings.date, date),
+              _line(AppStrings.time, startTime),
+              _line(
+                AppStrings.guests,
+                AppStrings.guestsSummary(adults, children),
+              ),
+              _line(AppStrings.subtotal, subtotal.toStringAsFixed(2)),
+              _line(AppStrings.vat, tax.toStringAsFixed(2)),
+              _line(AppStrings.total, total.toStringAsFixed(2)),
+              _line(AppStrings.couponOffer, offerTitle, maxLines: 2),
+              _line(AppStrings.status, status),
               SizedBox(height: 16.h),
               Row(
                 children: [
@@ -207,8 +211,8 @@ class _BookingReviewSheet extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(48),
                       ),
-                      child: const Text(
-                        'Cancel',
+                      child: Text(
+                        AppStrings.cancel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: AppColors.black),
@@ -223,8 +227,8 @@ class _BookingReviewSheet extends StatelessWidget {
                         minimumSize: const Size.fromHeight(48),
                         backgroundColor: AppColors.mainBlue,
                       ),
-                      child: const Text(
-                        'Confirm & Complete',
+                      child: Text(
+                        AppStrings.confirmAndComplete,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: AppColors.white),

@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/features/offers/domain/usecases/get_offers_for_date_usecase.dart';
 import 'package:jood/features/offers/domain/usecases/get_offers_for_range_usecase.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
@@ -123,7 +124,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
       _emitIfOpen(
         state.copyWith(
           status: BookingFlowStatus.failure,
-          errorMessage: 'Missing restaurant id.',
+          errorMessage: AppStrings.missingRestaurantId,
           offers: const [],
         ),
       );

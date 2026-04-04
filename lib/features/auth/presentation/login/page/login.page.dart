@@ -6,6 +6,7 @@ import 'package:jood/core/constants/app_assets.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/routing/routes.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
@@ -22,12 +23,34 @@ class LoginPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: Text('Log In', style: AppTextStyles.cardTitle),
+          title: Text(AppStrings.login, style: AppTextStyles.cardTitle),
           centerTitle: true,
           elevation: 0,
           automaticallyImplyLeading: false,
           backgroundColor: Colors.white,
           foregroundColor: AppColors.textPrimary,
+          actions: [
+            Padding(
+              padding: EdgeInsetsDirectional.only(end: 8.w),
+              child: TextButton.icon(
+                onPressed: context.toggleAppLocale,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  padding: EdgeInsets.symmetric(horizontal: 10.w),
+                ),
+                icon: Icon(Icons.language_rounded, size: 18.sp),
+                label: Text(
+                  context.appLocale.languageCode == 'ar'
+                      ? AppStrings.currentLanguageArabic
+                      : AppStrings.currentLanguageEnglish,
+                  style: AppTextStyles.cardMeta.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         body: SafeArea(
           child: BlocConsumer<LoginCubit, LoginState>(
@@ -67,8 +90,8 @@ class LoginPage extends StatelessWidget {
                     SizedBox(height: 24.h),
                     _Label(
                       text: state.loginMethod == LoginMethod.phone
-                          ? 'Phone Number'
-                          : 'Email Address',
+                          ? AppStrings.phoneNumber
+                          : AppStrings.emailAddress,
                     ),
                     if (state.loginMethod == LoginMethod.phone)
                       InternationalPhoneNumberInput(
@@ -87,7 +110,7 @@ class LoginPage extends StatelessWidget {
                         ),
                         keyboardType: TextInputType.phone,
                         inputDecoration: InputDecoration(
-                          hintText: 'Enter your phone number',
+                          hintText: AppStrings.enterPhoneNumber,
                           filled: true,
                           fillColor: const Color(0xFFF6F7FB),
                           contentPadding: EdgeInsets.symmetric(
@@ -102,14 +125,14 @@ class LoginPage extends StatelessWidget {
                       )
                     else
                       _TextField(
-                        hintText: 'Enter your email',
+                        hintText: AppStrings.enterEmail,
                         keyboardType: TextInputType.emailAddress,
                         onChanged: context.read<LoginCubit>().updateIdentifier,
                       ),
                     SizedBox(height: 5.h),
-                    _Label(text: 'Password'),
+                    _Label(text: AppStrings.password),
                     _TextField(
-                      hintText: 'Enter your password',
+                      hintText: AppStrings.enterPassword,
                       obscureText: !state.showPassword,
                       keyboardType: TextInputType.visiblePassword,
                       onChanged: context.read<LoginCubit>().updatePassword,
@@ -137,7 +160,10 @@ class LoginPage extends StatelessWidget {
                               onChanged: (_) =>
                                   context.read<LoginCubit>().toggleRemember(),
                             ),
-                            Text('Remember me', style: AppTextStyles.cardMeta),
+                            Text(
+                              AppStrings.rememberMe,
+                              style: AppTextStyles.cardMeta,
+                            ),
                           ],
                         ),
                         TextButton(
@@ -145,7 +171,7 @@ class LoginPage extends StatelessWidget {
                             context.pushNamed(Routes.forgetPasswordScreen);
                           },
                           child: Text(
-                            'Forgot password?',
+                            AppStrings.forgotPassword,
                             style: AppTextStyles.body,
                           ),
                         ),
@@ -172,7 +198,7 @@ class LoginPage extends StatelessWidget {
                                 color: Colors.white,
                               ),
                             )
-                          : Text('Log In', style: AppTextStyles.cta),
+                          : Text(AppStrings.login, style: AppTextStyles.cta),
                     ),
                     SizedBox(height: 14.h),
                     Row(
@@ -180,7 +206,10 @@ class LoginPage extends StatelessWidget {
                         const Expanded(child: Divider()),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8.w),
-                          child: Text('OR', style: AppTextStyles.cardMeta),
+                          child: Text(
+                            AppStrings.or,
+                            style: AppTextStyles.cardMeta,
+                          ),
                         ),
                         const Expanded(child: Divider()),
                       ],
@@ -203,8 +232,8 @@ class LoginPage extends StatelessWidget {
                       // ),
                       label: Text(
                         state.loginMethod == LoginMethod.phone
-                            ? 'Login via email'
-                            : 'Login via phone',
+                            ? AppStrings.loginViaEmail
+                            : AppStrings.loginViaPhone,
                         style: AppTextStyles.cardPrice.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w700,
@@ -232,7 +261,7 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        'Create a new account',
+                        AppStrings.createNewAccount,
                         style: AppTextStyles.cardPrice.copyWith(
                           color: AppColors.textPrimary,
                         ),
@@ -244,7 +273,7 @@ class LoginPage extends StatelessWidget {
                           ? null
                           : () => context.pushNamed(Routes.homeScreen),
                       child: Text(
-                        'Continue as Guest',
+                        AppStrings.continueAsGuest,
                         style: AppTextStyles.cardPrice,
                       ),
                     ),
@@ -283,7 +312,7 @@ Future<void> _showEmailVerificationDialog(
                 size: 30.sp,
               ),
               SizedBox(height: 10.h),
-              Text('Verify your email', style: AppTextStyles.cardTitle),
+              Text(AppStrings.verifyYourEmail, style: AppTextStyles.cardTitle),
               SizedBox(height: 8.h),
               Text(
                 message,
@@ -305,7 +334,7 @@ Future<void> _showEmailVerificationDialog(
                     ),
                   ),
                   child: Text(
-                    'Resend activation link',
+                    AppStrings.resendActivationLink,
                     style: AppTextStyles.body,
                   ),
                 ),
@@ -324,7 +353,10 @@ Future<void> _showEmailVerificationDialog(
                       borderRadius: BorderRadius.circular(30.r),
                     ),
                   ),
-                  child: Text('Login with phone', style: AppTextStyles.body),
+                  child: Text(
+                    AppStrings.loginWithPhone,
+                    style: AppTextStyles.body,
+                  ),
                 ),
               ),
             ],

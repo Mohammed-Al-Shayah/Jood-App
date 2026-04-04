@@ -93,7 +93,7 @@ class _PaymentScreenState extends State<PaymentScreen>
 
     showAppSnackBar(
       context,
-      'You need to login first.',
+      AppStrings.pleaseLoginFirst,
       type: SnackBarType.error,
     );
     context.pushNamed(Routes.loginScreen);
@@ -167,7 +167,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         onCancelled: (_) async {
           if (!mounted) return;
           _paymentCubit.stopSubmitting();
-          showAppSnackBar(context, 'Payment cancelled.');
+          showAppSnackBar(context, AppStrings.paymentCancelled);
           await _checkPendingPayment();
         },
         onError: (status) async {
@@ -189,7 +189,7 @@ class _PaymentScreenState extends State<PaymentScreen>
       _paymentCubit.stopSubmitting();
       showAppSnackBar(
         context,
-        'Unable to start payment: $error',
+        context.tr('unable_to_start_payment', params: {'error': error}),
         type: SnackBarType.error,
       );
     }
@@ -197,13 +197,13 @@ class _PaymentScreenState extends State<PaymentScreen>
 
   Future<void> _handlePaymentSuccess(PreparedPaymentLaunch checkout) async {
     try {
-      EasyLoading.show(status: 'loading...');
+      EasyLoading.show(status: AppStrings.processing);
       final completion = await _paymentCubit.finalizePayment(checkout);
 
       if (!mounted) return;
       showAppSnackBar(
         context,
-        'Payment completed successfully.',
+        AppStrings.paymentCompletedSuccessfully,
         type: SnackBarType.success,
       );
       context.pushReplacementNamed(
@@ -219,7 +219,10 @@ class _PaymentScreenState extends State<PaymentScreen>
       if (!mounted) return;
       showAppSnackBar(
         context,
-        'Payment was successful but booking save failed. Please contact support. $error',
+        context.tr(
+          'payment_completed_but_booking_save_failed',
+          params: {'error': error},
+        ),
         type: SnackBarType.error,
       );
     } finally {
@@ -260,7 +263,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                   builder: (context, vm) {
                     return BottomCtaBar(
                       label: paymentState.isSubmitting
-                          ? 'Processing...'
+                          ? AppStrings.processing
                           : '${AppStrings.confirmAndPay} ${formatCurrency(vm.currency, vm.totalPayable)}',
                       onPressed: paymentState.isSubmitting
                           ? null

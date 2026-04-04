@@ -5,6 +5,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import '../../../../auth/domain/usecases/link_email_password_usecase.dart';
@@ -37,7 +38,7 @@ class VerifyOtpPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text('Verify OTP'),
+          title: Text(AppStrings.verifyOtp),
           centerTitle: true,
           elevation: 0,
           backgroundColor: Colors.white,
@@ -71,10 +72,10 @@ class VerifyOtpPage extends StatelessWidget {
                   children: [
                     Text(
                       args.flow == OtpFlow.register
-                          ? 'Enter the OTP sent to your phone (${args.phone}) to complete registration.'
+                          ? AppStrings.otpRegisterMessage(args.phone)
                           : args.flow == OtpFlow.login
-                          ? 'Enter the OTP sent to your phone (${args.phone}) to log in.'
-                          : 'Enter the OTP sent to your phone (${args.phone}) to reset your password.',
+                          ? AppStrings.otpLoginMessage(args.phone)
+                          : AppStrings.otpResetMessage(args.phone),
                       style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp),
                     ),
                     SizedBox(height: 20.h),
@@ -106,7 +107,7 @@ class VerifyOtpPage extends StatelessWidget {
                               ? context.read<OtpCubit>().resend
                               : null,
                           child: Text(
-                            'Resend',
+                            AppStrings.resend,
                             style: TextStyle(
                               color: state.canResend
                                   ? AppColors.primary
@@ -148,7 +149,10 @@ class VerifyOtpPage extends StatelessWidget {
                                     color: Colors.white,
                                   ),
                                 )
-                              : Text('Verify', style: AppTextStyles.cta),
+                              : Text(
+                                  AppStrings.verify,
+                                  style: AppTextStyles.cta,
+                                ),
                         ),
                       ),
                     ),

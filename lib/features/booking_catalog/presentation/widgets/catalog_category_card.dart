@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../core/localization/app_localization_controller.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
+import '../../../../core/utils/app_strings.dart';
 import '../../domain/entities/catalog_category_type.dart';
 
 class CatalogCategoryCard extends StatelessWidget {
@@ -18,6 +20,7 @@ class CatalogCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final config = _configFor(category);
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -55,7 +58,7 @@ class CatalogCategoryCard extends StatelessWidget {
               ),
               SizedBox(height: 12.h),
               Text(
-                category.title,
+                _categoryText(category, 'title'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.cardTitle.copyWith(
@@ -65,7 +68,7 @@ class CatalogCategoryCard extends StatelessWidget {
               ),
               SizedBox(height: 4.h),
               Text(
-                config.subtitle,
+                _categoryText(category, 'card_subtitle'),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.cardMeta.copyWith(
@@ -77,7 +80,7 @@ class CatalogCategoryCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'Explore',
+                    AppStrings.explore,
                     style: AppTextStyles.cardPrice.copyWith(
                       color: Colors.white,
                       fontSize: 13.sp,
@@ -85,7 +88,9 @@ class CatalogCategoryCard extends StatelessWidget {
                   ),
                   SizedBox(width: 6.w),
                   Icon(
-                    Icons.arrow_forward_rounded,
+                    isRtl
+                        ? Icons.arrow_back_rounded
+                        : Icons.arrow_forward_rounded,
                     color: Colors.white,
                     size: 16.sp,
                   ),
@@ -100,14 +105,9 @@ class CatalogCategoryCard extends StatelessWidget {
 }
 
 class _CategoryVisualConfig {
-  const _CategoryVisualConfig({
-    required this.icon,
-    required this.subtitle,
-    required this.gradient,
-  });
+  const _CategoryVisualConfig({required this.icon, required this.gradient});
 
   final IconData icon;
-  final String subtitle;
   final List<Color> gradient;
 }
 
@@ -116,20 +116,23 @@ _CategoryVisualConfig _configFor(CatalogCategoryType category) {
     case CatalogCategoryType.buffet:
       return const _CategoryVisualConfig(
         icon: Icons.restaurant_menu_rounded,
-        subtitle: 'Breakfast, lunch, dinner, and optional brunch experiences.',
         gradient: [Color(0xFF0F766E), Color(0xFF14B8A6)],
       );
     case CatalogCategoryType.setMenu:
       return const _CategoryVisualConfig(
         icon: Icons.dinner_dining_rounded,
-        subtitle: 'Curated set menus with clean pricing and guided selection.',
         gradient: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
       );
     case CatalogCategoryType.attraction:
       return const _CategoryVisualConfig(
         icon: Icons.park_rounded,
-        subtitle: 'Book packages by date and time with dynamic availability.',
         gradient: [Color(0xFFB45309), Color(0xFFF59E0B)],
       );
   }
+}
+
+String _categoryText(CatalogCategoryType category, String suffix) {
+  return AppLocalizationController.instance.tr(
+    'catalog_category_${category.routeKey}_$suffix',
+  );
 }

@@ -5,6 +5,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import '../logic/change_password_cubit.dart';
@@ -20,7 +21,7 @@ class ChangePasswordPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text('Change Password'),
+          title: Text(AppStrings.changePassword),
           centerTitle: true,
           elevation: 0,
           backgroundColor: Colors.white,
@@ -40,7 +41,7 @@ class ChangePasswordPage extends StatelessWidget {
               if (state.status == ChangePasswordStatus.success) {
                 showAppSnackBar(
                   context,
-                  'Password changed successfully.',
+                  AppStrings.passwordChangedSuccessfully,
                   type: SnackBarType.success,
                 );
                 context.pushNamedAndRemoveAll(Routes.loginScreen);
@@ -54,12 +55,12 @@ class ChangePasswordPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Enter a new password for your account.',
+                      AppStrings.enterNewPasswordForAccount,
                       style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp),
                     ),
                     SizedBox(height: 24.h),
                     Text(
-                      'New Password',
+                      AppStrings.newPassword,
                       style: AppTextStyles.sectionTitle.copyWith(
                         fontSize: 14.sp,
                       ),
@@ -71,7 +72,7 @@ class ChangePasswordPage extends StatelessWidget {
                           .read<ChangePasswordCubit>()
                           .updatePassword,
                       decoration: InputDecoration(
-                        hintText: 'Enter new password',
+                        hintText: AppStrings.enterNewPassword,
                         suffixIcon: IconButton(
                           onPressed: context
                               .read<ChangePasswordCubit>()
@@ -97,7 +98,7 @@ class ChangePasswordPage extends StatelessWidget {
                     ),
                     SizedBox(height: 16.h),
                     Text(
-                      'Confirm Password',
+                      AppStrings.confirmPassword,
                       style: AppTextStyles.sectionTitle.copyWith(
                         fontSize: 14.sp,
                       ),
@@ -109,7 +110,7 @@ class ChangePasswordPage extends StatelessWidget {
                           .read<ChangePasswordCubit>()
                           .updateConfirmPassword,
                       decoration: InputDecoration(
-                        hintText: 'Confirm password',
+                        hintText: AppStrings.confirmPasswordHint,
                         suffixIcon: IconButton(
                           onPressed: context
                               .read<ChangePasswordCubit>()
@@ -160,7 +161,7 @@ class ChangePasswordPage extends StatelessWidget {
                               width: double.infinity,
                               child: Center(
                                 child: Text(
-                                  'Change Password',
+                                  AppStrings.changePassword,
                                   style: AppTextStyles.cta,
                                 ),
                               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/app_strings.dart';
 
 class MainBottomNavBar extends StatelessWidget {
   const MainBottomNavBar({
@@ -23,16 +24,18 @@ class MainBottomNavBar extends StatelessWidget {
       selectedLabelStyle: AppTextStyles.cardMeta,
       unselectedLabelStyle: AppTextStyles.cardMeta,
       onTap: onTap,
-
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home'),
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.receipt_long_outlined),
-          label: 'Orders',
+          icon: const Icon(Icons.home_outlined),
+          label: AppStrings.home,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          label: 'Profile',
+          icon: const Icon(Icons.receipt_long_outlined),
+          label: AppStrings.orders,
+        ),
+        BottomNavigationBarItem(
+          icon: const Icon(Icons.person_outline),
+          label: AppStrings.profile,
         ),
       ],
     );

@@ -103,10 +103,13 @@ class BookingConfirmedScreen extends StatelessWidget {
                     SizedBox(height: 12.h),
                     const BookingStatusBadge(),
                     SizedBox(height: 12.h),
-                    Text('Booking Confirmed!', style: AppTextStyles.cardTitle),
+                    Text(
+                      AppStrings.bookingConfirmedTitle,
+                      style: AppTextStyles.cardTitle,
+                    ),
                     SizedBox(height: 12.h),
                     Text(
-                      'Your booking at $restaurantName is confirmed.',
+                      AppStrings.bookingConfirmedAt(restaurantName),
                       style: AppTextStyles.cardMeta.copyWith(fontSize: 16.sp),
                     ),
                     SizedBox(height: 18.h),
@@ -172,9 +175,13 @@ String _confirmedSelectionLabel(dynamic offer) {
     parts.add(packageName);
   } else if (mealType.isNotEmpty) {
     final mealLabel = mealType
-        .split(RegExp(r'[_\s]+'))
+        .replaceAll('_', ' ')
+        .split(' ')
         .where((part) => part.isNotEmpty)
-        .map((part) => '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}')
+        .map(
+          (part) =>
+              '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+        )
         .join(' ');
     parts.add(mealLabel);
   } else if (title.isNotEmpty) {

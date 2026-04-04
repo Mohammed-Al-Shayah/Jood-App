@@ -1,28 +1,26 @@
+import 'package:intl/intl.dart';
+
+import '../../../../../core/localization/app_localization_controller.dart';
+
 String formatOfferDate(DateTime date) {
-  final dayName = weekdayShort(date.weekday);
-  final monthName = monthShort(date.month);
-  return '$dayName, $monthName ${date.day}';
+  return DateFormat(
+    'EEE, MMM d',
+    AppLocalizationController.instance.localeName,
+  ).format(date);
 }
 
 String weekdayShort(int weekday) {
-  const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  return labels[(weekday - 1).clamp(0, 6)];
+  final date = DateTime(2026, 1, weekday + 4);
+  return DateFormat(
+    'EEE',
+    AppLocalizationController.instance.localeName,
+  ).format(date);
 }
 
 String monthShort(int month) {
-  const labels = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return labels[(month - 1).clamp(0, 11)];
+  final date = DateTime(2026, month, 1);
+  return DateFormat(
+    'MMM',
+    AppLocalizationController.instance.localeName,
+  ).format(date);
 }
