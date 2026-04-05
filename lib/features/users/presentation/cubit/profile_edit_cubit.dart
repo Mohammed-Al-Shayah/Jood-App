@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:jood/core/errors/auth_error.dart';
 import 'package:jood/core/errors/auth_error_mapper.dart';
 import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/auth_validators.dart';
@@ -20,6 +21,8 @@ import '../../domain/usecases/update_user_usecase.dart';
 import 'profile_edit_state.dart';
 
 class ProfileEditCubit extends Cubit<ProfileEditState> {
+  static const int _defaultResendCooldownSeconds = 60;
+
   ProfileEditCubit({
     required UpdateUserUseCase updateUser,
     required GetUserByPhoneUseCase getUserByPhone,
@@ -258,19 +261,14 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
 
   Future<void> _sendPhoneOtp(String phone) async {
     emit(
-      state.copyWith(
-        status: ProfileEditStatus.otpSending,
-        errorMessage: null,
-        secondsLeft: 60,
-        canResend: false,
-      ),
+      state.copyWith(status: ProfileEditStatus.otpSending, errorMessage: null),
     );
-    _startTimer();
     try {
       final verificationId = await _sendPhoneOtpUseCase(
         phoneNumber: phone,
         mode: OtpMode.updatePhone,
       );
+      _applyOtpCooldown(_defaultResendCooldownSeconds);
       emit(
         state.copyWith(
           status: ProfileEditStatus.otpSent,
@@ -279,6 +277,12 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         ),
       );
     } catch (error) {
+      final retryAfterSeconds = authRetryAfterSeconds(error);
+      if (retryAfterSeconds != null) {
+        _applyOtpCooldown(retryAfterSeconds);
+      } else {
+        emit(state.copyWith(secondsLeft: 0, canResend: true));
+      }
       emit(
         state.copyWith(
           status: ProfileEditStatus.failure,
@@ -336,6 +340,17 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
         emit(state.copyWith(secondsLeft: next));
       }
     });
+  }
+
+  void _applyOtpCooldown(int seconds) {
+    final safeSeconds = seconds <= 0 ? 0 : seconds;
+    emit(state.copyWith(secondsLeft: safeSeconds, canResend: false));
+    if (safeSeconds == 0) {
+      _timer?.cancel();
+      emit(state.copyWith(secondsLeft: 0, canResend: true));
+      return;
+    }
+    _startTimer();
   }
 
   @override

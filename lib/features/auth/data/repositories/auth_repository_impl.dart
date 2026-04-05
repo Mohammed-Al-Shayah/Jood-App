@@ -2,7 +2,9 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/errors/auth_error.dart';
 import '../../../../core/utils/auth_validators.dart';
+import '../../../../core/utils/device_identity.dart';
 import '../../domain/entities/otp_mode.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -115,11 +117,13 @@ class AuthRepositoryImpl implements AuthRepository {
     required OtpMode mode,
   }) async {
     final normalizedPhone = AuthValidators.normalizePhone(phoneNumber);
+    final deviceId = await DeviceIdentity.getOrCreateId();
 
     try {
       final result = await _functions.httpsCallable('sendSmsOtp').call({
         'phoneNumber': normalizedPhone,
         'mode': mode.apiValue,
+        'deviceId': deviceId,
       });
       final data = _asMap(result.data);
       final verificationId = (data['verificationId']?.toString() ?? '').trim();
@@ -180,7 +184,8 @@ class AuthRepositoryImpl implements AuthRepository {
     return <String, dynamic>{};
   }
 
-  FirebaseAuthException _mapFunctionsException(FirebaseFunctionsException e) {
+  Exception _mapFunctionsException(FirebaseFunctionsException e) {
+    final details = _asMap(e.details);
     switch (e.code) {
       case 'invalid-argument':
         return FirebaseAuthException(
@@ -199,12 +204,14 @@ class AuthRepositoryImpl implements AuthRepository {
           message: e.message,
         );
       case 'resource-exhausted':
-        return FirebaseAuthException(
-          code: 'resource-exhausted',
-          message: e.message,
-        );
+      case 'failed-precondition':
+      case 'unauthenticated':
       default:
-        return FirebaseAuthException(code: e.code, message: e.message);
+        return AppAuthException(
+          code: e.code,
+          message: e.message,
+          details: details.isEmpty ? null : details,
+        );
     }
   }
 }

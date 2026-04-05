@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -439,10 +439,12 @@ class _OptionsSection extends StatelessWidget {
                 ? LayoutBuilder(
                     builder: (context, constraints) {
                       final cardSpacing = 10.w;
-                      final visibleColumns =
-                          options.length < 3 ? options.length : 3;
+                      final visibleColumns = options.length < 3
+                          ? options.length
+                          : 3;
                       final spacingCount = visibleColumns - 1;
-                      final cardWidth = (constraints.maxWidth -
+                      final cardWidth =
+                          (constraints.maxWidth -
                               (cardSpacing * spacingCount)) /
                           visibleColumns;
                       return SingleChildScrollView(
@@ -623,6 +625,20 @@ class _OptionCardState extends State<_OptionCard> {
           ),
         ],
         SizedBox(height: 10.h),
+        if (option.originalPriceLabel.isNotEmpty) ...[
+          Text(
+            option.originalPriceLabel,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: const Color(0xFFDD5A5A),
+              fontSize: 10.5.sp,
+              height: 1.2,
+              decoration: TextDecoration.lineThrough,
+              decorationColor: const Color(0xFFDD5A5A),
+              decorationThickness: 1.6,
+            ),
+          ),
+          SizedBox(height: 4.h),
+        ],
         Text(
           option.primaryPriceLabel,
           style: AppTextStyles.cardPrice.copyWith(
@@ -637,7 +653,7 @@ class _OptionCardState extends State<_OptionCard> {
             style: AppTextStyles.cardMeta.copyWith(
               color: AppColors.textSecondary,
               fontSize: 10.5.sp,
-              height: 1.35,
+              height: 1.2,
             ),
           ),
         ],
@@ -704,6 +720,17 @@ class _OptionCardState extends State<_OptionCard> {
           ),
         ],
         SizedBox(height: 10.h),
+        if (option.originalPriceLabel.isNotEmpty) ...[
+          Text(
+            option.originalPriceLabel,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: const Color(0xFFDD5A5A),
+              decoration: TextDecoration.lineThrough,
+              decorationColor: const Color(0xFFDD5A5A),
+            ),
+          ),
+          SizedBox(height: 4.h),
+        ],
         Wrap(
           spacing: 10.w,
           runSpacing: 4.h,

@@ -703,6 +703,17 @@ class _OffersTable extends StatelessWidget {
             .map((offer) {
               final venueName =
                   venueNames[offer.restaurantId] ?? offer.restaurantId;
+              final primaryOfferLabel = offer.packageName.trim().isNotEmpty
+                  ? offer.packageName
+                  : offer.title;
+              final secondaryOfferLabel =
+                  offer.packageDescription.trim().isNotEmpty
+                  ? offer.packageDescription
+                  : offer.packageName.trim().isNotEmpty &&
+                        offer.title.trim().isNotEmpty &&
+                        offer.title.trim() != offer.packageName.trim()
+                  ? offer.title
+                  : offer.mealType;
               return DataRow(
                 cells: [
                   DataCell(
@@ -713,22 +724,22 @@ class _OffersTable extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            offer.title,
+                            primaryOfferLabel,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.sectionTitle.copyWith(
                               fontSize: 14.sp,
                             ),
                           ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            offer.packageName.trim().isNotEmpty
-                                ? offer.packageName
-                                : offer.mealType,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.cardMeta,
-                          ),
+                          if (secondaryOfferLabel.trim().isNotEmpty) ...[
+                            SizedBox(height: 4.h),
+                            Text(
+                              secondaryOfferLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.cardMeta,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -746,7 +757,22 @@ class _OffersTable extends StatelessWidget {
                   DataCell(Text(categoryLabelBuilder(offer))),
                   DataCell(Text(offer.date)),
                   DataCell(Text('${offer.startTime} - ${offer.endTime}')),
-                  DataCell(Text(_priceLabel(offer))),
+                  DataCell(
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_priceLabel(offer)),
+                        if (_originalPriceLabel(offer).isNotEmpty)
+                          Text(
+                            _originalPriceLabel(offer),
+                            style: AppTextStyles.cardMeta.copyWith(
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                   DataCell(
                     Text(
                       _remainingLabel(offer),
@@ -793,6 +819,14 @@ class _OffersTable extends StatelessWidget {
       return '$amount / person';
     }
     return '$amount / ${offer.priceChild.toStringAsFixed(2)}';
+  }
+
+  String _originalPriceLabel(OfferEntity offer) {
+    if (offer.priceAdultOriginal <= 0 ||
+        offer.priceAdultOriginal <= offer.priceAdult) {
+      return '';
+    }
+    return '${offer.currency} ${offer.priceAdultOriginal.toStringAsFixed(2)}';
   }
 
   String _remainingLabel(OfferEntity offer) {

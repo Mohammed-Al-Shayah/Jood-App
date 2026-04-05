@@ -51,6 +51,8 @@ class AppStrings {
   static String get buffetDiscountBadge => _tr('buffet_discount_badge');
   static String get checkAvailability => _tr('check_availability');
   static String get detailsOpenToday => _tr('details_open_today');
+  static String get noOffersTodayExploreOtherDates =>
+      _tr('no_offers_today_explore_other_dates');
   static String get detailsOpenTime => _tr('details_open_time');
   static String get detailsReviewsCount => _tr('details_reviews_count');
   static String get detailsPhoneLabel => _tr('details_phone_label');

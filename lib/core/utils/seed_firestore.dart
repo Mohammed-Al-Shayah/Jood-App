@@ -5,7 +5,7 @@ import 'date_utils.dart';
 class SeedFirestore {
   const SeedFirestore._();
 
-  static const String _seedDocId = 'demo_v6_catalog';
+  static const String _seedDocId = 'demo_v7_catalog';
 
   static Future<void> ensureSeeded() async {
     if (!kDebugMode) return;

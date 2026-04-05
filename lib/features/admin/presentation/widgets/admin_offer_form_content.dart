@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
+import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/date_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_input_decoration.dart';
@@ -38,6 +39,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   final Map<String, _RestaurantCategorySupport> _restaurantSupportById = {};
   bool _loadingVenues = true;
   bool _isSubmitting = false;
+  final List<_AttractionPackageDraft> _attractionPackages = [];
 
   String? _venueId;
   late String _category;
@@ -73,6 +75,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   bool get _isAttraction => _category == 'attraction';
   bool get _isSetMenu => _category == 'set_menu';
   bool get _isBuffet => _category == 'buffet';
+  bool get _usesAttractionPackages => _isAttraction && !_isEdit;
   bool get _isCategoryLocked =>
       (widget.initialCategory ?? '').trim().isNotEmpty;
 
@@ -140,12 +143,18 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       _titleController.text = _defaultTitleForMealType(_category, _mealType);
     }
     _priceAdultController.addListener(_syncChildPriceFromAdult);
+    if (_usesAttractionPackages) {
+      _attractionPackages.add(_createAttractionPackageDraft());
+    }
     _loadVenues();
   }
 
   @override
   void dispose() {
     _priceAdultController.removeListener(_syncChildPriceFromAdult);
+    for (final package in _attractionPackages) {
+      package.dispose();
+    }
     _dateController.dispose();
     _dateRangeController.dispose();
     _startTimeController.dispose();
@@ -185,12 +194,12 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
                 _venueDropdown(),
                 if (_restaurantCategoryWarning != null)
                   _categoryWarningCard(_restaurantCategoryWarning!),
-                _titleField(),
+                if (!_isAttraction) _titleField(),
                 if (_isEdit) _dateField() else _dateRangeField(),
                 _timeField(_startTimeController, 'Start Time'),
                 _timeField(_endTimeController, 'End Time'),
                 if (_isBuffet || _isSetMenu) _mealTypeDropdown(),
-                if (_isAttraction) ...[
+                if (_isAttraction && !_usesAttractionPackages) ...[
                   _textField(_packageNameController, 'Package Name'),
                   _multilineField(
                     _packageDescriptionController,
@@ -199,59 +208,64 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
                   ),
                 ],
                 _textField(_currencyController, 'Currency'),
-                _statusDropdown(),
+                if (!_usesAttractionPackages) _statusDropdown(),
               ],
             ),
           ),
-          SizedBox(height: 14.h),
-          AdminSectionCard(
-            title: 'Pricing',
-            child: Column(
-              children: [
-                if (_isAttraction) ...[
-                  _numberField(_priceAdultController, 'Price Per Person'),
-                  _numberField(
-                    _priceAdultOriginalController,
-                    'Original Price Per Person',
-                  ),
-                ] else ...[
-                  _numberField(_priceAdultController, 'Price Adult'),
-                  _numberField(
-                    _priceAdultOriginalController,
-                    'Price Adult Original',
-                  ),
-                  _numberField(_priceChildController, 'Price Child'),
+          if (_usesAttractionPackages) ...[
+            SizedBox(height: 14.h),
+            _attractionPackagesSection(),
+          ] else ...[
+            SizedBox(height: 14.h),
+            AdminSectionCard(
+              title: 'Pricing',
+              child: Column(
+                children: [
+                  if (_isAttraction) ...[
+                    _numberField(_priceAdultController, 'Price Per Person'),
+                    _numberField(
+                      _priceAdultOriginalController,
+                      'Original Price Per Person',
+                    ),
+                  ] else ...[
+                    _numberField(_priceAdultController, 'Price Adult'),
+                    _numberField(
+                      _priceAdultOriginalController,
+                      'Price Adult Original',
+                    ),
+                    _numberField(_priceChildController, 'Price Child'),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          SizedBox(height: 14.h),
-          AdminSectionCard(
-            title: 'Capacity',
-            child: Column(
-              children: [
-                if (_isAttraction) ...[
-                  _intField(_capacityAdultController, 'Capacity Persons'),
-                  _intField(_bookedAdultController, 'Booked Persons'),
-                ] else ...[
-                  _intField(_capacityAdultController, 'Capacity Adult'),
-                  _intField(_capacityChildController, 'Capacity Child'),
-                  _intField(_bookedAdultController, 'Booked Adult'),
-                  _intField(_bookedChildController, 'Booked Child'),
+            SizedBox(height: 14.h),
+            AdminSectionCard(
+              title: 'Capacity',
+              child: Column(
+                children: [
+                  if (_isAttraction) ...[
+                    _intField(_capacityAdultController, 'Capacity Persons'),
+                    _intField(_bookedAdultController, 'Booked Persons'),
+                  ] else ...[
+                    _intField(_capacityAdultController, 'Capacity Adult'),
+                    _intField(_capacityChildController, 'Capacity Child'),
+                    _intField(_bookedAdultController, 'Booked Adult'),
+                    _intField(_bookedChildController, 'Booked Child'),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          SizedBox(height: 14.h),
-          AdminSectionCard(
-            title: 'Entry Conditions',
-            child: _multilineField(
-              _entryConditionsController,
-              'One condition per line',
-              minLines: 4,
-              required: false,
+            SizedBox(height: 14.h),
+            AdminSectionCard(
+              title: 'Entry Conditions',
+              child: _multilineField(
+                _entryConditionsController,
+                'One condition per line',
+                minLines: 4,
+                required: false,
+              ),
             ),
-          ),
+          ],
           SizedBox(height: 16.h),
           SizedBox(
             width: double.infinity,
@@ -401,6 +415,114 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         }),
         validator: (value) =>
             (value == null || value.isEmpty) ? 'Required' : null,
+      ),
+    );
+  }
+
+  Widget _attractionPackagesSection() {
+    return AdminSectionCard(
+      title: 'Packages',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Add multiple packages for the same time slot. Each package will be saved as a separate offer with its own price, capacity, status, and conditions.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12.sp,
+              height: 1.5,
+            ),
+          ),
+          SizedBox(height: 16.h),
+          ..._attractionPackages.asMap().entries.map((entry) {
+            final index = entry.key;
+            final package = entry.value;
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index == _attractionPackages.length - 1 ? 0 : 14.h,
+              ),
+              child: _attractionPackageCard(package, index),
+            );
+          }),
+          SizedBox(height: 14.h),
+          OutlinedButton.icon(
+            onPressed: _addAttractionPackage,
+            icon: const Icon(Icons.add),
+            label: const Text('Add package'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _attractionPackageCard(_AttractionPackageDraft package, int index) {
+    return Container(
+      key: ValueKey(package),
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Package ${index + 1}',
+                  style: AppTextStyles.sectionTitle.copyWith(fontSize: 15.sp),
+                ),
+              ),
+              if (_attractionPackages.length > 1)
+                IconButton(
+                  onPressed: () => _removeAttractionPackage(index),
+                  tooltip: 'Remove package',
+                  icon: const Icon(Icons.delete_outline),
+                ),
+            ],
+          ),
+          _textField(package.packageNameController, 'Package Name'),
+          _multilineField(
+            package.packageDescriptionController,
+            'Package Description',
+            minLines: 3,
+          ),
+          _numberField(package.priceAdultController, 'Price Per Person'),
+          _numberField(
+            package.priceAdultOriginalController,
+            'Original Price Per Person',
+          ),
+          _intField(package.capacityAdultController, 'Capacity Persons'),
+          _intField(package.bookedAdultController, 'Booked Persons'),
+          Padding(
+            padding: EdgeInsets.only(bottom: 18.h),
+            child: DropdownButtonFormField<String>(
+              initialValue: _statusOptions.contains(package.status)
+                  ? package.status
+                  : null,
+              decoration: adminInputDecoration('Status'),
+              items: _statusOptions
+                  .map(
+                    (status) =>
+                        DropdownMenuItem(value: status, child: Text(status)),
+                  )
+                  .toList(),
+              onChanged: (value) => setState(() {
+                package.status = value ?? 'active';
+              }),
+              validator: (value) =>
+                  (value == null || value.isEmpty) ? 'Required' : null,
+            ),
+          ),
+          _multilineField(
+            package.entryConditionsController,
+            'Entry Conditions (one condition per line)',
+            minLines: 3,
+            required: false,
+          ),
+        ],
       ),
     );
   }
@@ -696,6 +818,32 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     _syncingChildPrice = false;
   }
 
+  void _addAttractionPackage() {
+    setState(() {
+      _attractionPackages.add(_createAttractionPackageDraft());
+    });
+  }
+
+  void _removeAttractionPackage(int index) {
+    if (_attractionPackages.length <= 1) return;
+    final package = _attractionPackages.removeAt(index);
+    package.dispose();
+    setState(() {});
+  }
+
+  _AttractionPackageDraft _createAttractionPackageDraft() {
+    return _AttractionPackageDraft(
+      packageName: '',
+      packageDescription: '',
+      priceAdult: '',
+      priceAdultOriginal: '',
+      capacityAdult: '',
+      bookedAdult: '0',
+      status: 'active',
+      entryConditions: '',
+    );
+  }
+
   void _syncCategorySpecificFields({
     required String previousCategory,
     required String nextCategory,
@@ -706,10 +854,17 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       _syncingChildPrice = false;
       _capacityChildController.text = '0';
       _bookedChildController.text = '0';
+      if (!_isEdit && _attractionPackages.isEmpty) {
+        _attractionPackages.add(_createAttractionPackageDraft());
+      }
       return;
     }
 
     if (previousCategory == 'attraction') {
+      for (final package in _attractionPackages) {
+        package.dispose();
+      }
+      _attractionPackages.clear();
       _priceChildController.clear();
       _capacityChildController.text = '0';
       _bookedChildController.text = '0';
@@ -885,6 +1040,36 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         .toList(growable: false);
   }
 
+  String? _attractionPackagesCountError() {
+    for (var index = 0; index < _attractionPackages.length; index++) {
+      final package = _attractionPackages[index];
+      final capacity = int.tryParse(
+        package.capacityAdultController.text.trim(),
+      );
+      final booked = int.tryParse(package.bookedAdultController.text.trim());
+      if (capacity == null || booked == null) continue;
+      if (booked > capacity) {
+        return 'Booked persons cannot exceed capacity in package ${index + 1}.';
+      }
+    }
+    return null;
+  }
+
+  String? _singleOfferCountError({
+    required int capacityAdult,
+    required int capacityChild,
+    required int bookedAdult,
+    required int bookedChild,
+  }) {
+    if (bookedAdult > capacityAdult) {
+      return 'Booked adult cannot exceed adult capacity.';
+    }
+    if (bookedChild > capacityChild) {
+      return 'Booked child cannot exceed child capacity.';
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final categoryWarning = _restaurantCategoryWarning;
@@ -898,70 +1083,12 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     final startTime = _startTimeController.text.trim();
     final endTime = _endTimeController.text.trim();
     final currency = _currencyController.text.trim();
-    final priceAdult = double.parse(_priceAdultController.text.trim());
-    final priceAdultOriginal = double.parse(
-      _priceAdultOriginalController.text.trim(),
-    );
-    final priceChild = _isAttraction
-        ? 0.0
-        : double.parse(_priceChildController.text.trim());
-    final capacityAdult = int.parse(_capacityAdultController.text.trim());
-    final capacityChild = _isAttraction
-        ? 0
-        : int.parse(_capacityChildController.text.trim());
-    final bookedAdult = int.parse(_bookedAdultController.text.trim());
-    final bookedChild = _isAttraction
-        ? 0
-        : int.parse(_bookedChildController.text.trim());
-    final status = _statusController.text.trim();
-    final title = _titleController.text.trim();
-    final packageName = _isAttraction ? _packageNameController.text.trim() : '';
-    final packageDescription = _isAttraction
-        ? _packageDescriptionController.text.trim()
-        : '';
-    final mealType = (_isBuffet || _isSetMenu) ? _mealType : '';
     final bookingCategory = _category;
     final bookableType = _isAttraction ? 'attraction' : 'restaurant';
-    final entryConditions = _entryConditions();
 
     Object? result;
 
-    if (_isEdit) {
-      final parsedDate = DateTime.tryParse(_dateController.text.trim());
-      if (parsedDate == null) {
-        showAppSnackBar(
-          context,
-          'Invalid date format. Use YYYY-MM-DD.',
-          type: SnackBarType.error,
-        );
-        return;
-      }
-      result = OfferModel(
-        id: widget.offer!.id,
-        restaurantId: venueId,
-        date: AppDateUtils.formatDate(parsedDate),
-        startTime: startTime,
-        endTime: endTime,
-        currency: currency,
-        priceAdult: priceAdult,
-        priceAdultOriginal: priceAdultOriginal,
-        priceChild: priceChild,
-        capacityAdult: capacityAdult,
-        capacityChild: capacityChild,
-        bookedAdult: bookedAdult,
-        bookedChild: bookedChild,
-        status: status,
-        title: title,
-        entryConditions: entryConditions,
-        createdAt: widget.offer!.createdAt,
-        updatedAt: now,
-        bookingCategory: bookingCategory,
-        bookableType: bookableType,
-        mealType: mealType,
-        packageName: packageName,
-        packageDescription: packageDescription,
-      );
-    } else {
+    if (_usesAttractionPackages) {
       final range = _selectedRange;
       if (range == null) {
         showAppSnackBar(
@@ -971,30 +1098,139 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         );
         return;
       }
-      result = _offersForRange(
+      if (_attractionPackages.isEmpty) {
+        showAppSnackBar(
+          context,
+          'Add at least one package.',
+          type: SnackBarType.error,
+        );
+        return;
+      }
+      final countError = _attractionPackagesCountError();
+      if (countError != null) {
+        showAppSnackBar(context, countError, type: SnackBarType.error);
+        return;
+      }
+      result = _offersForAttractionPackages(
         venueId: venueId,
         range: range,
         startTime: startTime,
         endTime: endTime,
         currency: currency,
-        priceAdult: priceAdult,
-        priceAdultOriginal: priceAdultOriginal,
-        priceChild: priceChild,
-        capacityAdult: capacityAdult,
-        capacityChild: capacityChild,
-        bookedAdult: bookedAdult,
-        bookedChild: bookedChild,
-        status: status,
-        title: title,
-        entryConditions: entryConditions,
         createdAt: now,
         updatedAt: now,
         bookingCategory: bookingCategory,
         bookableType: bookableType,
-        mealType: mealType,
-        packageName: packageName,
-        packageDescription: packageDescription,
       );
+    } else {
+      final priceAdult = double.parse(_priceAdultController.text.trim());
+      final priceAdultOriginal = double.parse(
+        _priceAdultOriginalController.text.trim(),
+      );
+      final priceChild = _isAttraction
+          ? 0.0
+          : double.parse(_priceChildController.text.trim());
+      final capacityAdult = int.parse(_capacityAdultController.text.trim());
+      final capacityChild = _isAttraction
+          ? 0
+          : int.parse(_capacityChildController.text.trim());
+      final bookedAdult = int.parse(_bookedAdultController.text.trim());
+      final bookedChild = _isAttraction
+          ? 0
+          : int.parse(_bookedChildController.text.trim());
+      final countError = _singleOfferCountError(
+        capacityAdult: capacityAdult,
+        capacityChild: capacityChild,
+        bookedAdult: bookedAdult,
+        bookedChild: bookedChild,
+      );
+      if (countError != null) {
+        showAppSnackBar(context, countError, type: SnackBarType.error);
+        return;
+      }
+      final status = _statusController.text.trim();
+      final packageName = _isAttraction
+          ? _packageNameController.text.trim()
+          : '';
+      final title = _isAttraction && packageName.isNotEmpty
+          ? packageName
+          : _titleController.text.trim();
+      final packageDescription = _isAttraction
+          ? _packageDescriptionController.text.trim()
+          : '';
+      final mealType = (_isBuffet || _isSetMenu) ? _mealType : '';
+      final entryConditions = _entryConditions();
+
+      if (_isEdit) {
+        final parsedDate = DateTime.tryParse(_dateController.text.trim());
+        if (parsedDate == null) {
+          showAppSnackBar(
+            context,
+            'Invalid date format. Use YYYY-MM-DD.',
+            type: SnackBarType.error,
+          );
+          return;
+        }
+        result = OfferModel(
+          id: widget.offer!.id,
+          restaurantId: venueId,
+          date: AppDateUtils.formatDate(parsedDate),
+          startTime: startTime,
+          endTime: endTime,
+          currency: currency,
+          priceAdult: priceAdult,
+          priceAdultOriginal: priceAdultOriginal,
+          priceChild: priceChild,
+          capacityAdult: capacityAdult,
+          capacityChild: capacityChild,
+          bookedAdult: bookedAdult,
+          bookedChild: bookedChild,
+          status: status,
+          title: title,
+          entryConditions: entryConditions,
+          createdAt: widget.offer!.createdAt,
+          updatedAt: now,
+          bookingCategory: bookingCategory,
+          bookableType: bookableType,
+          mealType: mealType,
+          packageName: packageName,
+          packageDescription: packageDescription,
+        );
+      } else {
+        final range = _selectedRange;
+        if (range == null) {
+          showAppSnackBar(
+            context,
+            'Please select a date range.',
+            type: SnackBarType.error,
+          );
+          return;
+        }
+        result = _offersForRange(
+          venueId: venueId,
+          range: range,
+          startTime: startTime,
+          endTime: endTime,
+          currency: currency,
+          priceAdult: priceAdult,
+          priceAdultOriginal: priceAdultOriginal,
+          priceChild: priceChild,
+          capacityAdult: capacityAdult,
+          capacityChild: capacityChild,
+          bookedAdult: bookedAdult,
+          bookedChild: bookedChild,
+          status: status,
+          title: title,
+          entryConditions: entryConditions,
+          createdAt: now,
+          updatedAt: now,
+          bookingCategory: bookingCategory,
+          bookableType: bookableType,
+          mealType: mealType,
+          packageName: packageName,
+          packageDescription: packageDescription,
+        );
+      }
     }
 
     setState(() => _isSubmitting = true);
@@ -1012,6 +1248,52 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  List<OfferEntity> _offersForAttractionPackages({
+    required String venueId,
+    required DateTimeRange range,
+    required String startTime,
+    required String endTime,
+    required String currency,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required String bookingCategory,
+    required String bookableType,
+  }) {
+    final offers = <OfferEntity>[];
+    for (final package in _attractionPackages) {
+      final packageName = package.packageNameController.text.trim();
+      offers.addAll(
+        _offersForRange(
+          venueId: venueId,
+          range: range,
+          startTime: startTime,
+          endTime: endTime,
+          currency: currency,
+          priceAdult: double.parse(package.priceAdultController.text.trim()),
+          priceAdultOriginal: double.parse(
+            package.priceAdultOriginalController.text.trim(),
+          ),
+          priceChild: 0,
+          capacityAdult: int.parse(package.capacityAdultController.text.trim()),
+          capacityChild: 0,
+          bookedAdult: int.parse(package.bookedAdultController.text.trim()),
+          bookedChild: 0,
+          status: package.status,
+          title: packageName,
+          entryConditions: package.entryConditions(),
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          bookingCategory: bookingCategory,
+          bookableType: bookableType,
+          mealType: '',
+          packageName: packageName,
+          packageDescription: package.packageDescriptionController.text.trim(),
+        ),
+      );
+    }
+    return offers;
   }
 
   List<OfferEntity> _offersForRange({
@@ -1078,6 +1360,56 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       );
     }
     return offers;
+  }
+}
+
+class _AttractionPackageDraft {
+  _AttractionPackageDraft({
+    required String packageName,
+    required String packageDescription,
+    required String priceAdult,
+    required String priceAdultOriginal,
+    required String capacityAdult,
+    required String bookedAdult,
+    required this.status,
+    required String entryConditions,
+  }) : packageNameController = TextEditingController(text: packageName),
+       packageDescriptionController = TextEditingController(
+         text: packageDescription,
+       ),
+       priceAdultController = TextEditingController(text: priceAdult),
+       priceAdultOriginalController = TextEditingController(
+         text: priceAdultOriginal,
+       ),
+       capacityAdultController = TextEditingController(text: capacityAdult),
+       bookedAdultController = TextEditingController(text: bookedAdult),
+       entryConditionsController = TextEditingController(text: entryConditions);
+
+  final TextEditingController packageNameController;
+  final TextEditingController packageDescriptionController;
+  final TextEditingController priceAdultController;
+  final TextEditingController priceAdultOriginalController;
+  final TextEditingController capacityAdultController;
+  final TextEditingController bookedAdultController;
+  final TextEditingController entryConditionsController;
+  String status;
+
+  List<String> entryConditions() {
+    return entryConditionsController.text
+        .split('\n')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  void dispose() {
+    packageNameController.dispose();
+    packageDescriptionController.dispose();
+    priceAdultController.dispose();
+    priceAdultOriginalController.dispose();
+    capacityAdultController.dispose();
+    bookedAdultController.dispose();
+    entryConditionsController.dispose();
   }
 }
 

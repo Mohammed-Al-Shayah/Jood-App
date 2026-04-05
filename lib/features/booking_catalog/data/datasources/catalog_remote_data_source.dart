@@ -196,8 +196,12 @@ class CatalogRemoteDataSource {
     required List<Map<String, dynamic>> offers,
     required CatalogCategoryType category,
   }) {
+    final today = AppDateUtils.formatDate(DateTime.now());
     final matchingOffers = offers
         .where((offer) => _matchesCategory(offer, category))
+        .toList();
+    final todayOffers = matchingOffers
+        .where((offer) => (offer['date'] as String? ?? '').trim() == today)
         .toList();
 
     var minPrice = double.infinity;
@@ -205,7 +209,7 @@ class CatalogRemoteDataSource {
     var remainingTotal = 0;
     var currency = '';
 
-    for (final offer in matchingOffers) {
+    for (final offer in todayOffers) {
       final status = (offer['status'] as String? ?? 'active')
           .toLowerCase()
           .replaceAll(' ', '');
@@ -227,6 +231,16 @@ class CatalogRemoteDataSource {
           NumberUtils.toInt(offer['capacityChild']) -
           NumberUtils.toInt(offer['bookedChild']);
       remainingTotal += (remainingAdult + remainingChild).clamp(0, 1000000);
+    }
+
+    final hasAvailableTodayOffers = minPrice.isFinite;
+    if (!hasAvailableTodayOffers) {
+      return CatalogListLabels(
+        badge: '',
+        priceFrom: '',
+        discount: '',
+        slotsLeft: AppStrings.noOffersTodayExploreOtherDates,
+      );
     }
 
     final labelPriceFrom = NumberUtils.parseNumber(data['priceFrom']);

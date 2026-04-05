@@ -19,6 +19,8 @@ import '../verify_otp_args.dart';
 import 'otp_state.dart';
 
 class OtpCubit extends SafeCubit<OtpState> {
+  static const int _defaultResendCooldownSeconds = 60;
+
   OtpCubit({
     required SendPhoneOtpUseCase sendPhoneOtp,
     required VerifyOtpUseCase verifyOtp,
@@ -55,11 +57,18 @@ class OtpCubit extends SafeCubit<OtpState> {
   }
 
   Future<void> resend() async {
-    emitSafe(state.copyWith(secondsLeft: 60, canResend: false));
-    _startTimer();
+    if (!state.canResend) return;
+    emitSafe(state.copyWith(status: OtpStatus.initial, errorMessage: null));
     try {
       _verificationId = await _sendPhoneOtp(phoneNumber: _args.phone);
+      _applyResendCooldown(_defaultResendCooldownSeconds);
     } catch (error) {
+      final retryAfterSeconds = authRetryAfterSeconds(error);
+      if (retryAfterSeconds != null) {
+        _applyResendCooldown(retryAfterSeconds);
+      } else {
+        emitSafe(state.copyWith(secondsLeft: 0, canResend: true));
+      }
       emitSafe(
         state.copyWith(
           status: OtpStatus.failure,
@@ -115,6 +124,17 @@ class OtpCubit extends SafeCubit<OtpState> {
         ),
       );
     }
+  }
+
+  void _applyResendCooldown(int seconds) {
+    final safeSeconds = seconds <= 0 ? 0 : seconds;
+    emitSafe(state.copyWith(secondsLeft: safeSeconds, canResend: false));
+    if (safeSeconds == 0) {
+      _timer?.cancel();
+      emitSafe(state.copyWith(secondsLeft: 0, canResend: true));
+      return;
+    }
+    _startTimer();
   }
 
   void _startTimer() {

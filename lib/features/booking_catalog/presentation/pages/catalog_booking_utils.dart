@@ -38,6 +38,7 @@ List<CatalogBookingOption> buildMealOptions(
           ? ''
           : '${offer.startTime}${offer.endTime.trim().isEmpty ? '' : ' - ${offer.endTime}'}',
       primaryPriceLabel: formatCurrency(offer.currency, offer.priceAdult),
+      originalPriceLabel: _originalPriceLabel(offer),
       secondaryPriceLabel: _secondaryPriceLabel(offer),
       statusLabel: offerStatusLabel(offer),
       offerIndex: selectedEntry.key,
@@ -87,6 +88,7 @@ List<CatalogBookingOption> buildTimeSlotOptions(List<OfferEntity> offers) {
       primaryPriceLabel: availableOffers.isEmpty
           ? AppStrings.unavailable
           : AppStrings.packagesCount(availableOffers.length),
+      originalPriceLabel: '',
       secondaryPriceLabel: '',
       statusLabel: availableOffers.isEmpty
           ? AppStrings.soldOut
@@ -132,6 +134,7 @@ List<CatalogBookingOption> buildPackageOptions(
       label: entry.key,
       subtitle: offer.packageDescription,
       primaryPriceLabel: formatCurrency(offer.currency, offer.priceAdult),
+      originalPriceLabel: _originalPriceLabel(offer),
       secondaryPriceLabel: _secondaryPriceLabel(offer),
       statusLabel: offerStatusLabel(offer),
       offerIndex: selectedEntry.key,
@@ -261,6 +264,12 @@ String _secondaryPriceLabel(OfferEntity offer) {
   return AppStrings.childPrice(
     formatCurrency(offer.currency, offer.priceChild),
   );
+}
+
+String _originalPriceLabel(OfferEntity offer) {
+  final original = offer.priceAdultOriginal;
+  if (original <= 0 || original <= offer.priceAdult) return '';
+  return formatCurrency(offer.currency, original);
 }
 
 int remainingTotal(OfferEntity offer) {

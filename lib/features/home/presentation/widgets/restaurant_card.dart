@@ -32,6 +32,7 @@ class RestaurantCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trimmedPrice = price.trim();
+    final trimmedSlots = slots.trim();
     final lowerPrice = trimmedPrice.toLowerCase();
     final hasFromLabel = lowerPrice.startsWith('from ');
     final priceLabel = hasFromLabel ? AppStrings.from : '';
@@ -41,6 +42,11 @@ class RestaurantCard extends StatelessWidget {
     final hasBadge = badge.trim().isNotEmpty;
     final hasDiscount = discount.trim().isNotEmpty || hasBadge;
     final showDiscountValue = discount.trim().isNotEmpty;
+    final showNoOffersMessage =
+        trimmedPrice.isEmpty &&
+        discount.trim().isEmpty &&
+        trimmedSlots.isNotEmpty &&
+        !hasBadge;
 
     return Material(
       color: Colors.transparent,
@@ -154,6 +160,26 @@ class RestaurantCard extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (showNoOffersMessage)
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 10.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.discountBackground,
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Text(
+                              trimmedSlots,
+                              style: AppTextStyles.cardMeta.copyWith(
+                                color: AppColors.primaryDark,
+                                fontWeight: FontWeight.w600,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
                         if (hasFromLabel)
                           Row(
                             children: [
