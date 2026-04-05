@@ -75,9 +75,9 @@ class RestaurantCard extends StatelessWidget {
                     ),
                   ),
                   if (hasBadge)
-                    Positioned(
+                    PositionedDirectional(
                       top: 12.h,
-                      left: 12.w,
+                      start: 12.w,
                       child: Container(
                         width: 80.w,
                         height: 40.h,

@@ -11,22 +11,16 @@ class PaymentSummaryCard extends StatelessWidget {
     required this.restaurantName,
     required this.timeLabel,
     required this.totalAmount,
-    required this.adultsCount,
-    required this.childrenCount,
+    required this.guestsLabel,
   });
 
   final String restaurantName;
   final String timeLabel;
   final String totalAmount;
-  final int adultsCount;
-  final int childrenCount;
+  final String guestsLabel;
 
   @override
   Widget build(BuildContext context) {
-    final guestsLabel = childrenCount > 0
-        ? '$adultsCount ${AppStrings.adults}, $childrenCount ${AppStrings.children}'
-        : '$adultsCount ${AppStrings.adults}';
-
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
@@ -67,7 +61,7 @@ class PaymentSummaryCard extends StatelessWidget {
             ],
           ),
           SizedBox(height: 10.h),
-          Divider(color: Colors.white24,thickness: 2,),
+          Divider(color: Colors.white24, thickness: 2),
           SizedBox(height: 10.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -106,5 +100,3 @@ class PaymentSummaryCard extends StatelessWidget {
     );
   }
 }
-
-

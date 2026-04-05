@@ -11,5 +11,3 @@ class BookingOffer {
 }
 
 enum BookingOfferStatus { available, low, soldOut }
-
-

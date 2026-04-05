@@ -12,5 +12,3 @@ class BookingRepositoryImpl implements BookingRepository {
     return localDataSource.getOffers(date);
   }
 }
-
-

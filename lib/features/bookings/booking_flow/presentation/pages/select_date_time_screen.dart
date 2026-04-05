@@ -43,7 +43,7 @@ class SelectDateTimeScreen extends StatelessWidget {
               builder: (context, selectedIndex) {
                 if (selectedIndex == null) return const SizedBox.shrink();
                 return BottomCtaBar(
-                  label: 'Next',
+                  label: AppStrings.next,
                   onPressed: () {
                     context.pushNamed(
                       Routes.selectGuestsScreen,
@@ -120,7 +120,8 @@ class SelectDateTimeScreen extends StatelessWidget {
                             SizedBox(height: 24.h),
                             if (state.status == BookingFlowStatus.failure)
                               Text(
-                                state.errorMessage ?? 'Failed to load offers.',
+                                state.errorMessage ??
+                                    AppStrings.failedToLoadOffers,
                                 style: AppTextStyles.cardMeta,
                               ),
                             if (state.status == BookingFlowStatus.ready &&
@@ -130,7 +131,7 @@ class SelectDateTimeScreen extends StatelessWidget {
                                   SizedBox(height: 200.h),
                                   Center(
                                     child: Text(
-                                      'No offers available for this date.',
+                                      AppStrings.noOffersAvailableForDate,
                                       style: AppTextStyles.cardMeta.copyWith(
                                         fontSize: 16.sp,
                                         color: AppColors.textPrimary,
@@ -205,9 +206,9 @@ String _statusLabel(OfferEntity offer) {
   final availability = _availabilityFor(offer);
   switch (availability) {
     case _OfferAvailability.available:
-      return '$remaining ${AppStrings.ticketsAvailable}';
+      return AppStrings.availableStatus(remaining);
     case _OfferAvailability.low:
-      return '${AppStrings.onlyTicketsLeft} $remaining ${AppStrings.ticketsAvailable}';
+      return AppStrings.onlyLeftCount(remaining);
     case _OfferAvailability.soldOut:
       return AppStrings.soldOut;
     case _OfferAvailability.expired:
@@ -284,22 +285,25 @@ DateTime? _parseOfferDate(String value) {
 int? _parseTimeToMinutes(String value) {
   final trimmed = value.trim().toLowerCase();
   if (trimmed.isEmpty) return null;
-  final amPmMatch = RegExp(
-    r'^(\d{1,2})(?::(\d{2}))?\s*([ap]m)$',
-  ).firstMatch(trimmed);
-  if (amPmMatch != null) {
-    final hour = int.tryParse(amPmMatch.group(1) ?? '');
-    final minute = int.tryParse(amPmMatch.group(2) ?? '0') ?? 0;
-    final period = amPmMatch.group(3);
+  final normalized = trimmed.replaceAll('.', '');
+  final hasAmPm = normalized.endsWith('am') || normalized.endsWith('pm');
+  if (hasAmPm) {
+    final period = normalized.substring(normalized.length - 2);
+    final timePart = normalized.substring(0, normalized.length - 2).trim();
+    final segments = timePart.split(':');
+    final hour = int.tryParse(segments.first);
+    final minute = segments.length > 1
+        ? int.tryParse(segments[1].trim()) ?? 0
+        : 0;
     if (hour == null) return null;
     var h = hour % 12;
     if (period == 'pm') h += 12;
     return h * 60 + minute;
   }
-  final match24 = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(trimmed);
-  if (match24 != null) {
-    final hour = int.tryParse(match24.group(1) ?? '');
-    final minute = int.tryParse(match24.group(2) ?? '');
+  final segments24 = trimmed.split(':');
+  if (segments24.length == 2) {
+    final hour = int.tryParse(segments24[0].trim());
+    final minute = int.tryParse(segments24[1].trim());
     if (hour == null || minute == null) return null;
     return hour * 60 + minute;
   }

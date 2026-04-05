@@ -114,8 +114,7 @@ class RegisterCubit extends SafeCubit<RegisterState> {
 
       if (emailExistsInAuth || emailExistsInDb) {
         debugPrint('[RegisterCubit] ERROR: Email already registered');
-        const errorMessage =
-            'This email address is already registered and a new account cannot be created with it.';
+        final errorMessage = AppStrings.emailAlreadyRegisteredLong;
         emitSafe(
           state.copyWith(
             status: RegisterStatus.failure,
@@ -139,8 +138,8 @@ class RegisterCubit extends SafeCubit<RegisterState> {
         emitSafe(
           state.copyWith(
             status: RegisterStatus.failure,
-            errorMessage: 'Phone number already in use.',
-            phoneError: 'This phone number is already registered.',
+            errorMessage: AppStrings.phoneNumberAlreadyInUse,
+            phoneError: AppStrings.thisPhoneNumberIsAlreadyRegistered,
           ),
         );
         return;
@@ -168,8 +167,8 @@ class RegisterCubit extends SafeCubit<RegisterState> {
           errorMessage: isAuthError(e)
               ? mapAuthError(
                   e,
-                  operationNotAllowedMessage: 'Phone auth is not enabled.',
-                  fallbackMessage: 'Sign up failed. Please try again.',
+                  operationNotAllowedMessage: AppStrings.phoneAuthNotEnabled,
+                  fallbackMessage: AppStrings.signUpFailedPleaseTryAgain,
                 )
               : AppStrings.somethingWentWrong,
         ),
@@ -222,7 +221,7 @@ class RegisterCubit extends SafeCubit<RegisterState> {
       ),
       termsError: _maybeError(
         next.termsTouched || showAll,
-        next.termsAccepted ? null : 'Please accept the terms.',
+        next.termsAccepted ? null : AppStrings.pleaseAcceptTheTerms,
       ),
     );
   }
@@ -232,45 +231,45 @@ class RegisterCubit extends SafeCubit<RegisterState> {
   }
 
   String? _fullNameError(String value) {
-    if (value.trim().isEmpty) return 'Full name is required.';
+    if (value.trim().isEmpty) return AppStrings.fullNameIsRequired;
     return null;
   }
 
   String? _emailError(String value) {
-    if (value.trim().isEmpty) return 'Email is required.';
+    if (value.trim().isEmpty) return AppStrings.emailIsRequired;
     if (!AuthValidators.isEmail(value)) {
-      return 'Enter a valid email (example@domain.com).';
+      return AppStrings.enterValidEmailExample;
     }
     return null;
   }
 
   String? _passwordError(String value) {
-    if (value.trim().isEmpty) return 'Password is required.';
+    if (value.trim().isEmpty) return AppStrings.passwordIsRequired;
     if (!AuthValidators.isPassword(value)) {
-      return 'Password must be at least 6 characters.';
+      return AppStrings.passwordMustBeAtLeast6Characters;
     }
     return null;
   }
 
   String? _confirmPasswordError(String password, String confirm) {
-    if (confirm.trim().isEmpty) return 'Please confirm your password.';
-    if (password != confirm) return 'Passwords do not match.';
+    if (confirm.trim().isEmpty) return AppStrings.pleaseConfirmYourPassword;
+    if (password != confirm) return AppStrings.passwordsDoNotMatch;
     return null;
   }
 
   String? _phoneError(String value) {
-    if (value.trim().isEmpty) return 'Phone number is required.';
-    if (!AuthValidators.isPhone(value)) return 'Enter a valid phone number.';
+    if (value.trim().isEmpty) return AppStrings.phoneNumberIsRequired;
+    if (!AuthValidators.isPhone(value)) return AppStrings.enterValidPhoneNumber;
     return null;
   }
 
   String? _countryError(String value) {
-    if (value.trim().isEmpty) return 'Country is required.';
+    if (value.trim().isEmpty) return AppStrings.countryIsRequired;
     return null;
   }
 
   String? _cityError(String value) {
-    if (value.trim().isEmpty) return 'City is required.';
+    if (value.trim().isEmpty) return AppStrings.cityIsRequired;
     return null;
   }
 

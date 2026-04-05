@@ -27,6 +27,7 @@ class AdminWebApp extends StatelessWidget {
           valueListenable: AppLocalizationController.instance.localeNotifier,
           builder: (context, locale, _) {
             return MaterialApp(
+              key: ValueKey<String>('admin-${locale.languageCode}'),
               title: AppStrings.adminAppTitle,
               debugShowCheckedModeBanner: false,
               locale: locale,

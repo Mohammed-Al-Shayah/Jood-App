@@ -162,7 +162,7 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
       _emitIfOpen(
         state.copyWith(
           status: BookingFlowStatus.failure,
-          errorMessage: error.toString(),
+          errorMessage: null,
           offers: const [],
         ),
       );

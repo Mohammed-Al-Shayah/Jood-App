@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jood/core/utils/app_strings.dart';
 
 import '../../../attractions/domain/entities/attraction_entity.dart';
 import '../../../attractions/domain/usecases/get_all_attractions_usecase.dart';
@@ -49,7 +50,7 @@ class OrdersCubit extends Cubit<OrdersState> {
           status: OrdersStatus.unauthenticated,
           orders: const [],
           venueDetailsByKey: const {},
-          errorMessage: 'Please login first.',
+          errorMessage: null,
         ),
       );
       return;
@@ -61,12 +62,7 @@ class OrdersCubit extends Cubit<OrdersState> {
       _handleOrdersChanged,
       onError: (Object error) {
         if (isClosed) return;
-        emit(
-          state.copyWith(
-            status: OrdersStatus.failure,
-            errorMessage: 'Failed to load orders: $error',
-          ),
-        );
+        emit(state.copyWith(status: OrdersStatus.failure, errorMessage: null));
       },
     );
   }
@@ -146,29 +142,24 @@ class OrdersCubit extends Cubit<OrdersState> {
   Future<String?> cancelBooking(BookingEntity booking) async {
     final currentUserId = _currentUserId ?? _getCurrentUser()?.uid;
     if (currentUserId == null) {
-      return 'Please login first.';
+      return AppStrings.pleaseLoginFirst;
     }
 
-    if (isClosed) return 'Failed to cancel booking. Please try again.';
+    if (isClosed) return AppStrings.failedToCancelBooking;
     emit(state.copyWith(cancellingBookingId: booking.id));
     try {
       await _cancelBooking(bookingId: booking.id, actorUserId: currentUserId);
       return null;
     } catch (error) {
       final raw = error.toString();
-      if (raw.contains('CANCELLATION_EXPIRED')) {
-        return 'Cancellation window has ended.';
+      if (raw.contains('CANCELLATION_EXPIRED') ||
+          raw.contains(AppStrings.cancellationWindowEnded)) {
+        return AppStrings.cancellationWindowEnded;
       }
-      if (raw.contains('Booking already cancelled.')) {
-        return 'Booking already cancelled.';
+      if (raw.trim().isNotEmpty) {
+        return raw;
       }
-      if (raw.contains('Completed booking cannot be cancelled.')) {
-        return 'Completed booking cannot be cancelled.';
-      }
-      if (raw.contains('Not authorized.')) {
-        return 'Not authorized.';
-      }
-      return 'Failed to cancel booking. Please try again.';
+      return AppStrings.failedToCancelBooking;
     } finally {
       if (!isClosed) {
         emit(state.copyWith(cancellingBookingId: null));

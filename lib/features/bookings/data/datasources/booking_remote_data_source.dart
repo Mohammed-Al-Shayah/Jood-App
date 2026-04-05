@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/app_strings.dart';
 import '../../domain/services/booking_order_policy.dart';
 import '../../domain/services/booking_redemption_policy.dart';
 import '../models/booking_model.dart';
@@ -56,10 +57,10 @@ class BookingRemoteDataSource {
           (capacityAdult + capacityChild) - (bookedAdult + bookedChild);
 
       if (status == 'soldout' || status == 'sold_out') {
-        throw BookingException('Offer is not active.');
+        throw BookingException(AppStrings.offerIsNotActive);
       }
       if (remainingTotal < (adults + children)) {
-        throw BookingException('Sold out / Not enough tickets.');
+        throw BookingException(AppStrings.soldOutNotEnoughTickets);
       }
 
       final priceAdult = NumberUtils.toDouble(data['priceAdult']);
@@ -200,7 +201,7 @@ class BookingRemoteDataSource {
         .limit(1)
         .get();
     if (query.docs.isEmpty) {
-      throw BookingException('Order not found.');
+      throw BookingException(AppStrings.orderNotFound);
     }
     return BookingModel.fromDoc(query.docs.first);
   }
@@ -213,21 +214,21 @@ class BookingRemoteDataSource {
       final bookingRef = firestore.collection('bookings').doc(bookingId);
       final bookingSnap = await transaction.get(bookingRef);
       if (!bookingSnap.exists) {
-        throw BookingException('Booking not found.');
+        throw BookingException(AppStrings.bookingNotFound);
       }
 
       final data = bookingSnap.data() ?? const <String, dynamic>{};
       final status = (data['status'] as String? ?? '').trim().toLowerCase();
       if (BookingOrderPolicy.isCancelledStatus(status)) {
-        throw BookingException('Booking already cancelled.');
+        throw BookingException(AppStrings.bookingAlreadyCancelled);
       }
       if (BookingOrderPolicy.isCompletedStatus(status)) {
-        throw BookingException('Completed booking cannot be cancelled.');
+        throw BookingException(AppStrings.completedBookingCannotBeCancelled);
       }
 
       final bookingUserId = (data['userId'] as String? ?? '').trim();
       if (bookingUserId.isNotEmpty && bookingUserId != actorUserId) {
-        throw BookingException('Not authorized.');
+        throw BookingException(AppStrings.notAuthorized);
       }
 
       final date = (data['date'] as String? ?? '').trim();
@@ -275,7 +276,7 @@ class BookingRemoteDataSource {
       final bookingRef = firestore.collection('bookings').doc(bookingId);
       final bookingSnap = await transaction.get(bookingRef);
       if (!bookingSnap.exists) {
-        throw BookingException('Order not found.');
+        throw BookingException(AppStrings.orderNotFound);
       }
 
       final booking = BookingModel.fromDoc(bookingSnap);

@@ -31,9 +31,8 @@ class _OrderQrScannerView extends StatefulWidget {
 class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
   bool _isProcessing = false;
   bool _isSheetOpen = false;
-  final ValueNotifier<String> _statusTextNotifier = ValueNotifier<String>(
-    AppStrings.scanOrderQr,
-  );
+  final ValueNotifier<_ScannerStatusValue> _statusTextNotifier =
+      ValueNotifier<_ScannerStatusValue>(const _ScannerStatusValue.idle());
 
   @override
   void dispose() {
@@ -49,7 +48,7 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
     if (raw.isEmpty) return;
 
     _isProcessing = true;
-    _statusTextNotifier.value = AppStrings.verifyingOrder;
+    _statusTextNotifier.value = const _ScannerStatusValue.verifying();
 
     try {
       final bookingView = await context
@@ -86,23 +85,23 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
       }
 
       if (confirm != true) {
-        _statusTextNotifier.value = AppStrings.scanOrderQr;
+        _statusTextNotifier.value = const _ScannerStatusValue.idle();
         return;
       }
 
       if (!mounted) return;
-      _statusTextNotifier.value = AppStrings.completingOrder;
+      _statusTextNotifier.value = const _ScannerStatusValue.completing();
       final completeText = await context
           .read<OrderQrScannerCubit>()
           .completeCurrentBooking();
       if (!mounted) return;
 
-      _statusTextNotifier.value = completeText;
+      _statusTextNotifier.value = _ScannerStatusValue.custom(completeText);
       showAppSnackBar(context, completeText, type: SnackBarType.success);
     } catch (error) {
       if (!mounted) return;
       final message = error.toString().replaceFirst('Exception: ', '').trim();
-      _statusTextNotifier.value = message;
+      _statusTextNotifier.value = _ScannerStatusValue.custom(message);
       showAppSnackBar(context, message, type: SnackBarType.error);
     } finally {
       await Future<void>.delayed(const Duration(milliseconds: 900));
@@ -118,9 +117,9 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
         fit: StackFit.expand,
         children: [
           MobileScanner(fit: BoxFit.cover, onDetect: _onDetect),
-          Positioned(
-            left: 16,
-            right: 16,
+          PositionedDirectional(
+            start: 16,
+            end: 16,
             bottom: 24,
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
@@ -128,11 +127,11 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
                 color: Colors.black.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(12.r),
               ),
-              child: ValueListenableBuilder<String>(
+              child: ValueListenableBuilder<_ScannerStatusValue>(
                 valueListenable: _statusTextNotifier,
                 builder: (context, statusText, _) {
                   return Text(
-                    statusText,
+                    statusText.resolve(context),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white),
                   );
@@ -201,7 +200,7 @@ class _BookingReviewSheet extends StatelessWidget {
               _line(AppStrings.vat, tax.toStringAsFixed(2)),
               _line(AppStrings.total, total.toStringAsFixed(2)),
               _line(AppStrings.couponOffer, offerTitle, maxLines: 2),
-              _line(AppStrings.status, status),
+              _line(AppStrings.status, AppStrings.bookingStatusLabel(status)),
               SizedBox(height: 16.h),
               Row(
                 children: [
@@ -264,7 +263,7 @@ class _BookingReviewSheet extends StatelessWidget {
             flex: 5,
             child: Text(
               value,
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.end,
               maxLines: maxLines,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontWeight: FontWeight.w600),
@@ -273,5 +272,34 @@ class _BookingReviewSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+enum _ScannerStatusKind { idle, verifying, completing, custom }
+
+class _ScannerStatusValue {
+  const _ScannerStatusValue._(this.kind, [this.customMessage]);
+
+  const _ScannerStatusValue.idle() : this._(_ScannerStatusKind.idle);
+  const _ScannerStatusValue.verifying() : this._(_ScannerStatusKind.verifying);
+  const _ScannerStatusValue.completing()
+    : this._(_ScannerStatusKind.completing);
+  const _ScannerStatusValue.custom(String message)
+    : this._(_ScannerStatusKind.custom, message);
+
+  final _ScannerStatusKind kind;
+  final String? customMessage;
+
+  String resolve(BuildContext context) {
+    switch (kind) {
+      case _ScannerStatusKind.idle:
+        return AppStrings.scanOrderQr;
+      case _ScannerStatusKind.verifying:
+        return AppStrings.verifyingOrder;
+      case _ScannerStatusKind.completing:
+        return AppStrings.completingOrder;
+      case _ScannerStatusKind.custom:
+        return customMessage ?? AppStrings.scanOrderQr;
+    }
   }
 }

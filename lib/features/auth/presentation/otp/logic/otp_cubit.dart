@@ -66,9 +66,8 @@ class OtpCubit extends SafeCubit<OtpState> {
           errorMessage: isAuthError(error)
               ? mapAuthError(
                   error,
-                  operationNotAllowedMessage: 'Phone auth is not enabled.',
-                  fallbackMessage:
-                      'Phone verification failed. Please try again.',
+                  operationNotAllowedMessage: AppStrings.phoneAuthNotEnabled,
+                  fallbackMessage: AppStrings.unableToVerifyPhonePleaseTryAgain,
                 )
               : AppStrings.somethingWentWrong,
         ),
@@ -91,7 +90,7 @@ class OtpCubit extends SafeCubit<OtpState> {
         emitSafe(
           state.copyWith(
             status: OtpStatus.failure,
-            errorMessage: 'Unable to verify phone. Please try again.',
+            errorMessage: AppStrings.unableToVerifyPhonePleaseTryAgain,
           ),
         );
         return;
@@ -109,9 +108,8 @@ class OtpCubit extends SafeCubit<OtpState> {
           errorMessage: isAuthError(error)
               ? mapAuthError(
                   error,
-                  operationNotAllowedMessage: 'Phone auth is not enabled.',
-                  fallbackMessage:
-                      'Phone verification failed. Please try again.',
+                  operationNotAllowedMessage: AppStrings.phoneAuthNotEnabled,
+                  fallbackMessage: AppStrings.unableToVerifyPhonePleaseTryAgain,
                 )
               : AppStrings.somethingWentWrong,
         ),
@@ -174,10 +172,9 @@ class OtpCubit extends SafeCubit<OtpState> {
       }
       if (code == 'email-already-in-use' ||
           code == 'credential-already-in-use') {
-        throw const AppAuthException(
+        throw AppAuthException(
           code: 'email-already-in-use',
-          message:
-              'This email is already registered. Please use a different email or log in.',
+          message: AppStrings.emailAlreadyRegisteredUseDifferentOrLogin,
         );
       }
       if (isAuthError(error)) {
@@ -186,8 +183,8 @@ class OtpCubit extends SafeCubit<OtpState> {
           message: mapAuthError(
             error,
             operationNotAllowedMessage:
-                'Email/password accounts are not enabled.',
-            fallbackMessage: 'Sign up failed. Please try again.',
+                AppStrings.emailPasswordAccountsNotEnabled,
+            fallbackMessage: AppStrings.signUpFailedPleaseTryAgain,
           ),
         );
       }

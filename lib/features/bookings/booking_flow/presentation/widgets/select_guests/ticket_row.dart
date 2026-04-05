@@ -8,7 +8,7 @@ class TicketRow extends StatelessWidget {
   const TicketRow({
     super.key,
     required this.label,
-    required this.ageLabel,
+    this.ageLabel = '',
     required this.priceLabel,
     required this.count,
     required this.onAdd,
@@ -34,11 +34,13 @@ class TicketRow extends StatelessWidget {
                 label,
                 style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
               ),
-              SizedBox(height: 4.h),
-              Text(
-                ageLabel,
-                style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp),
-              ),
+              if (ageLabel.trim().isNotEmpty) ...[
+                SizedBox(height: 4.h),
+                Text(
+                  ageLabel,
+                  style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp),
+                ),
+              ],
               SizedBox(height: 6.h),
               Text(
                 priceLabel,
@@ -73,5 +75,3 @@ class TicketRow extends StatelessWidget {
     );
   }
 }
-
-

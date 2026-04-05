@@ -6,11 +6,7 @@ import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
 
 class MoreChip extends StatelessWidget {
-  const MoreChip({
-    super.key,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const MoreChip({super.key, required this.isSelected, required this.onTap});
 
   final bool isSelected;
   final VoidCallback onTap;
@@ -42,5 +38,3 @@ class MoreChip extends StatelessWidget {
     );
   }
 }
-
-

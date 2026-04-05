@@ -93,5 +93,3 @@ class DateChip extends StatelessWidget {
 String _formatPrice(double value, String currency) {
   return formatCurrency(currency, value);
 }
-
-

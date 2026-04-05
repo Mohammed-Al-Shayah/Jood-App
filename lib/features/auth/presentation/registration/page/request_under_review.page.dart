@@ -49,8 +49,7 @@ class _RequestUnderReviewPageState extends State<RequestUnderReviewPage> {
                         shape: BoxShape.circle,
                         color: AppColors.primary,
                       ),
-                      child:
-                          Icon(Icons.check, size: 40.r, color: Colors.white),
+                      child: Icon(Icons.check, size: 40.r, color: Colors.white),
                     ),
                   ),
                 ),

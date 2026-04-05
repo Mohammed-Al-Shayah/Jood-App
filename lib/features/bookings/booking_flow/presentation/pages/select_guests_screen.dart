@@ -30,8 +30,7 @@ class SelectGuestsScreen extends StatefulWidget {
   State<SelectGuestsScreen> createState() => _SelectGuestsScreenState();
 }
 
-class _SelectGuestsScreenState extends State<SelectGuestsScreen>
-    {
+class _SelectGuestsScreenState extends State<SelectGuestsScreen> {
   @override
   void initState() {
     super.initState();
@@ -132,7 +131,8 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen>
                     if (selectedTotal > remainingTotal) {
                       showAppSnackBar(
                         context,
-                        'Selected tickets are no longer available. Please adjust quantities.',
+                        AppStrings
+                            .selectedTicketsNoLongerAvailableAdjustQuantities,
                         type: SnackBarType.error,
                       );
                       return;
@@ -271,7 +271,9 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen>
                               ),
                               SizedBox(height: 12.h),
                               SummaryRow(
-                                label: '${AppStrings.adults} x${vm.adultCount}',
+                                label: AppStrings.adultsCountLabel(
+                                  vm.adultCount,
+                                ),
                                 value: formatCurrency(
                                   currency,
                                   amounts.adultTotal,
@@ -280,8 +282,9 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen>
                               if (vm.childCount > 0) ...[
                                 SizedBox(height: 6.h),
                                 SummaryRow(
-                                  label:
-                                      '${AppStrings.children} x${vm.childCount}',
+                                  label: AppStrings.childrenCountLabel(
+                                    vm.childCount,
+                                  ),
                                   value: formatCurrency(
                                     currency,
                                     amounts.childTotal,
@@ -297,7 +300,7 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen>
                               // ),
                               SizedBox(height: 10.h),
                               SummaryRow(
-                                label: 'Before discount',
+                                label: AppStrings.beforeDiscount,
                                 value: formatCurrency(
                                   currency,
                                   amounts.originalSubtotal,
@@ -305,7 +308,7 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen>
                               ),
                               SizedBox(height: 6.h),
                               SummaryRow(
-                                label: 'Discount',
+                                label: AppStrings.discount,
                                 value: formatCurrency(
                                   currency,
                                   -amounts.discountTotal,
@@ -313,7 +316,7 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen>
                               ),
                               SizedBox(height: 6.h),
                               SummaryRow(
-                                label: 'VAT (5%)',
+                                label: AppStrings.vatWithRate('5%'),
                                 value: formatCurrency(currency, amounts.tax),
                               ),
                               SizedBox(height: 6.h),

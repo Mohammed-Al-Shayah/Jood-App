@@ -49,7 +49,7 @@ String mapAuthError(
   if (error is FirebaseException) {
     return mapFirebaseException(error, fallbackMessage: fallbackMessage);
   }
-  return fallbackMessage ?? 'Request failed. Please try again.';
+  return fallbackMessage ?? AppStrings.requestFailedPleaseTryAgain;
 }
 
 bool isAuthError(Object error) {
@@ -82,7 +82,7 @@ bool isReauthRequiredError(Object error) {
 }
 
 String mapFirebaseException(FirebaseException e, {String? fallbackMessage}) {
-  return e.message ?? fallbackMessage ?? 'Request failed. Please try again.';
+  return e.message ?? fallbackMessage ?? AppStrings.requestFailedPleaseTryAgain;
 }
 
 String _mapAuthCode({
@@ -95,39 +95,40 @@ String _mapAuthCode({
 }) {
   switch (code) {
     case 'invalid-phone-number':
-      return 'Invalid phone number.';
+      return AppStrings.invalidPhoneNumber;
     case 'invalid-email':
-      return 'Invalid email address.';
+      return AppStrings.invalidEmailAddress;
     case 'user-disabled':
-      return 'This account has been disabled.';
+      return AppStrings.thisAccountHasBeenDisabled;
     case 'user-not-found':
-      return userNotFoundMessage ?? 'No user found.';
+      return userNotFoundMessage ?? AppStrings.noUserFound;
     case 'wrong-password':
-      return 'Incorrect password.';
+      return AppStrings.incorrectPassword;
     case 'invalid-credential':
-      return 'Invalid credentials.';
+      return AppStrings.invalidCredentials;
     case 'weak-password':
-      return 'Password is too weak.';
+      return AppStrings.passwordIsTooWeak;
     case 'email-already-in-use':
     case 'credential-already-in-use':
-      return message ?? 'Email already in use.';
+      return message ?? AppStrings.emailAlreadyInUse;
     case 'invalid-verification-code':
-      return 'Invalid OTP code.';
+      return AppStrings.invalidOtpCode;
     case 'session-expired':
-      return 'OTP session expired. Please resend the code.';
+      return AppStrings.otpSessionExpiredResendCode;
     case 'quota-exceeded':
-      return 'SMS quota exceeded. Please try again later.';
+      return AppStrings.smsQuotaExceeded;
     case 'resource-exhausted':
       return message ?? AppStrings.tooManyAttempts;
     case 'too-many-requests':
       return AppStrings.tooManyAttempts;
     case 'operation-not-allowed':
       return operationNotAllowedMessage ??
-          'This operation is not allowed for this project.';
+          AppStrings.operationNotAllowedForProject;
     case 'requires-recent-login':
-      return requiresRecentLoginMessage ??
-          'For security, please sign in again and retry.';
+      return requiresRecentLoginMessage ?? AppStrings.signInAgainAndRetry;
     default:
-      return message ?? fallbackMessage ?? 'Request failed. Please try again.';
+      return message ??
+          fallbackMessage ??
+          AppStrings.requestFailedPleaseTryAgain;
   }
 }

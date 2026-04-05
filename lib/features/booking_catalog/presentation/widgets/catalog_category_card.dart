@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/localization/app_localization_controller.dart';
@@ -56,7 +56,7 @@ class CatalogCategoryCard extends StatelessWidget {
                 ),
                 child: Icon(config.icon, color: Colors.white, size: 20.sp),
               ),
-              SizedBox(height: 12.h),
+              SizedBox(height: 10.h),
               Text(
                 _categoryText(category, 'title'),
                 maxLines: 1,
@@ -67,16 +67,21 @@ class CatalogCategoryCard extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 4.h),
-              Text(
-                _categoryText(category, 'card_subtitle'),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.cardMeta.copyWith(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  fontSize: 12.sp,
+              Expanded(
+                child: Align(
+                  alignment: AlignmentDirectional.topStart,
+                  child: Text(
+                    _categoryText(category, 'card_subtitle'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.cardMeta.copyWith(
+                      color: Colors.white.withValues(alpha: 0.92),
+                      fontSize: 12.sp,
+                    ),
+                  ),
                 ),
               ),
-              const Spacer(),
+              SizedBox(height: 6.h),
               Row(
                 children: [
                   Text(

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/utils/app_strings.dart';
 import '../../../restaurants/data/models/restaurant_model.dart';
 import '../../../restaurants/domain/entities/restaurant_entity.dart';
 import '../../../../core/utils/number_utils.dart';
@@ -60,7 +61,8 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
           minOriginalPrice = originalAdult;
           currency = offer['currency'] as String? ?? currency;
         }
-        final remainingAdult = NumberUtils.toInt(offer['capacityAdult']) -
+        final remainingAdult =
+            NumberUtils.toInt(offer['capacityAdult']) -
             NumberUtils.toInt(offer['bookedAdult']);
         final remainingChild =
             NumberUtils.toInt(offer['capacityChild']) -
@@ -93,36 +95,40 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
             '${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(2)}';
         data['discountValue'] = resolvedCurrent;
         if (resolvedOriginal > resolvedCurrent) {
-          data['priceFrom'] =
-              'From ${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedOriginal.toStringAsFixed(2)}';
+          data['priceFrom'] = AppStrings.fromPrice(
+            '${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedOriginal.toStringAsFixed(2)}',
+          );
           data['discount'] = priceLabel;
-          data['slotsLeft'] = 'After discount $priceLabel';
+          data['slotsLeft'] = AppStrings.afterDiscount(priceLabel);
           data['priceFromValue'] = resolvedOriginal;
         } else {
-          data['priceFrom'] =
-              'From ${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(2)}';
+          data['priceFrom'] = AppStrings.fromPrice(
+            '${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(2)}',
+          );
           data['priceFromValue'] = resolvedCurrent;
         }
       }
       if ((data['slotsLeft'] as String?)?.isEmpty ?? true) {
         if (remainingTotal > 0) {
-          data['slotsLeft'] = '$remainingTotal slots left';
+          data['slotsLeft'] = AppStrings.slotsLeftCount(remainingTotal);
         }
       }
       data['priceFromValue'] ??= NumberUtils.parseNumber(data['priceFrom']);
       data['discountValue'] ??= NumberUtils.parseNumber(data['discount']);
 
       if (discountPercent > 0) {
-        data['badge'] = '${discountPercent.round()}% off';
+        data['badge'] = AppStrings.percentOff(discountPercent.round());
       } else {
         final ratingValue = NumberUtils.toDouble(data['rating']);
         final badgeText = (data['badge'] as String? ?? '').trim();
         if (badgeText.isEmpty) {
           if (ratingValue >= 4.5) {
-            data['badge'] = 'Top rated';
+            data['badge'] = AppStrings.topRated;
           } else if (ratingValue >= 4.0) {
-            data['badge'] = 'Popular';
+            data['badge'] = AppStrings.popular;
           }
+        } else {
+          data['badge'] = _localizedBadge(badgeText);
         }
       }
 
@@ -146,9 +152,21 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
     if (value == null) return null;
     final text = value.toString().trim();
     if (text.isEmpty) return null;
-    final match = RegExp(r'([A-Za-z]{2,})').firstMatch(text);
-    if (match == null) return null;
-    return match.group(1);
+    final buffer = StringBuffer();
+    for (final rune in text.runes) {
+      final character = String.fromCharCode(rune);
+      final isLetter =
+          (rune >= 65 && rune <= 90) || (rune >= 97 && rune <= 122);
+      if (isLetter) {
+        buffer.write(character);
+        continue;
+      }
+      if (buffer.isNotEmpty) {
+        break;
+      }
+    }
+    final result = buffer.toString();
+    return result.isEmpty ? null : result;
   }
 
   static double _resolveDiscountPercent({
@@ -171,5 +189,26 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
       return 0;
     }
     return ((originalPrice - minPrice) / originalPrice) * 100;
+  }
+
+  static String _localizedBadge(String badge) {
+    final trimmed = badge.trim();
+    if (trimmed.isEmpty) return trimmed;
+    final percentIndex = trimmed.indexOf('%');
+    if (percentIndex > 0) {
+      final percent = int.tryParse(trimmed.substring(0, percentIndex).trim());
+      if (percent != null) {
+        return AppStrings.percentOff(percent);
+      }
+    }
+
+    switch (trimmed.toLowerCase()) {
+      case 'top rated':
+        return AppStrings.topRated;
+      case 'popular':
+        return AppStrings.popular;
+      default:
+        return trimmed;
+    }
   }
 }

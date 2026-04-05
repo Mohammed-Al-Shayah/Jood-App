@@ -56,24 +56,15 @@ class BookingDetailsCard extends StatelessWidget {
           SizedBox(height: 12.h),
           Row(
             children: [
-              _InfoChip(
-                icon: Icons.calendar_today,
-                label: dateLabel,
-              ),
+              _InfoChip(icon: Icons.calendar_today, label: dateLabel),
               SizedBox(width: 12.w),
-              _InfoChip(
-                icon: Icons.schedule,
-                label: timeLabel,
-              ),
+              _InfoChip(icon: Icons.schedule, label: timeLabel),
             ],
           ),
           SizedBox(height: 10.h),
           Row(
             children: [
-              _InfoChip(
-                icon: Icons.people,
-                label: guestsLabel,
-              ),
+              _InfoChip(icon: Icons.people, label: guestsLabel),
               const Spacer(),
               Text(
                 totalPaid,
@@ -110,14 +101,9 @@ class _InfoChip extends StatelessWidget {
         children: [
           Icon(icon, size: 14.sp, color: AppColors.primary),
           SizedBox(width: 6.w),
-          Text(
-            label,
-            style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp),
-          ),
+          Text(label, style: AppTextStyles.cardMeta.copyWith(fontSize: 12.sp)),
         ],
       ),
     );
   }
 }
-
-

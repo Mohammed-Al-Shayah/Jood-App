@@ -87,6 +87,10 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     super.initState();
     final offer = widget.offer;
     _category = _resolveInitialCategory(offer, widget.initialCategory);
+    final isAttraction = _category == 'attraction';
+    final totalCapacity =
+        (offer?.capacityAdult ?? 0) + (offer?.capacityChild ?? 0);
+    final totalBooked = (offer?.bookedAdult ?? 0) + (offer?.bookedChild ?? 0);
     _mealType = offer?.mealType.trim().isNotEmpty == true
         ? offer!.mealType.trim().toLowerCase()
         : _defaultMealTypeForCategory(_category);
@@ -103,19 +107,23 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       text: offer?.priceAdultOriginal.toString() ?? '',
     );
     _priceChildController = TextEditingController(
-      text: offer?.priceChild.toString() ?? '',
+      text: isAttraction ? '0' : (offer?.priceChild.toString() ?? ''),
     );
     _capacityAdultController = TextEditingController(
-      text: offer?.capacityAdult.toString() ?? '',
+      text: isAttraction
+          ? totalCapacity.toString()
+          : (offer?.capacityAdult.toString() ?? ''),
     );
     _capacityChildController = TextEditingController(
-      text: offer?.capacityChild.toString() ?? '',
+      text: isAttraction ? '0' : (offer?.capacityChild.toString() ?? ''),
     );
     _bookedAdultController = TextEditingController(
-      text: offer?.bookedAdult.toString() ?? '0',
+      text: isAttraction
+          ? totalBooked.toString()
+          : (offer?.bookedAdult.toString() ?? '0'),
     );
     _bookedChildController = TextEditingController(
-      text: offer?.bookedChild.toString() ?? '0',
+      text: isAttraction ? '0' : (offer?.bookedChild.toString() ?? '0'),
     );
     _statusController = TextEditingController(text: offer?.status ?? 'active');
     _titleController = TextEditingController(text: offer?.title ?? '');
@@ -200,12 +208,20 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
             title: 'Pricing',
             child: Column(
               children: [
-                _numberField(_priceAdultController, 'Price Adult'),
-                _numberField(
-                  _priceAdultOriginalController,
-                  'Price Adult Original',
-                ),
-                _numberField(_priceChildController, 'Price Child'),
+                if (_isAttraction) ...[
+                  _numberField(_priceAdultController, 'Price Per Person'),
+                  _numberField(
+                    _priceAdultOriginalController,
+                    'Original Price Per Person',
+                  ),
+                ] else ...[
+                  _numberField(_priceAdultController, 'Price Adult'),
+                  _numberField(
+                    _priceAdultOriginalController,
+                    'Price Adult Original',
+                  ),
+                  _numberField(_priceChildController, 'Price Child'),
+                ],
               ],
             ),
           ),
@@ -214,10 +230,15 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
             title: 'Capacity',
             child: Column(
               children: [
-                _intField(_capacityAdultController, 'Capacity Adult'),
-                _intField(_capacityChildController, 'Capacity Child'),
-                _intField(_bookedAdultController, 'Booked Adult'),
-                _intField(_bookedChildController, 'Booked Child'),
+                if (_isAttraction) ...[
+                  _intField(_capacityAdultController, 'Capacity Persons'),
+                  _intField(_bookedAdultController, 'Booked Persons'),
+                ] else ...[
+                  _intField(_capacityAdultController, 'Capacity Adult'),
+                  _intField(_capacityChildController, 'Capacity Child'),
+                  _intField(_bookedAdultController, 'Booked Adult'),
+                  _intField(_bookedChildController, 'Booked Child'),
+                ],
               ],
             ),
           ),
@@ -286,6 +307,10 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
               _packageNameController.clear();
               _packageDescriptionController.clear();
             }
+            _syncCategorySpecificFields(
+              previousCategory: previousCategory,
+              nextCategory: value,
+            );
             _syncSelectedVenue();
             _maybeSyncTitleWithMealType(
               previousCategory: previousCategory,
@@ -648,6 +673,13 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
   void _syncChildPriceFromAdult() {
     if (_syncingChildPrice) return;
+    if (_isAttraction) {
+      if (_priceChildController.text.trim() == '0') return;
+      _syncingChildPrice = true;
+      _priceChildController.text = '0';
+      _syncingChildPrice = false;
+      return;
+    }
     final raw = _priceAdultController.text.trim();
     if (raw.isEmpty) {
       _syncingChildPrice = true;
@@ -662,6 +694,27 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     _syncingChildPrice = true;
     _priceChildController.text = formatted;
     _syncingChildPrice = false;
+  }
+
+  void _syncCategorySpecificFields({
+    required String previousCategory,
+    required String nextCategory,
+  }) {
+    if (nextCategory == 'attraction') {
+      _syncingChildPrice = true;
+      _priceChildController.text = '0';
+      _syncingChildPrice = false;
+      _capacityChildController.text = '0';
+      _bookedChildController.text = '0';
+      return;
+    }
+
+    if (previousCategory == 'attraction') {
+      _priceChildController.clear();
+      _capacityChildController.text = '0';
+      _bookedChildController.text = '0';
+      _syncChildPriceFromAdult();
+    }
   }
 
   void _syncSelectedVenue() {
@@ -849,11 +902,17 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     final priceAdultOriginal = double.parse(
       _priceAdultOriginalController.text.trim(),
     );
-    final priceChild = double.parse(_priceChildController.text.trim());
+    final priceChild = _isAttraction
+        ? 0.0
+        : double.parse(_priceChildController.text.trim());
     final capacityAdult = int.parse(_capacityAdultController.text.trim());
-    final capacityChild = int.parse(_capacityChildController.text.trim());
+    final capacityChild = _isAttraction
+        ? 0
+        : int.parse(_capacityChildController.text.trim());
     final bookedAdult = int.parse(_bookedAdultController.text.trim());
-    final bookedChild = int.parse(_bookedChildController.text.trim());
+    final bookedChild = _isAttraction
+        ? 0
+        : int.parse(_bookedChildController.text.trim());
     final status = _statusController.text.trim();
     final title = _titleController.text.trim();
     final packageName = _isAttraction ? _packageNameController.text.trim() : '';

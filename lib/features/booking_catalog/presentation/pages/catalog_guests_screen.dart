@@ -18,6 +18,7 @@ import '../../../bookings/booking_flow/presentation/widgets/select_guests/sectio
 import '../../../bookings/booking_flow/presentation/widgets/select_guests/summary_row.dart';
 import '../../../bookings/booking_flow/presentation/widgets/select_guests/ticket_row.dart';
 import '../../../offers/domain/entities/offer_entity.dart';
+import '../../domain/entities/catalog_category_type.dart';
 import '../../domain/entities/catalog_item_entity.dart';
 import 'catalog_booking_utils.dart';
 
@@ -33,12 +34,28 @@ class CatalogGuestsScreen extends StatefulWidget {
 class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
   static const int _absoluteGuestCap = 99;
 
+  bool _usesUnifiedGuestCount(OfferEntity? offer) {
+    if (widget.item.category == CatalogCategoryType.attraction) {
+      return true;
+    }
+    return offer?.bookableType.trim().toLowerCase() == 'attraction';
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cubit = context.read<BookingFlowCubit>();
+      final selectedOffer = cubit.state.selectedOffer();
       final currentTotal = cubit.state.adultCount + cubit.state.childCount;
+      if (_usesUnifiedGuestCount(selectedOffer)) {
+        final nextCount = currentTotal == 0 ? 1 : currentTotal;
+        if (cubit.state.adultCount != nextCount ||
+            cubit.state.childCount != 0) {
+          cubit.setGuestCounts(adults: nextCount, children: 0);
+        }
+        return;
+      }
       if (currentTotal == 0) {
         cubit.setGuestCounts(adults: 1, children: 0);
       }
@@ -50,14 +67,23 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
     return BlocBuilder<BookingFlowCubit, BookingFlowState>(
       builder: (context, state) {
         final selectedOffer = state.selectedOffer();
+        final usesUnifiedGuestCount = _usesUnifiedGuestCount(selectedOffer);
+        final normalizedAdultCount = usesUnifiedGuestCount
+            ? state.adultCount + state.childCount
+            : state.adultCount;
+        final normalizedChildCount = usesUnifiedGuestCount
+            ? 0
+            : state.childCount;
         final amounts = BookingAmountsViewModel.calculate(
           adultPrice: selectedOffer?.priceAdult ?? 0,
-          childPrice: selectedOffer?.priceChild ?? 0,
+          childPrice: usesUnifiedGuestCount
+              ? 0
+              : (selectedOffer?.priceChild ?? 0),
           adultOriginalPrice: selectedOffer?.priceAdultOriginal ?? 0,
-          adultCount: state.adultCount,
-          childCount: state.childCount,
+          adultCount: normalizedAdultCount,
+          childCount: normalizedChildCount,
         );
-        final totalGuests = state.adultCount + state.childCount;
+        final totalGuests = normalizedAdultCount + normalizedChildCount;
         final canProceed =
             selectedOffer != null &&
             totalGuests > 0 &&
@@ -99,12 +125,14 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
                           item: widget.item,
                           selectedOffer: selectedOffer,
                           selectedDate: state.selectedDate,
+                          usesUnifiedGuestCount: usesUnifiedGuestCount,
                         ),
                         SizedBox(height: 16.h),
                         _GuestsSection(
                           state: state,
                           selectedOffer: selectedOffer,
                           maxGuests: _absoluteGuestCap,
+                          usesUnifiedGuestCount: usesUnifiedGuestCount,
                         ),
                         SizedBox(height: 16.h),
                         _SummarySection(
@@ -112,6 +140,7 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
                           state: state,
                           selectedOffer: selectedOffer,
                           amounts: amounts,
+                          usesUnifiedGuestCount: usesUnifiedGuestCount,
                         ),
                       ],
                     ),
@@ -147,12 +176,13 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
       return;
     }
 
+    final usesUnifiedGuestCount = _usesUnifiedGuestCount(beforeOffer);
     final beforeAmounts = BookingAmountsViewModel.calculate(
       adultPrice: beforeOffer.priceAdult,
-      childPrice: beforeOffer.priceChild,
+      childPrice: usesUnifiedGuestCount ? 0 : beforeOffer.priceChild,
       adultOriginalPrice: beforeOffer.priceAdultOriginal,
-      adultCount: before.adultCount,
-      childCount: before.childCount,
+      adultCount: usesUnifiedGuestCount ? guestCount : before.adultCount,
+      childCount: usesUnifiedGuestCount ? 0 : before.childCount,
     );
 
     final stillSelected = await cubit.refreshSelectedDate();
@@ -177,18 +207,23 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
       return;
     }
 
+    final afterUsesUnifiedGuestCount = _usesUnifiedGuestCount(afterOffer);
+    final afterGuestCount = after.adultCount + after.childCount;
     final afterAmounts = BookingAmountsViewModel.calculate(
       adultPrice: afterOffer.priceAdult,
-      childPrice: afterOffer.priceChild,
+      childPrice: afterUsesUnifiedGuestCount ? 0 : afterOffer.priceChild,
       adultOriginalPrice: afterOffer.priceAdultOriginal,
-      adultCount: after.adultCount,
-      childCount: after.childCount,
+      adultCount: afterUsesUnifiedGuestCount
+          ? afterGuestCount
+          : after.adultCount,
+      childCount: afterUsesUnifiedGuestCount ? 0 : after.childCount,
     );
 
     final priceChanged =
         beforeOffer.id != afterOffer.id ||
         beforeOffer.priceAdult != afterOffer.priceAdult ||
-        beforeOffer.priceChild != afterOffer.priceChild ||
+        (!usesUnifiedGuestCount &&
+            beforeOffer.priceChild != afterOffer.priceChild) ||
         beforeOffer.priceAdultOriginal != afterOffer.priceAdultOriginal ||
         beforeAmounts.totalPayable != afterAmounts.totalPayable;
     if (priceChanged) {
@@ -216,11 +251,13 @@ class _SelectedOptionSection extends StatelessWidget {
     required this.item,
     required this.selectedOffer,
     required this.selectedDate,
+    required this.usesUnifiedGuestCount,
   });
 
   final CatalogItemEntity item;
   final OfferEntity? selectedOffer;
   final DateTime selectedDate;
+  final bool usesUnifiedGuestCount;
 
   @override
   Widget build(BuildContext context) {
@@ -267,18 +304,28 @@ class _SelectedOptionSection extends StatelessWidget {
                         color: AppColors.primary,
                       ),
                     ),
-                    SizedBox(width: 10.w),
-                    Text(
-                      AppStrings.childPrice(
-                        formatCurrency(
-                          selectedOffer!.currency,
-                          selectedOffer!.priceChild,
+                    if (usesUnifiedGuestCount) ...[
+                      SizedBox(width: 10.w),
+                      Text(
+                        AppStrings.perPerson,
+                        style: AppTextStyles.cardMeta.copyWith(
+                          color: AppColors.textSecondary,
                         ),
                       ),
-                      style: AppTextStyles.cardMeta.copyWith(
-                        color: AppColors.textSecondary,
+                    ] else ...[
+                      SizedBox(width: 10.w),
+                      Text(
+                        AppStrings.childPrice(
+                          formatCurrency(
+                            selectedOffer!.currency,
+                            selectedOffer!.priceChild,
+                          ),
+                        ),
+                        style: AppTextStyles.cardMeta.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ],
@@ -292,18 +339,23 @@ class _GuestsSection extends StatelessWidget {
     required this.state,
     required this.selectedOffer,
     required this.maxGuests,
+    required this.usesUnifiedGuestCount,
   });
 
   final BookingFlowState state;
   final OfferEntity? selectedOffer;
   final int maxGuests;
+  final bool usesUnifiedGuestCount;
 
   @override
   Widget build(BuildContext context) {
     final remaining = selectedOffer == null
         ? 0
         : remainingTotal(selectedOffer!);
-    final totalSelected = state.adultCount + state.childCount;
+    final unifiedCount = state.adultCount + state.childCount;
+    final totalSelected = usesUnifiedGuestCount
+        ? unifiedCount
+        : state.adultCount + state.childCount;
     final canAddMore =
         selectedOffer != null &&
         totalSelected < remaining &&
@@ -317,31 +369,53 @@ class _GuestsSection extends StatelessWidget {
       title: AppStrings.guests,
       child: Column(
         children: [
-          TicketRow(
-            label: AppStrings.adults,
-            ageLabel: AppStrings.adultsAge,
-            priceLabel: formatCurrency(currency, adultPrice),
-            count: state.adultCount,
-            onAdd: canAddMore
-                ? () => cubit.setAdultCount(state.adultCount + 1)
-                : null,
-            onRemove: state.adultCount > 0
-                ? () => cubit.setAdultCount(state.adultCount - 1)
-                : null,
-          ),
-          Divider(color: AppColors.shadowColor, height: 24.h),
-          TicketRow(
-            label: AppStrings.children,
-            ageLabel: AppStrings.childrenAge,
-            priceLabel: formatCurrency(currency, childPrice),
-            count: state.childCount,
-            onAdd: canAddMore
-                ? () => cubit.setChildCount(state.childCount + 1)
-                : null,
-            onRemove: state.childCount > 0
-                ? () => cubit.setChildCount(state.childCount - 1)
-                : null,
-          ),
+          if (usesUnifiedGuestCount) ...[
+            TicketRow(
+              label: AppStrings.guests,
+              ageLabel: AppStrings.samePriceForAllGuests,
+              priceLabel:
+                  '${formatCurrency(currency, adultPrice)} ${AppStrings.perPerson}',
+              count: unifiedCount,
+              onAdd: canAddMore
+                  ? () => cubit.setGuestCounts(
+                      adults: unifiedCount + 1,
+                      children: 0,
+                    )
+                  : null,
+              onRemove: unifiedCount > 0
+                  ? () => cubit.setGuestCounts(
+                      adults: unifiedCount - 1,
+                      children: 0,
+                    )
+                  : null,
+            ),
+          ] else ...[
+            TicketRow(
+              label: AppStrings.adults,
+              ageLabel: AppStrings.adultsAge,
+              priceLabel: formatCurrency(currency, adultPrice),
+              count: state.adultCount,
+              onAdd: canAddMore
+                  ? () => cubit.setAdultCount(state.adultCount + 1)
+                  : null,
+              onRemove: state.adultCount > 0
+                  ? () => cubit.setAdultCount(state.adultCount - 1)
+                  : null,
+            ),
+            Divider(color: AppColors.shadowColor, height: 24.h),
+            TicketRow(
+              label: AppStrings.children,
+              ageLabel: AppStrings.childrenAge,
+              priceLabel: formatCurrency(currency, childPrice),
+              count: state.childCount,
+              onAdd: canAddMore
+                  ? () => cubit.setChildCount(state.childCount + 1)
+                  : null,
+              onRemove: state.childCount > 0
+                  ? () => cubit.setChildCount(state.childCount - 1)
+                  : null,
+            ),
+          ],
           if (selectedOffer != null && remaining > 0) ...[
             SizedBox(height: 12.h),
             Align(
@@ -366,12 +440,14 @@ class _SummarySection extends StatelessWidget {
     required this.state,
     required this.selectedOffer,
     required this.amounts,
+    required this.usesUnifiedGuestCount,
   });
 
   final CatalogItemEntity item;
   final BookingFlowState state;
   final OfferEntity? selectedOffer;
   final BookingAmountsViewModel amounts;
+  final bool usesUnifiedGuestCount;
 
   @override
   Widget build(BuildContext context) {
@@ -382,6 +458,7 @@ class _SummarySection extends StatelessWidget {
       selectedTimeSlotKey: null,
       selectedPackageKey: null,
     );
+    final unifiedCount = state.adultCount + state.childCount;
 
     return SectionCard(
       title: AppStrings.bookingSummary,
@@ -401,16 +478,23 @@ class _SummarySection extends StatelessWidget {
             ),
           ),
           SizedBox(height: 12.h),
-          SummaryRow(
-            label: AppStrings.adultsCountLabel(state.adultCount),
-            value: formatCurrency(currency, amounts.adultTotal),
-          ),
-          if (state.childCount > 0) ...[
-            SizedBox(height: 6.h),
+          if (usesUnifiedGuestCount) ...[
             SummaryRow(
-              label: AppStrings.childrenCountLabel(state.childCount),
-              value: formatCurrency(currency, amounts.childTotal),
+              label: AppStrings.guestsCountLabel(unifiedCount),
+              value: formatCurrency(currency, amounts.subtotal),
             ),
+          ] else ...[
+            SummaryRow(
+              label: AppStrings.adultsCountLabel(state.adultCount),
+              value: formatCurrency(currency, amounts.adultTotal),
+            ),
+            if (state.childCount > 0) ...[
+              SizedBox(height: 6.h),
+              SummaryRow(
+                label: AppStrings.childrenCountLabel(state.childCount),
+                value: formatCurrency(currency, amounts.childTotal),
+              ),
+            ],
           ],
           SizedBox(height: 10.h),
           Divider(color: AppColors.shadowColor),

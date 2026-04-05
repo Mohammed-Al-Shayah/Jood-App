@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/auth_validators.dart';
 import '../../domain/entities/otp_mode.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -125,7 +126,7 @@ class AuthRepositoryImpl implements AuthRepository {
       if (verificationId.isEmpty) {
         throw FirebaseAuthException(
           code: 'session-expired',
-          message: 'Unable to start phone verification. Please try again.',
+          message: AppStrings.unableToStartPhoneVerification,
         );
       }
       return verificationId;
@@ -160,7 +161,7 @@ class AuthRepositoryImpl implements AuthRepository {
       if (customToken.isEmpty) {
         throw FirebaseAuthException(
           code: 'invalid-credential',
-          message: 'Unable to verify phone. Please try again.',
+          message: AppStrings.unableToVerifyPhonePleaseTryAgain,
         );
       }
 

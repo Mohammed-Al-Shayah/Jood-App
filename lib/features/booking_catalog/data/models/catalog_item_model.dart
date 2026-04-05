@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/number_utils.dart';
 import '../../domain/entities/catalog_category_type.dart';
 import '../../domain/entities/catalog_item_entity.dart';
@@ -71,12 +72,12 @@ class CatalogItemModel extends CatalogItemEntity {
       availableMeals: _stringList(
         categoryData['availableMeals'],
         fallback: category == CatalogCategoryType.setMenu
-            ? const [
-                'Breakfast Set Menu',
-                'Lunch Set Menu',
-                'Dinner Set Menu',
+            ? [
+                AppStrings.breakfastSetMenu,
+                AppStrings.lunchSetMenu,
+                AppStrings.dinner,
               ]
-            : const ['Breakfast', 'Lunch', 'Dinner'],
+            : [AppStrings.breakfast, AppStrings.lunch, AppStrings.dinner],
       ),
       packageOverview: const [],
       bookingNotes: _stringList(categoryData['notes']),

@@ -51,5 +51,3 @@ class DateStrip extends StatelessWidget {
     );
   }
 }
-
-

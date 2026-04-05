@@ -21,14 +21,8 @@ class BookingStatusBadge extends StatelessWidget {
           color: AppColors.primary,
           shape: BoxShape.circle,
         ),
-        child: Icon(
-          Icons.check,
-          color: Colors.white,
-          size: 40.sp,
-        ),
+        child: Icon(Icons.check, color: Colors.white, size: 40.sp),
       ),
     );
   }
 }
-
-

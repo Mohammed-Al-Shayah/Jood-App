@@ -74,6 +74,8 @@ class AppStrings {
   static String get selectNumberOfTickets => _tr('select_number_of_tickets');
   static String get adults => _tr('adults');
   static String get children => _tr('children');
+  static String get perPerson => _tr('per_person');
+  static String get samePriceForAllGuests => _tr('same_price_for_all_guests');
   static String get adultsAge => _tr('adults_age');
   static String get childrenAge => _tr('children_age');
   static String get bookingSummary => _tr('booking_summary');
@@ -176,8 +178,15 @@ class AppStrings {
   static String get or => _tr('or');
   static String get loginViaEmail => _tr('login_via_email');
   static String get loginViaPhone => _tr('login_via_phone');
+  static String get signUp => _tr('sign_up');
   static String get createNewAccount => _tr('create_new_account');
   static String get continueAsGuest => _tr('continue_as_guest');
+  static String get enterFullName => _tr('enter_full_name');
+  static String get createPassword => _tr('create_password');
+  static String get phoneNumberForOtp => _tr('phone_number_for_otp');
+  static String get agreeToTermsAndPrivacyPolicy =>
+      _tr('agree_to_terms_and_privacy_policy');
+  static String get sendOtp => _tr('send_otp');
   static String get verifyYourEmail => _tr('verify_your_email');
   static String get resendActivationLink => _tr('resend_activation_link');
   static String get loginWithPhone => _tr('login_with_phone');
@@ -201,8 +210,73 @@ class AppStrings {
   static String get confirmPasswordHint => _tr('confirm_password_hint');
   static String get verifyOtp => _tr('verify_otp');
   static String get resend => _tr('resend');
+  static String get fullNameIsRequired => _tr('full_name_is_required');
+  static String get emailIsRequired => _tr('email_is_required');
+  static String get enterValidEmailExample => _tr('enter_valid_email_example');
+  static String get passwordIsRequired => _tr('password_is_required');
+  static String get passwordMustBeAtLeast6Characters =>
+      _tr('password_must_be_at_least_6_characters');
+  static String get pleaseConfirmYourPassword =>
+      _tr('please_confirm_your_password');
+  static String get passwordsDoNotMatch => _tr('passwords_do_not_match');
+  static String get phoneNumberIsRequired => _tr('phone_number_is_required');
+  static String get enterValidPhoneNumber => _tr('enter_valid_phone_number');
+  static String get countryIsRequired => _tr('country_is_required');
+  static String get cityIsRequired => _tr('city_is_required');
+  static String get pleaseAcceptTheTerms => _tr('please_accept_the_terms');
+  static String get emailAlreadyRegisteredLong =>
+      _tr('email_already_registered_long');
+  static String get thisPhoneNumberIsAlreadyRegistered =>
+      _tr('this_phone_number_is_already_registered');
+  static String get phoneAuthNotEnabled => _tr('phone_auth_not_enabled');
+  static String get signUpFailedPleaseTryAgain =>
+      _tr('sign_up_failed_please_try_again');
+  static String get enterPasswordThenResendActivationLink =>
+      _tr('enter_password_then_resend_activation_link');
+  static String get activationLinkResentCheckInbox =>
+      _tr('activation_link_resent_check_inbox');
+  static String get noUserFoundForEmail => _tr('no_user_found_for_email');
+  static String get noUserFoundForPhone => _tr('no_user_found_for_phone');
+  static String get emailPasswordAccountsNotEnabled =>
+      _tr('email_password_accounts_not_enabled');
+  static String get loginFailedPleaseTryAgain =>
+      _tr('login_failed_please_try_again');
+  static String get unableToSignInPleaseTryAgain =>
+      _tr('unable_to_sign_in_please_try_again');
+  static String get pleaseVerifyYourEmailFirst =>
+      _tr('please_verify_your_email_first');
+  static String get phoneAuthenticationNotEnabledForProject =>
+      _tr('phone_authentication_not_enabled_for_project');
+  static String get requestFailedPleaseTryAgain =>
+      _tr('request_failed_please_try_again');
+  static String get sessionExpiredVerifyPhoneAgain =>
+      _tr('session_expired_verify_phone_again');
+  static String get unableToChangePasswordPleaseTryAgain =>
+      _tr('unable_to_change_password_please_try_again');
+  static String get unableToVerifyPhonePleaseTryAgain =>
+      _tr('unable_to_verify_phone_please_try_again');
+  static String get unableToStartPhoneVerification =>
+      _tr('unable_to_start_phone_verification');
+  static String get emailAlreadyRegisteredUseDifferentOrLogin =>
+      _tr('email_already_registered_use_different_or_login');
+  static String get invalidPhoneNumber => _tr('invalid_phone_number');
+  static String get invalidEmailAddress => _tr('invalid_email_address');
+  static String get thisAccountHasBeenDisabled =>
+      _tr('this_account_has_been_disabled');
+  static String get noUserFound => _tr('no_user_found');
+  static String get incorrectPassword => _tr('incorrect_password');
+  static String get invalidCredentials => _tr('invalid_credentials');
+  static String get passwordIsTooWeak => _tr('password_is_too_weak');
+  static String get emailAlreadyInUse => _tr('email_already_in_use');
+  static String get invalidOtpCode => _tr('invalid_otp_code');
+  static String get otpSessionExpiredResendCode =>
+      _tr('otp_session_expired_resend_code');
+  static String get smsQuotaExceeded => _tr('sms_quota_exceeded');
+  static String get operationNotAllowedForProject =>
+      _tr('operation_not_allowed_for_project');
   static String get pleaseLoginFirst => _tr('please_login_first');
   static String get failedToLoadOrders => _tr('failed_to_load_orders');
+  static String get failedToLoadOffers => _tr('failed_to_load_offers');
   static String get failedToLoadCategoryItems =>
       _tr('failed_to_load_category_items');
   static String get failedToLoadBookingOptions =>
@@ -386,6 +460,47 @@ class AppStrings {
   static String get setMenuItemSelectionAfterBooking =>
       _tr('set_menu_item_selection_after_booking');
   static String get missingRestaurantId => _tr('missing_restaurant_id');
+  static String get noOffersAvailableForDate =>
+      _tr('no_offers_available_for_date');
+  static String get selectedTicketsNoLongerAvailableAdjustQuantities =>
+      _tr('selected_tickets_no_longer_available_adjust_quantities');
+  static String get pleaseSelectOfferFirst => _tr('please_select_offer_first');
+  static String get selectedOptionNoLongerAvailableReviewBooking =>
+      _tr('selected_option_no_longer_available_review_booking');
+  static String get pricingWasUpdatedReviewTotal =>
+      _tr('pricing_was_updated_review_total');
+  static String get thawaniNotConfiguredAddKeys =>
+      _tr('thawani_not_configured_add_keys');
+  static String get restaurantBooking => _tr('restaurant_booking');
+  static String get paymentFailedCheckThawaniKeys =>
+      _tr('payment_failed_check_thawani_keys');
+  static String get onlyRestaurantStaffCanRedeemOrders =>
+      _tr('only_restaurant_staff_can_redeem_orders');
+  static String get orderBelongsToAnotherRestaurant =>
+      _tr('order_belongs_to_another_restaurant');
+  static String get orderAlreadyCompleted => _tr('order_already_completed');
+  static String get orderIsNotPaid => _tr('order_is_not_paid');
+  static String get offerIsNotActive => _tr('offer_is_not_active');
+  static String get soldOutNotEnoughTickets =>
+      _tr('sold_out_not_enough_tickets');
+  static String get bookingNotFound => _tr('booking_not_found');
+  static String get bookingAlreadyCancelled => _tr('booking_already_cancelled');
+  static String get completedBookingCannotBeCancelled =>
+      _tr('completed_booking_cannot_be_cancelled');
+  static String get notAuthorized => _tr('not_authorized');
+  static String get bookingStatusPaid => _tr('booking_status_paid');
+  static String get bookingStatusConfirmed => _tr('booking_status_confirmed');
+  static String get bookingStatusCompleted => _tr('booking_status_completed');
+  static String get bookingStatusCancelled => _tr('booking_status_cancelled');
+  static String get bookingStatusPending => _tr('booking_status_pending');
+  static String get bookingStatusFailed => _tr('booking_status_failed');
+  static String get topRated => _tr('top_rated');
+  static String get popular => _tr('popular');
+  static String get createStory => _tr('create_story');
+  static String get storyStep1Description => _tr('story_step_1_description');
+  static String get storyStep2Description => _tr('story_step_2_description');
+  static String get storyStep3Description => _tr('story_step_3_description');
+  static String get authPlaceholder => _tr('auth_placeholder');
 
   static List<String> get highlightsItems => _trList('highlights_items');
   static List<String> get inclusionsItems => _trList('inclusions_items');
@@ -403,6 +518,10 @@ class AppStrings {
 
   static String reviewsCount(int count) {
     return _tr('reviews_count', params: {'count': count});
+  }
+
+  static String stepNumber(int number) {
+    return _tr('step_number', params: {'number': number});
   }
 
   static String bookingConfirmedAt(String restaurantName) {
@@ -447,6 +566,10 @@ class AppStrings {
     return _tr('booking_code_share_text', params: {'code': code});
   }
 
+  static String percentOff(int percent) {
+    return _tr('percent_off', params: {'percent': percent});
+  }
+
   static String failedToSaveQr(Object error) {
     return _tr('failed_to_save_qr', params: {'error': error});
   }
@@ -465,6 +588,10 @@ class AppStrings {
 
   static String childPrice(String value) {
     return _tr('child_price', params: {'value': value});
+  }
+
+  static String afterDiscount(String value) {
+    return _tr('after_discount', params: {'value': value});
   }
 
   static String fromPrice(String value) {
@@ -499,11 +626,70 @@ class AppStrings {
     return _tr('children_count_label', params: {'count': count});
   }
 
+  static String guestsCountLabel(int count) {
+    return _tr('guests_count_label', params: {'count': count});
+  }
+
   static String vatWithRate(String rate) {
     return _tr('vat_with_rate', params: {'rate': rate});
   }
 
   static String spotsAvailableForSelection(int count) {
     return _tr('spots_available_for_selection', params: {'count': count});
+  }
+
+  static String slotsLeftCount(int count) {
+    return _tr('slots_left_count', params: {'count': count});
+  }
+
+  static String paymentFailedWithMessage(String message) {
+    return _tr('payment_failed_with_message', params: {'message': message});
+  }
+
+  static String paymentFailedWithCodeAndMessage(String code, String message) {
+    return _tr(
+      'payment_failed_with_code_and_message',
+      params: {'code': code, 'message': message},
+    );
+  }
+
+  static String paymentFailedCheckThawaniKeysWithCode(String code) {
+    return _tr(
+      'payment_failed_check_thawani_keys_with_code',
+      params: {'code': code},
+    );
+  }
+
+  static String bookingStatusLabel(String value) {
+    final normalized = value.trim().toLowerCase().replaceAll(' ', '_');
+    switch (normalized) {
+      case 'paid':
+        return bookingStatusPaid;
+      case 'confirmed':
+        return bookingStatusConfirmed;
+      case 'completed':
+        return bookingStatusCompleted;
+      case 'cancelled':
+      case 'canceled':
+        return bookingStatusCancelled;
+      case 'pending':
+        return bookingStatusPending;
+      case 'failed':
+        return bookingStatusFailed;
+      default:
+        if (value.trim().isEmpty) return unknown;
+        final words = value
+            .trim()
+            .replaceAll('_', ' ')
+            .replaceAll('-', ' ')
+            .split(' ')
+            .where((word) => word.isNotEmpty)
+            .map(
+              (word) =>
+                  '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+            )
+            .toList();
+        return words.isEmpty ? value : words.join(' ');
+    }
   }
 }

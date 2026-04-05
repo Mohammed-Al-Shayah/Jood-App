@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -439,8 +439,12 @@ class _OptionsSection extends StatelessWidget {
                 ? LayoutBuilder(
                     builder: (context, constraints) {
                       final cardSpacing = 10.w;
-                      final cardWidth =
-                          (constraints.maxWidth - (cardSpacing * 2)) / 3;
+                      final visibleColumns =
+                          options.length < 3 ? options.length : 3;
+                      final spacingCount = visibleColumns - 1;
+                      final cardWidth = (constraints.maxWidth -
+                              (cardSpacing * spacingCount)) /
+                          visibleColumns;
                       return SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),

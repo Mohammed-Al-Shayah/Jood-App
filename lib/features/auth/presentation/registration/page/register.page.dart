@@ -7,6 +7,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import '../../otp/verify_otp_args.dart';
@@ -23,7 +24,7 @@ class RegisterPage extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text('Sign up'),
+          title: Text(AppStrings.signUp),
           centerTitle: true,
           elevation: 0,
           backgroundColor: Colors.white,
@@ -67,22 +68,22 @@ class RegisterPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _Label(text: 'Full Name'),
+                    _Label(text: AppStrings.fullName),
                     _Field(
-                      hintText: 'Enter your full name',
+                      hintText: AppStrings.enterFullName,
                       onChanged: context.read<RegisterCubit>().updateFullName,
                       errorText: state.fullNameError,
                     ),
-                    _Label(text: 'Email Address'),
+                    _Label(text: AppStrings.emailAddress),
                     _Field(
-                      hintText: 'Enter your email address',
+                      hintText: AppStrings.enterEmail,
                       keyboardType: TextInputType.emailAddress,
                       onChanged: context.read<RegisterCubit>().updateEmail,
                       errorText: state.emailError,
                     ),
-                    _Label(text: 'Password'),
+                    _Label(text: AppStrings.password),
                     _Field(
-                      hintText: 'Create a password',
+                      hintText: AppStrings.createPassword,
                       obscureText: !state.showPassword,
                       onChanged: context.read<RegisterCubit>().updatePassword,
                       errorText: state.passwordError,
@@ -98,9 +99,9 @@ class RegisterPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _Label(text: 'Confirm Password'),
+                    _Label(text: AppStrings.confirmPassword),
                     _Field(
-                      hintText: 'Confirm password',
+                      hintText: AppStrings.confirmPasswordHint,
                       obscureText: !state.showConfirmPassword,
                       onChanged: context
                           .read<RegisterCubit>()
@@ -118,7 +119,7 @@ class RegisterPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _Label(text: 'Phone Number (for OTP)'),
+                    _Label(text: AppStrings.phoneNumberForOtp),
                     InternationalPhoneNumberInput(
                       initialValue: PhoneNumber(isoCode: state.phoneIso),
                       onInputChanged: (number) {
@@ -132,11 +133,10 @@ class RegisterPage extends StatelessWidget {
                       },
                       selectorConfig: const SelectorConfig(
                         selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
-                
                       ),
                       keyboardType: TextInputType.phone,
                       inputDecoration: InputDecoration(
-                        hintText: 'Enter your phone number',
+                        hintText: AppStrings.enterPhoneNumber,
                         errorText: state.phoneError,
                         filled: true,
                         fillColor: const Color(0xFFF6F7FB),
@@ -150,9 +150,9 @@ class RegisterPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _Label(text: 'Country'),
+                    _Label(text: AppStrings.country),
                     _PickerField(
-                      hintText: 'Select country',
+                      hintText: AppStrings.selectCountry,
                       value: state.country,
                       onTap: () => _showCountryPicker(
                         context,
@@ -162,9 +162,9 @@ class RegisterPage extends StatelessWidget {
                       ),
                       errorText: state.countryError,
                     ),
-                    _Label(text: 'City'),
+                    _Label(text: AppStrings.city),
                     _Field(
-                      hintText: 'Enter your city',
+                      hintText: AppStrings.city,
                       onChanged: context.read<RegisterCubit>().updateCity,
                       errorText: state.cityError,
                     ),
@@ -179,7 +179,7 @@ class RegisterPage extends StatelessWidget {
                         ),
                         Expanded(
                           child: Text(
-                            'I agree to the Terms of Service and Privacy Policy',
+                            AppStrings.agreeToTermsAndPrivacyPolicy,
                             style: AppTextStyles.cardMeta.copyWith(
                               fontSize: 12.sp,
                             ),
@@ -189,7 +189,10 @@ class RegisterPage extends StatelessWidget {
                     ),
                     if (state.termsError != null)
                       Padding(
-                        padding: EdgeInsets.only(left: 8.w, top: 4.h),
+                        padding: EdgeInsetsDirectional.only(
+                          start: 8.w,
+                          top: 4.h,
+                        ),
                         child: Text(
                           state.termsError!,
                           style: AppTextStyles.cardMeta.copyWith(
@@ -221,7 +224,10 @@ class RegisterPage extends StatelessWidget {
                                     color: Colors.white,
                                   ),
                                 )
-                              : Text('Send OTP', style: AppTextStyles.cta),
+                              : Text(
+                                  AppStrings.sendOtp,
+                                  style: AppTextStyles.cta,
+                                ),
                         ),
                       ),
                     ),
@@ -340,7 +346,7 @@ class _PickerField extends StatelessWidget {
         ),
         if (errorText != null)
           Padding(
-            padding: EdgeInsets.only(left: 16.w, top: 4.h),
+            padding: EdgeInsetsDirectional.only(start: 16.w, top: 4.h),
             child: Text(
               errorText!,
               style: AppTextStyles.cardMeta.copyWith(color: Colors.redAccent),
@@ -363,7 +369,7 @@ void _showCountryPicker(BuildContext context, ValueChanged<Country> onSelect) {
         color: AppColors.textPrimary,
       ),
       inputDecoration: InputDecoration(
-        hintText: 'Search country',
+        hintText: AppStrings.searchCountry,
         filled: true,
         fillColor: const Color(0xFFF6F7FB),
         contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),

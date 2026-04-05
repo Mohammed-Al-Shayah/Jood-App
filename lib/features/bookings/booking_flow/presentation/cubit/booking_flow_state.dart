@@ -57,7 +57,9 @@ class BookingFlowState {
       childCount: childCount ?? this.childCount,
       datePrices: datePrices ?? this.datePrices,
       currency: currency ?? this.currency,
-      errorMessage: errorMessage == _unset ? this.errorMessage : errorMessage as String?,
+      errorMessage: errorMessage == _unset
+          ? this.errorMessage
+          : errorMessage as String?,
     );
   }
 
@@ -86,5 +88,3 @@ extension BookingFlowStateX on BookingFlowState {
     return offers[index];
   }
 }
-
-

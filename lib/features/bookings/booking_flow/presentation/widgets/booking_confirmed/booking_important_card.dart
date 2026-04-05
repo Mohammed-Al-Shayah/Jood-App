@@ -68,5 +68,3 @@ class _Bullet extends StatelessWidget {
     );
   }
 }
-
-

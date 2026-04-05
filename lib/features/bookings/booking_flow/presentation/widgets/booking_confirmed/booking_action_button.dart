@@ -39,5 +39,3 @@ class BookingActionButton extends StatelessWidget {
     );
   }
 }
-
-

@@ -10,5 +10,3 @@ class GetBookingOffers {
     return repository.getOffersForDate(date);
   }
 }
-
-

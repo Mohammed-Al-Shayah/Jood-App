@@ -27,6 +27,7 @@ class JoodApp extends StatelessWidget {
           valueListenable: AppLocalizationController.instance.localeNotifier,
           builder: (context, locale, _) {
             return MaterialApp(
+              key: ValueKey<String>('jood-${locale.languageCode}'),
               title: AppStrings.appTitle,
               debugShowCheckedModeBanner: false,
               locale: locale,

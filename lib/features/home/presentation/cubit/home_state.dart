@@ -4,7 +4,9 @@ import '../../../booking_catalog/domain/entities/catalog_category_type.dart';
 import '../../../booking_catalog/domain/entities/catalog_item_entity.dart';
 
 enum HomeStatus { initial, loading, success, empty, failure }
+
 enum SortField { price, discount, rating }
+
 enum SortOrder { asc, desc }
 
 class HomeState extends Equatable {
@@ -42,7 +44,7 @@ class HomeState extends Equatable {
     Object? selectedCategory = _unset,
     Object? sortField = _unset,
     SortOrder? sortOrder,
-    String? errorMessage,
+    Object? errorMessage = _unset,
     String? userCity,
     String? userCountry,
   }) {
@@ -58,7 +60,9 @@ class HomeState extends Equatable {
           ? this.sortField
           : sortField as SortField?,
       sortOrder: sortOrder ?? this.sortOrder,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: identical(errorMessage, _unset)
+          ? this.errorMessage
+          : errorMessage as String?,
       userCity: userCity ?? this.userCity,
       userCountry: userCountry ?? this.userCountry,
     );
@@ -66,15 +70,15 @@ class HomeState extends Equatable {
 
   @override
   List<Object?> get props => [
-      status,
-      items,
-      filteredItems,
-      query,
-      selectedCategory,
-      sortField,
-      sortOrder,
-      errorMessage,
-      userCity,
-      userCountry,
-      ];
+    status,
+    items,
+    filteredItems,
+    query,
+    selectedCategory,
+    sortField,
+    sortOrder,
+    errorMessage,
+    userCity,
+    userCountry,
+  ];
 }

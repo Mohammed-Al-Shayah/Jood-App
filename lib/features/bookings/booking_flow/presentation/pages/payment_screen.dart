@@ -23,6 +23,7 @@ import 'package:jood/features/bookings/booking_flow/presentation/cubit/payment_s
 import 'package:jood/features/bookings/booking_flow/presentation/cubit/payment_screen_state.dart';
 import 'package:jood/features/bookings/booking_flow/presentation/models/booking_amounts_view_model.dart';
 import 'package:jood/features/bookings/booking_flow/presentation/models/payment_error_view_model.dart';
+import 'package:jood/features/bookings/booking_flow/presentation/widgets/booking_confirmed/booking_confirmed_utils.dart';
 import 'package:jood/features/bookings/booking_flow/presentation/widgets/date_utils.dart';
 import 'package:jood/features/bookings/booking_flow/presentation/widgets/payment/payment_secure_card.dart';
 import 'package:jood/features/bookings/booking_flow/presentation/widgets/payment/payment_summary_card.dart';
@@ -299,8 +300,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                                 String summaryTime,
                                 String currency,
                                 double totalPayable,
-                                int adultsCount,
-                                int childrenCount,
+                                String guestsLabel,
                               })
                             >(
                               selector: (state) {
@@ -325,8 +325,12 @@ class _PaymentScreenState extends State<PaymentScreen>
                                   summaryTime: summaryTime,
                                   currency: selectedOffer?.currency ?? r'$',
                                   totalPayable: amounts.totalPayable,
-                                  adultsCount: state.adultCount,
-                                  childrenCount: state.childCount,
+                                  guestsLabel: buildGuestsLabel(
+                                    state.adultCount,
+                                    state.childCount,
+                                    bookableType:
+                                        selectedOffer?.bookableType ?? '',
+                                  ),
                                 );
                               },
                               builder: (context, vm) {
@@ -337,8 +341,7 @@ class _PaymentScreenState extends State<PaymentScreen>
                                     vm.currency,
                                     vm.totalPayable,
                                   ),
-                                  adultsCount: vm.adultsCount,
-                                  childrenCount: vm.childrenCount,
+                                  guestsLabel: vm.guestsLabel,
                                 );
                               },
                             ),

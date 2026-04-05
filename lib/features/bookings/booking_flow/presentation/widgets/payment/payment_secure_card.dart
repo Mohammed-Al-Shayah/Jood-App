@@ -25,11 +25,7 @@ class PaymentSecureCard extends StatelessWidget {
               color: AppColors.primary,
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              Icons.lock,
-              color: Colors.white,
-              size: 25.sp,
-            ),
+            child: Icon(Icons.lock, color: Colors.white, size: 25.sp),
           ),
           SizedBox(width: 12.w),
           Expanded(
@@ -38,9 +34,7 @@ class PaymentSecureCard extends StatelessWidget {
               children: [
                 Text(
                   AppStrings.securePaymentTitle,
-                  style: AppTextStyles.sectionTitle.copyWith(
-                    fontSize: 16.sp,
-                  ),
+                  style: AppTextStyles.sectionTitle.copyWith(fontSize: 16.sp),
                 ),
                 SizedBox(height: 4.h),
                 Text(
@@ -58,5 +52,3 @@ class PaymentSecureCard extends StatelessWidget {
     );
   }
 }
-
-

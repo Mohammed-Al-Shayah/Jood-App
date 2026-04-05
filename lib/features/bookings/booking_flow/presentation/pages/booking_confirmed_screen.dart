@@ -66,7 +66,11 @@ class BookingConfirmedScreen extends StatelessWidget {
           timeLabel: _confirmedSelectionLabel(selectedOffer),
           currency: selectedOffer?.currency ?? r'$',
           totalAmount: amounts.totalPayable,
-          guestsLabel: buildGuestsLabel(state.adultCount, state.childCount),
+          guestsLabel: buildGuestsLabel(
+            state.adultCount,
+            state.childCount,
+            bookableType: selectedOffer?.bookableType ?? '',
+          ),
           resolvedBookingCode: resolvedBookingCode,
           resolvedQrData: (qrData != null && qrData!.trim().isNotEmpty)
               ? qrData!

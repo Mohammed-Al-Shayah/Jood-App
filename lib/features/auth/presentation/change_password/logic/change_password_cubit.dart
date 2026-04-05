@@ -49,7 +49,7 @@ class ChangePasswordCubit extends Cubit<ChangePasswordState> {
         emit(
           state.copyWith(
             status: ChangePasswordStatus.failure,
-            errorMessage: 'Session expired. Please verify your phone again.',
+            errorMessage: AppStrings.sessionExpiredVerifyPhoneAgain,
           ),
         );
         return;
@@ -65,9 +65,9 @@ class ChangePasswordCubit extends Cubit<ChangePasswordState> {
               ? mapAuthError(
                   error,
                   requiresRecentLoginMessage:
-                      'Session expired. Please verify your phone again.',
+                      AppStrings.sessionExpiredVerifyPhoneAgain,
                   fallbackMessage:
-                      'Unable to change password. Please try again.',
+                      AppStrings.unableToChangePasswordPleaseTryAgain,
                 )
               : AppStrings.somethingWentWrong,
         ),

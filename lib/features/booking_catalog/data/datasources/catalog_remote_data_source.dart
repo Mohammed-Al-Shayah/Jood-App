@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../core/utils/number_utils.dart';
 import '../../domain/entities/catalog_category_type.dart';
@@ -244,7 +245,7 @@ class CatalogRemoteDataSource {
         ? ''
         : '$currencyLabel ';
     final priceFrom = resolvedOriginal > 0
-        ? 'From $prefix${resolvedOriginal.toStringAsFixed(2)}'
+        ? AppStrings.fromPrice('$prefix${resolvedOriginal.toStringAsFixed(2)}')
         : _stringValue(data['priceFrom']).trim();
     final discount = resolvedCurrent > 0 && resolvedCurrent < resolvedOriginal
         ? '$prefix${resolvedCurrent.toStringAsFixed(2)}'
@@ -255,7 +256,7 @@ class CatalogRemoteDataSource {
       currentPrice: resolvedCurrent,
     );
     final slotsLeft = remainingTotal > 0
-        ? '$remainingTotal slots left'
+        ? AppStrings.slotsLeftCount(remainingTotal)
         : _stringValue(data['slotsLeft']).trim();
 
     return CatalogListLabels(
@@ -290,15 +291,36 @@ class CatalogRemoteDataSource {
     required double currentPrice,
   }) {
     final existing = _stringValue(data['badge']).trim();
-    if (existing.isNotEmpty) return existing;
+    if (existing.isNotEmpty) return _localizedBadge(existing);
     if (originalPrice > 0 && currentPrice > 0 && originalPrice > currentPrice) {
       final percent = ((originalPrice - currentPrice) / originalPrice) * 100;
-      return '${percent.round()}% off';
+      return AppStrings.percentOff(percent.round());
     }
     final rating = NumberUtils.toDouble(data['rating']);
-    if (rating >= 4.5) return 'Top rated';
-    if (rating >= 4.0) return 'Popular';
+    if (rating >= 4.5) return AppStrings.topRated;
+    if (rating >= 4.0) return AppStrings.popular;
     return '';
+  }
+
+  String _localizedBadge(String badge) {
+    final trimmed = badge.trim();
+    if (trimmed.isEmpty) return trimmed;
+    final percentIndex = trimmed.indexOf('%');
+    if (percentIndex > 0) {
+      final percent = int.tryParse(trimmed.substring(0, percentIndex).trim());
+      if (percent != null) {
+        return AppStrings.percentOff(percent);
+      }
+    }
+
+    switch (trimmed.toLowerCase()) {
+      case 'top rated':
+        return AppStrings.topRated;
+      case 'popular':
+        return AppStrings.popular;
+      default:
+        return trimmed;
+    }
   }
 
   static Map<String, dynamic> _asMap(dynamic value) {

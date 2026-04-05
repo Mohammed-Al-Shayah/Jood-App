@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/app_strings.dart';
+
 class BeneficiaryCreateStoryPage extends StatefulWidget {
   const BeneficiaryCreateStoryPage({super.key});
 
@@ -19,7 +21,7 @@ class _BeneficiaryCreateStoryPageState
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Create Story'),
+        title: Text(AppStrings.createStory),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
@@ -47,13 +49,13 @@ class _BeneficiaryCreateStoryPageState
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                   ),
-                  child: const Text('Next'),
+                  child: Text(AppStrings.next),
                 ),
                 SizedBox(width: 12.w),
                 if (_currentStep > 0)
                   TextButton(
                     onPressed: details.onStepCancel,
-                    child: const Text('Back'),
+                    child: Text(AppStrings.previous),
                   ),
               ],
             ),
@@ -62,33 +64,33 @@ class _BeneficiaryCreateStoryPageState
         steps: [
           Step(
             title: Text(
-              'Step 1',
+              AppStrings.stepNumber(1),
               style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
             ),
             content: Text(
-              'Basic information about your story.',
+              AppStrings.storyStep1Description,
               style: AppTextStyles.cardMeta,
             ),
             isActive: _currentStep >= 0,
           ),
           Step(
             title: Text(
-              'Step 2',
+              AppStrings.stepNumber(2),
               style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
             ),
             content: Text(
-              'Details and background.',
+              AppStrings.storyStep2Description,
               style: AppTextStyles.cardMeta,
             ),
             isActive: _currentStep >= 1,
           ),
           Step(
             title: Text(
-              'Step 3',
+              AppStrings.stepNumber(3),
               style: AppTextStyles.sectionTitle.copyWith(fontSize: 14.sp),
             ),
             content: Text(
-              'Review and submit.',
+              AppStrings.storyStep3Description,
               style: AppTextStyles.cardMeta,
             ),
             isActive: _currentStep >= 2,

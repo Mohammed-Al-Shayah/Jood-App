@@ -5,10 +5,7 @@ class CancelBookingUseCase {
 
   final BookingRepository repository;
 
-  Future<void> call({
-    required String bookingId,
-    required String actorUserId,
-  }) {
+  Future<void> call({required String bookingId, required String actorUserId}) {
     return repository.cancelBooking(
       bookingId: bookingId,
       actorUserId: actorUserId,

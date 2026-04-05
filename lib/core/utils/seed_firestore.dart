@@ -224,11 +224,7 @@ class SeedFirestore {
           'VIP seating area',
           'Live fire and tanoura show',
         ],
-        'inclusions': [
-          'Round-trip transport',
-          'Dinner buffet',
-          'Camel ride',
-        ],
+        'inclusions': ['Round-trip transport', 'Dinner buffet', 'Camel ride'],
         'badge': 'Best seller',
         'priceFrom': 'From OMR 38',
         'discount': 'OMR 31',
@@ -289,10 +285,7 @@ class SeedFirestore {
             'Sunset and night departures',
             'Different prices by package and time',
           ],
-          'included': [
-            'Boarding access',
-            'Cruise route around Marina',
-          ],
+          'included': ['Boarding access', 'Cruise route around Marina'],
           'packageOverview': [
             'Classic Deck: standard boarding access.',
             'Window Dining: dinner seating with skyline views.',
@@ -348,8 +341,7 @@ class SeedFirestore {
                 ),
               );
 
-          final baseAdult =
-              70.0 + (rIndex * 15) + (tIndex * 8) + (dIndex * 6);
+          final baseAdult = 70.0 + (rIndex * 15) + (tIndex * 8) + (dIndex * 6);
           final baseChild = baseAdult * 0.5;
           final capacityAdult = 20 + (rIndex * 5);
           final capacityChild = 10 + (tIndex * 3);
@@ -409,7 +401,10 @@ class SeedFirestore {
     }
 
     final brunchDays = <int>{1, 4};
-    final brunchRestaurantIds = <String>{'demo_restaurant_1', 'demo_restaurant_6'};
+    final brunchRestaurantIds = <String>{
+      'demo_restaurant_1',
+      'demo_restaurant_6',
+    };
     for (final restaurantId in brunchRestaurantIds) {
       for (final dayIndex in brunchDays) {
         final date = dates[dayIndex];
@@ -493,8 +488,14 @@ class SeedFirestore {
       final basePrice = entry.value;
       for (var dayIndex = 0; dayIndex < dates.length; dayIndex++) {
         final date = dates[dayIndex];
-        for (var optionIndex = 0; optionIndex < setMenuOptions.length; optionIndex++) {
-          if (restaurantId == 'demo_restaurant_5' && dayIndex == 3 && optionIndex == 0) {
+        for (
+          var optionIndex = 0;
+          optionIndex < setMenuOptions.length;
+          optionIndex++
+        ) {
+          if (restaurantId == 'demo_restaurant_5' &&
+              dayIndex == 3 &&
+              optionIndex == 0) {
             continue;
           }
           final option = setMenuOptions[optionIndex];
@@ -509,7 +510,9 @@ class SeedFirestore {
               restaurantId == 'demo_restaurant_2' &&
               dayIndex == 2 &&
               option['mealType'] == 'lunch';
-          final offerRef = firestore.collection('offers').doc(
+          final offerRef = firestore
+              .collection('offers')
+              .doc(
                 _offerId(
                   restaurantId,
                   date,
@@ -535,8 +538,16 @@ class SeedFirestore {
                 : 'active',
             'capacityAdult': 16,
             'capacityChild': 8,
-            'bookedAdult': soldOut ? 16 : low ? 14 : 4 + optionIndex,
-            'bookedChild': soldOut ? 8 : low ? 7 : 2 + (dayIndex % 2),
+            'bookedAdult': soldOut
+                ? 16
+                : low
+                ? 14
+                : 4 + optionIndex,
+            'bookedChild': soldOut
+                ? 8
+                : low
+                ? 7
+                : 2 + (dayIndex % 2),
             'title': '${_titleize(option['mealType'] as String)} Set Menu',
             'bookableType': 'restaurant',
             'bookingCategory': 'set_menu',
@@ -562,7 +573,8 @@ class SeedFirestore {
           'packages': [
             {
               'name': 'Standard Camp',
-              'description': 'Shared camp seating with dinner and core activities.',
+              'description':
+                  'Shared camp seating with dinner and core activities.',
               'adultBase': 31.0,
               'childBase': 18.0,
               'capacityAdult': 20,
@@ -584,7 +596,8 @@ class SeedFirestore {
           'packages': [
             {
               'name': 'Adventure Plus',
-              'description': 'Premium desert activities with upgraded dinner setup.',
+              'description':
+                  'Premium desert activities with upgraded dinner setup.',
               'adultBase': 52.0,
               'childBase': 29.0,
               'capacityAdult': 12,
@@ -638,7 +651,8 @@ class SeedFirestore {
             },
             {
               'name': 'Premium Upper Deck',
-              'description': 'Upper-deck lounge seating with best skyline views.',
+              'description':
+                  'Upper-deck lounge seating with best skyline views.',
               'adultBase': 35.0,
               'childBase': 20.0,
               'capacityAdult': 8,
@@ -657,7 +671,11 @@ class SeedFirestore {
         for (var slotIndex = 0; slotIndex < schedule.length; slotIndex++) {
           final slot = schedule[slotIndex];
           final packages = slot['packages'] as List<dynamic>;
-          for (var packageIndex = 0; packageIndex < packages.length; packageIndex++) {
+          for (
+            var packageIndex = 0;
+            packageIndex < packages.length;
+            packageIndex++
+          ) {
             final package = packages[packageIndex] as Map<String, dynamic>;
             final soldOut =
                 attractionId == 'demo_attraction_2' &&
@@ -674,7 +692,9 @@ class SeedFirestore {
                 (package['adultBase'] as double) + dayIndex + (slotIndex * 2);
             final childPrice =
                 (package['childBase'] as double) + (dayIndex * 0.5);
-            final offerRef = firestore.collection('offers').doc(
+            final offerRef = firestore
+                .collection('offers')
+                .doc(
                   _offerId(
                     attractionId,
                     date,
@@ -831,7 +851,8 @@ class SeedFirestore {
       final date = dates[booking['dateIndex'] as int];
       final timeIndex = booking['timeIndex'] as int?;
       final time = timeIndex == null ? null : times[timeIndex];
-      final offerId = booking['offerId'] as String? ??
+      final offerId =
+          booking['offerId'] as String? ??
           _offerId(restaurantId, date, time!['start'] as String);
       final adults = booking['adults'] as int;
       final children = booking['children'] as int;
@@ -868,12 +889,14 @@ class SeedFirestore {
         'status': 'paid',
         'bookingCode': booking['code'],
         'qrPayload': 'BOOKING:${booking['code']}',
-        'restaurantNameSnapshot': booking['restaurantNameSnapshot'] ??
+        'restaurantNameSnapshot':
+            booking['restaurantNameSnapshot'] ??
             _nameForVenueId(restaurantId, restaurants, attractions),
         'offerTitleSnapshot':
             booking['offerTitleSnapshot'] ?? time?['title'] ?? '',
         'bookableType': booking['bookableType'] ?? 'restaurant',
-        'coverImageUrlSnapshot': booking['coverImageUrlSnapshot'] ??
+        'coverImageUrlSnapshot':
+            booking['coverImageUrlSnapshot'] ??
             _coverForVenueId(restaurantId, restaurants, attractions),
         'createdAt': FieldValue.serverTimestamp(),
         'paidAt': FieldValue.serverTimestamp(),
@@ -916,9 +939,7 @@ class SeedFirestore {
                 'Welcome drink',
               ],
               'availableMeals': ['Breakfast', 'Lunch', 'Dinner', 'Brunch'],
-              'notes': [
-                'Brunch appears only on selected dates.',
-              ],
+              'notes': ['Brunch appears only on selected dates.'],
             },
           },
         };
@@ -953,19 +974,13 @@ class SeedFirestore {
             'buffet': {
               'description':
                   'Panoramic terrace buffet with stronger evening demand and premium dinner pricing.',
-              'included': [
-                'Sea-view seating',
-                'Chef dessert tasting',
-              ],
+              'included': ['Sea-view seating', 'Chef dessert tasting'],
               'availableMeals': ['Breakfast', 'Lunch', 'Dinner'],
             },
             'setMenu': {
               'description':
                   'Premium set menu experience with breakfast, lunch, and dinner options.',
-              'included': [
-                'Curated courses',
-                'Premium service lane',
-              ],
+              'included': ['Curated courses', 'Premium service lane'],
               'notes': [
                 'Dinner set menu can sell out faster than the daytime options.',
               ],
@@ -986,10 +1001,7 @@ class SeedFirestore {
             'setMenu': {
               'description':
                   'Grill-driven set menu with different pricing across breakfast, lunch, and dinner.',
-              'included': [
-                'Fixed grill menu',
-                'Separate child pricing',
-              ],
+              'included': ['Fixed grill menu', 'Separate child pricing'],
               'notes': [
                 'Some breakfast set menu dates are intentionally unavailable for testing.',
               ],
@@ -1006,9 +1018,7 @@ class SeedFirestore {
                   'Traditional brunch-focused buffet with lighter weekday operations.',
               'included': ['Tea service', 'Traditional sweets'],
               'availableMeals': ['Breakfast', 'Lunch', 'Brunch'],
-              'notes': [
-                'Brunch is available only on selected dates.',
-              ],
+              'notes': ['Brunch is available only on selected dates.'],
             },
           },
         };

@@ -3,6 +3,7 @@ import 'package:jood/core/config/thawani_config.dart';
 import 'package:jood/core/errors/exceptions.dart';
 import 'package:jood/core/payments/payment_completion_service.dart';
 import 'package:jood/core/payments/payment_verification_service.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
 
 import '../models/booking_amounts_view_model.dart';
@@ -60,7 +61,7 @@ class PaymentScreenCubit extends Cubit<PaymentScreenState> {
     final previousState = bookingFlowCubit.state;
     final previousOffer = previousState.selectedOffer();
     if (previousOffer == null) {
-      throw BookingException('Please select an offer first.');
+      throw BookingException(AppStrings.pleaseSelectOfferFirst);
     }
 
     final previousAmounts = BookingAmountsViewModel.calculate(
@@ -76,7 +77,7 @@ class PaymentScreenCubit extends Cubit<PaymentScreenState> {
     final offer = refreshedState.selectedOffer();
     if (!stillSelected || offer == null) {
       throw BookingException(
-        'The selected option is no longer available. Please review your booking.',
+        AppStrings.selectedOptionNoLongerAvailableReviewBooking,
       );
     }
 
@@ -94,19 +95,15 @@ class PaymentScreenCubit extends Cubit<PaymentScreenState> {
         previousOffer.priceAdultOriginal != offer.priceAdultOriginal ||
         previousAmounts.totalPayable != refreshedAmounts.totalPayable;
     if (pricingChanged) {
-      throw BookingException(
-        'Pricing was updated. Review the refreshed total and confirm again.',
-      );
+      throw BookingException(AppStrings.pricingWasUpdatedReviewTotal);
     }
 
     final user = _getCurrentUser();
     if (user == null) {
-      throw BookingException('You need to login first.');
+      throw BookingException(AppStrings.pleaseLoginFirst);
     }
     if (!ThawaniConfig.isConfigured) {
-      throw BookingException(
-        'Thawani is not configured. Add THAWANI_API_KEY and THAWANI_PUBLISHABLE_KEY.',
-      );
+      throw BookingException(AppStrings.thawaniNotConfiguredAddKeys);
     }
 
     final amounts = BookingAmountsViewModel.calculate(
@@ -120,7 +117,7 @@ class PaymentScreenCubit extends Cubit<PaymentScreenState> {
     return PreparedPaymentLaunch(
       offerId: offer.id,
       offerTitle: offer.title.trim().isEmpty
-          ? 'Restaurant booking'
+          ? AppStrings.restaurantBooking
           : offer.title,
       userId: user.uid,
       adultCount: refreshedState.adultCount,

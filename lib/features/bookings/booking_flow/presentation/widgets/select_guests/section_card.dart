@@ -5,11 +5,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 
 class SectionCard extends StatelessWidget {
-  const SectionCard({
-    super.key,
-    required this.title,
-    required this.child,
-  });
+  const SectionCard({super.key, required this.title, required this.child});
 
   final String title;
   final Widget child;
@@ -43,5 +39,3 @@ class SectionCard extends StatelessWidget {
     );
   }
 }
-
-

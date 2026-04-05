@@ -694,7 +694,7 @@ class _OffersTable extends StatelessWidget {
           DataColumn(label: Text('Category')),
           DataColumn(label: Text('Date')),
           DataColumn(label: Text('Time')),
-          DataColumn(label: Text('Adult / Child')),
+          DataColumn(label: Text('Price')),
           DataColumn(label: Text('Remaining')),
           DataColumn(label: Text('Status')),
           DataColumn(label: Text('Actions')),
@@ -703,8 +703,6 @@ class _OffersTable extends StatelessWidget {
             .map((offer) {
               final venueName =
                   venueNames[offer.restaurantId] ?? offer.restaurantId;
-              final remainingAdults = offer.remainingAdult;
-              final remainingChildren = offer.remainingChild;
               return DataRow(
                 cells: [
                   DataCell(
@@ -748,15 +746,10 @@ class _OffersTable extends StatelessWidget {
                   DataCell(Text(categoryLabelBuilder(offer))),
                   DataCell(Text(offer.date)),
                   DataCell(Text('${offer.startTime} - ${offer.endTime}')),
+                  DataCell(Text(_priceLabel(offer))),
                   DataCell(
                     Text(
-                      '${offer.currency} ${offer.priceAdult.toStringAsFixed(2)} / '
-                      '${offer.priceChild.toStringAsFixed(2)}',
-                    ),
-                  ),
-                  DataCell(
-                    Text(
-                      'A $remainingAdults  C $remainingChildren',
+                      _remainingLabel(offer),
                       style: AppTextStyles.cardMeta.copyWith(
                         color: AppColors.textPrimary,
                       ),
@@ -792,6 +785,22 @@ class _OffersTable extends StatelessWidget {
             .toList(growable: false),
       ),
     );
+  }
+
+  String _priceLabel(OfferEntity offer) {
+    final amount = '${offer.currency} ${offer.priceAdult.toStringAsFixed(2)}';
+    if (offer.bookableType.trim().toLowerCase() == 'attraction') {
+      return '$amount / person';
+    }
+    return '$amount / ${offer.priceChild.toStringAsFixed(2)}';
+  }
+
+  String _remainingLabel(OfferEntity offer) {
+    if (offer.bookableType.trim().toLowerCase() == 'attraction') {
+      final remaining = offer.remainingAdult + offer.remainingChild;
+      return '$remaining persons';
+    }
+    return 'A ${offer.remainingAdult}  C ${offer.remainingChild}';
   }
 }
 

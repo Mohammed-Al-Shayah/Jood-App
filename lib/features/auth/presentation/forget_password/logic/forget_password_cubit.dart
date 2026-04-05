@@ -67,13 +67,15 @@ class ForgetPasswordCubit extends SafeCubit<ForgetPasswordState> {
           emitSafe(
             state.copyWith(
               status: ForgetPasswordStatus.failure,
-              errorMessage: 'No user found for this phone.',
+              errorMessage: AppStrings.noUserFoundForPhone,
             ),
           );
           return;
         }
 
-        final verificationId = await _sendPhoneOtp(phoneNumber: normalizedPhone);
+        final verificationId = await _sendPhoneOtp(
+          phoneNumber: normalizedPhone,
+        );
         emitSafe(
           state.copyWith(
             status: ForgetPasswordStatus.phoneOtpSent,
@@ -93,8 +95,8 @@ class ForgetPasswordCubit extends SafeCubit<ForgetPasswordState> {
               ? mapAuthError(
                   error,
                   operationNotAllowedMessage:
-                      'Phone authentication is not enabled for this project.',
-                  fallbackMessage: 'Request failed. Please try again.',
+                      AppStrings.phoneAuthenticationNotEnabledForProject,
+                  fallbackMessage: AppStrings.requestFailedPleaseTryAgain,
                 )
               : AppStrings.somethingWentWrong,
         ),

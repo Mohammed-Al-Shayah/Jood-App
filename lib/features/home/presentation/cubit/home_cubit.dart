@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:jood/core/localization/app_localization_controller.dart';
 import 'package:jood/core/utils/app_strings.dart';
 
 import '../../../../core/utils/number_utils.dart';
@@ -22,7 +23,11 @@ class HomeCubit extends Cubit<HomeState> {
        _watchCatalogChanges = watchCatalogChanges,
        _getUserById = getUserById,
        _getCurrentUser = getCurrentUser,
-       super(const HomeState());
+       super(const HomeState()) {
+    AppLocalizationController.instance.localeNotifier.addListener(
+      _handleLocaleChanged,
+    );
+  }
 
   final GetCatalogItemsUseCase _getCatalogItems;
   final WatchCatalogChangesUseCase _watchCatalogChanges;
@@ -30,6 +35,11 @@ class HomeCubit extends Cubit<HomeState> {
   final GetCurrentUserUseCase _getCurrentUser;
   StreamSubscription<void>? _catalogChangesSubscription;
   bool _isFetchingRestaurants = false;
+
+  void _handleLocaleChanged() {
+    if (isClosed || state.status == HomeStatus.initial) return;
+    unawaited(fetchHomeItems(showLoading: false, shuffleResults: false));
+  }
 
   void startListening() {
     _catalogChangesSubscription?.cancel();
@@ -88,12 +98,7 @@ class HomeCubit extends Cubit<HomeState> {
       }
     } catch (error) {
       if (isClosed) return;
-      emit(
-        state.copyWith(
-          status: HomeStatus.failure,
-          errorMessage: error.toString(),
-        ),
-      );
+      emit(state.copyWith(status: HomeStatus.failure, errorMessage: null));
     } finally {
       _isFetchingRestaurants = false;
     }
@@ -321,6 +326,9 @@ class HomeCubit extends Cubit<HomeState> {
 
   @override
   Future<void> close() async {
+    AppLocalizationController.instance.localeNotifier.removeListener(
+      _handleLocaleChanged,
+    );
     await _catalogChangesSubscription?.cancel();
     await super.close();
   }

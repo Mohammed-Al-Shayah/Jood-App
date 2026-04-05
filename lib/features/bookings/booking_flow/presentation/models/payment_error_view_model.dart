@@ -1,3 +1,5 @@
+import 'package:jood/core/utils/app_strings.dart';
+
 class PaymentErrorViewModel {
   const PaymentErrorViewModel({required this.code, required this.message});
 
@@ -23,10 +25,12 @@ class PaymentErrorViewModel {
 
   String toDisplayMessage() {
     if (message != null) {
-      return code == null ? message! : 'Payment failed ($code): $message';
+      return code == null
+          ? AppStrings.paymentFailedWithMessage(message!)
+          : AppStrings.paymentFailedWithCodeAndMessage(code!, message!);
     }
     return code == null
-        ? 'Payment failed. Please check your Thawani keys/settings.'
-        : 'Payment failed ($code). Please check your Thawani keys/settings.';
+        ? AppStrings.paymentFailedCheckThawaniKeys
+        : AppStrings.paymentFailedCheckThawaniKeysWithCode(code!);
   }
 }

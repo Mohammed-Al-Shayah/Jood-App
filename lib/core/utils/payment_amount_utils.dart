@@ -23,6 +23,7 @@ String formatCurrency(String currency, num value) {
   if (trimmed.isEmpty) {
     return '\$$amount';
   }
-  final isSymbol = trimmed.length == 1 || RegExp(r'[$â‚¬Â£Â¥]').hasMatch(trimmed);
+  final isSymbol =
+      trimmed.length == 1 || RegExp(r'[$â‚¬Â£Â¥]').hasMatch(trimmed);
   return isSymbol ? '$trimmed$amount' : '$trimmed $amount';
 }

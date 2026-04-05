@@ -38,9 +38,7 @@ List<CatalogBookingOption> buildMealOptions(
           ? ''
           : '${offer.startTime}${offer.endTime.trim().isEmpty ? '' : ' - ${offer.endTime}'}',
       primaryPriceLabel: formatCurrency(offer.currency, offer.priceAdult),
-      secondaryPriceLabel: AppStrings.childPrice(
-        formatCurrency(offer.currency, offer.priceChild),
-      ),
+      secondaryPriceLabel: _secondaryPriceLabel(offer),
       statusLabel: offerStatusLabel(offer),
       offerIndex: selectedEntry.key,
       isEnabled: enabled,
@@ -134,9 +132,7 @@ List<CatalogBookingOption> buildPackageOptions(
       label: entry.key,
       subtitle: offer.packageDescription,
       primaryPriceLabel: formatCurrency(offer.currency, offer.priceAdult),
-      secondaryPriceLabel: AppStrings.childPrice(
-        formatCurrency(offer.currency, offer.priceChild),
-      ),
+      secondaryPriceLabel: _secondaryPriceLabel(offer),
       statusLabel: offerStatusLabel(offer),
       offerIndex: selectedEntry.key,
       isEnabled: !isOfferUnavailable(offer),
@@ -256,6 +252,15 @@ String headerTitle(CatalogCategoryType category) {
     case CatalogCategoryType.attraction:
       return AppStrings.bookAttraction;
   }
+}
+
+String _secondaryPriceLabel(OfferEntity offer) {
+  if (offer.bookableType.trim().toLowerCase() == 'attraction') {
+    return '';
+  }
+  return AppStrings.childPrice(
+    formatCurrency(offer.currency, offer.priceChild),
+  );
 }
 
 int remainingTotal(OfferEntity offer) {

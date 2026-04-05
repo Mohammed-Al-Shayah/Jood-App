@@ -44,22 +44,25 @@ class BookingOrderPolicy {
   static int? _parseTimeToMinutes(String value) {
     final trimmed = value.trim().toLowerCase();
     if (trimmed.isEmpty) return null;
-    final amPmMatch = RegExp(
-      r'^(\d{1,2})(?::(\d{2}))?\s*([ap]m)$',
-    ).firstMatch(trimmed);
-    if (amPmMatch != null) {
-      final hour = int.tryParse(amPmMatch.group(1) ?? '');
-      final minute = int.tryParse(amPmMatch.group(2) ?? '0') ?? 0;
-      final period = amPmMatch.group(3);
+    final normalized = trimmed.replaceAll('.', '');
+    final hasAmPm = normalized.endsWith('am') || normalized.endsWith('pm');
+    if (hasAmPm) {
+      final period = normalized.substring(normalized.length - 2);
+      final timePart = normalized.substring(0, normalized.length - 2).trim();
+      final segments = timePart.split(':');
+      final hour = int.tryParse(segments.first);
+      final minute = segments.length > 1
+          ? int.tryParse(segments[1].trim()) ?? 0
+          : 0;
       if (hour == null) return null;
       var normalizedHour = hour % 12;
       if (period == 'pm') normalizedHour += 12;
       return normalizedHour * 60 + minute;
     }
-    final match24 = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(trimmed);
-    if (match24 != null) {
-      final hour = int.tryParse(match24.group(1) ?? '');
-      final minute = int.tryParse(match24.group(2) ?? '');
+    final segments24 = trimmed.split(':');
+    if (segments24.length == 2) {
+      final hour = int.tryParse(segments24[0].trim());
+      final minute = int.tryParse(segments24[1].trim());
       if (hour == null || minute == null) return null;
       return hour * 60 + minute;
     }

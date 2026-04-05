@@ -45,9 +45,9 @@ class DetailHeader extends StatelessWidget {
           child: _CircleBackButton(onTap: onBack),
         ),
 
-        Positioned(
-          left: 16.w,
-          right: 16.w,
+        PositionedDirectional(
+          start: 16.w,
+          end: 16.w,
           bottom: 16.h,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

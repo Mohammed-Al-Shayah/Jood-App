@@ -1,4 +1,5 @@
 enum ForgetPasswordStatus { initial, loading, success, phoneOtpSent, failure }
+
 enum ForgetPasswordMethod { email, phone }
 
 class ForgetPasswordState {

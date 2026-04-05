@@ -185,5 +185,5 @@ String _formatDiscountPercent(OfferEntity offer) {
   final current = offer.priceAdult;
   if (original <= 0 || current <= 0 || original <= current) return '';
   final percent = ((original - current) / original) * 100;
-  return '${percent.round()}% off';
+  return AppStrings.percentOff(percent.round());
 }

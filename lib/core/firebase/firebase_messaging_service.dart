@@ -37,7 +37,9 @@ class FirebaseMessagingService {
       }
       if (apnsToken == null) {
         apnsAvailable = false;
-        debugPrint('[FCM] APNS غير متوفر (المحاكي لا يدعم الإشعارات - اختبر على جهاز حقيقي)');
+        debugPrint(
+          '[FCM] APNS غير متوفر (المحاكي لا يدعم الإشعارات - اختبر على جهاز حقيقي)',
+        );
       }
     }
 

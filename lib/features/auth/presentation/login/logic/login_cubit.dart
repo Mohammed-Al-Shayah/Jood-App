@@ -85,7 +85,7 @@ class LoginCubit extends SafeCubit<LoginState> {
       emitSafe(
         state.copyWith(
           status: LoginStatus.failure,
-          errorMessage: 'Enter your password, then resend the activation link.',
+          errorMessage: AppStrings.enterPasswordThenResendActivationLink,
         ),
       );
       return;
@@ -105,7 +105,7 @@ class LoginCubit extends SafeCubit<LoginState> {
       emitSafe(
         state.copyWith(
           status: LoginStatus.verificationLinkSent,
-          errorMessage: 'Activation link resent. Please check your inbox.',
+          errorMessage: AppStrings.activationLinkResentCheckInbox,
         ),
       );
     } catch (error) {
@@ -115,10 +115,10 @@ class LoginCubit extends SafeCubit<LoginState> {
           errorMessage: isAuthError(error)
               ? mapAuthError(
                   error,
-                  userNotFoundMessage: 'No user found for this email.',
+                  userNotFoundMessage: AppStrings.noUserFoundForEmail,
                   operationNotAllowedMessage:
-                      'Email/password accounts are not enabled.',
-                  fallbackMessage: 'Login failed. Please try again.',
+                      AppStrings.emailPasswordAccountsNotEnabled,
+                  fallbackMessage: AppStrings.loginFailedPleaseTryAgain,
                 )
               : AppStrings.somethingWentWrong,
         ),
@@ -144,7 +144,7 @@ class LoginCubit extends SafeCubit<LoginState> {
         emitSafe(
           state.copyWith(
             status: LoginStatus.failure,
-            errorMessage: 'Unable to sign in. Please try again.',
+            errorMessage: AppStrings.unableToSignInPleaseTryAgain,
           ),
         );
         return;
@@ -156,7 +156,7 @@ class LoginCubit extends SafeCubit<LoginState> {
         emitSafe(
           state.copyWith(
             status: LoginStatus.failure,
-            errorMessage: 'Unable to sign in. Please try again.',
+            errorMessage: AppStrings.unableToSignInPleaseTryAgain,
           ),
         );
         return;
@@ -171,8 +171,7 @@ class LoginCubit extends SafeCubit<LoginState> {
           state.copyWith(
             status: LoginStatus.emailNotVerified,
             unverifiedEmail: input,
-            errorMessage:
-                'Please verify your email first. We sent you a verification link. If you did not receive it, check your spam folder.',
+            errorMessage: AppStrings.pleaseVerifyYourEmailFirst,
           ),
         );
         return;
@@ -189,11 +188,11 @@ class LoginCubit extends SafeCubit<LoginState> {
               ? mapAuthError(
                   error,
                   userNotFoundMessage: isEmailLogin
-                      ? 'No user found for this email.'
-                      : 'No user found for this phone.',
+                      ? AppStrings.noUserFoundForEmail
+                      : AppStrings.noUserFoundForPhone,
                   operationNotAllowedMessage:
-                      'Email/password accounts are not enabled.',
-                  fallbackMessage: 'Login failed. Please try again.',
+                      AppStrings.emailPasswordAccountsNotEnabled,
+                  fallbackMessage: AppStrings.loginFailedPleaseTryAgain,
                 )
               : AppStrings.somethingWentWrong,
         ),
@@ -208,9 +207,9 @@ class LoginCubit extends SafeCubit<LoginState> {
     final user = await _getUserByPhone(normalizedPhone);
     final email = user?.email.trim() ?? '';
     if (email.isEmpty) {
-      throw const AppAuthException(
+      throw AppAuthException(
         code: 'user-not-found',
-        message: 'No user found for this phone.',
+        message: AppStrings.noUserFoundForPhone,
       );
     }
     return _loginWithEmail(email: email, password: password);

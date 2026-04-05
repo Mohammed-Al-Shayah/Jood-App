@@ -1,4 +1,5 @@
 import '../../../../core/errors/exceptions.dart';
+import '../../../../core/utils/app_strings.dart';
 import 'booking_order_policy.dart';
 
 class BookingRedemptionPolicy {
@@ -14,10 +15,10 @@ class BookingRedemptionPolicy {
     required String restaurantId,
   }) {
     if (!canRedeemRole(role)) {
-      throw BookingException('Only restaurant staff can redeem orders.');
+      throw BookingException(AppStrings.onlyRestaurantStaffCanRedeemOrders);
     }
     if (restaurantId.trim().isEmpty) {
-      throw BookingException('Staff account missing restaurant id.');
+      throw BookingException(AppStrings.staffAccountMissingRestaurantId);
     }
   }
 
@@ -27,13 +28,13 @@ class BookingRedemptionPolicy {
     required String status,
   }) {
     if (bookingRestaurantId.trim() != staffRestaurantId.trim()) {
-      throw BookingException('This order belongs to another restaurant.');
+      throw BookingException(AppStrings.orderBelongsToAnotherRestaurant);
     }
     if (BookingOrderPolicy.isCompletedStatus(status)) {
-      throw BookingException('Order already completed.');
+      throw BookingException(AppStrings.orderAlreadyCompleted);
     }
     if (!BookingOrderPolicy.canShowQr(status)) {
-      throw BookingException('Order is not paid.');
+      throw BookingException(AppStrings.orderIsNotPaid);
     }
   }
 }

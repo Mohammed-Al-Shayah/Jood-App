@@ -334,9 +334,7 @@ class _OrderCard extends StatelessWidget {
   }
 
   String _statusLabel(String statusValue) {
-    if (statusValue.isEmpty) return AppStrings.unknown;
-    return statusValue[0].toUpperCase() +
-        statusValue.substring(1).toLowerCase();
+    return AppStrings.bookingStatusLabel(statusValue);
   }
 
   String _formattedDate() {
@@ -438,7 +436,7 @@ class _OrderCard extends StatelessWidget {
             ),
             SizedBox(height: 10.h),
             Align(
-              alignment: Alignment.centerRight,
+              alignment: AlignmentDirectional.centerEnd,
               child: showQr
                   ? TextButton.icon(
                       onPressed: () => _showQrSheet(
