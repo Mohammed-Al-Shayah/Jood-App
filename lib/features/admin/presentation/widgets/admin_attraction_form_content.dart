@@ -34,21 +34,33 @@ class _AdminAttractionFormContentState
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nameController;
+  late final TextEditingController _nameArController;
   late final TextEditingController _cityIdController;
+  late final TextEditingController _cityIdArController;
   late final TextEditingController _areaController;
+  late final TextEditingController _areaArController;
   late final TextEditingController _ratingController;
   late final TextEditingController _reviewsCountController;
   late final TextEditingController _coverImageUrlController;
   late final TextEditingController _aboutController;
+  late final TextEditingController _aboutArController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
+  late final TextEditingController _addressArController;
   late final TextEditingController _highlightsController;
+  late final TextEditingController _highlightsArController;
   late final TextEditingController _inclusionsController;
+  late final TextEditingController _inclusionsArController;
   late final TextEditingController _catalogDescriptionController;
+  late final TextEditingController _catalogDescriptionArController;
   late final TextEditingController _catalogHighlightsController;
+  late final TextEditingController _catalogHighlightsArController;
   late final TextEditingController _catalogIncludedController;
+  late final TextEditingController _catalogIncludedArController;
   late final TextEditingController _packageOverviewController;
+  late final TextEditingController _packageOverviewArController;
   late final TextEditingController _bookingNotesController;
+  late final TextEditingController _bookingNotesArController;
   late final TextEditingController _badgeController;
   late final TextEditingController _priceFromController;
   late final TextEditingController _discountController;
@@ -63,9 +75,20 @@ class _AdminAttractionFormContentState
   void initState() {
     super.initState();
     final attraction = widget.attraction;
-    _nameController = TextEditingController(text: attraction?.name ?? '');
-    _cityIdController = TextEditingController(text: attraction?.cityId ?? '');
-    _areaController = TextEditingController(text: attraction?.area ?? '');
+    _nameController = TextEditingController(
+      text: _preferredText(attraction?.nameEn, attraction?.name),
+    );
+    _nameArController = TextEditingController(text: attraction?.nameAr ?? '');
+    _cityIdController = TextEditingController(
+      text: _preferredText(attraction?.cityIdEn, attraction?.cityId),
+    );
+    _cityIdArController = TextEditingController(
+      text: attraction?.cityIdAr ?? '',
+    );
+    _areaController = TextEditingController(
+      text: _preferredText(attraction?.areaEn, attraction?.area),
+    );
+    _areaArController = TextEditingController(text: attraction?.areaAr ?? '');
     _ratingController = TextEditingController(
       text: attraction?.rating.toString() ?? '',
     );
@@ -75,29 +98,82 @@ class _AdminAttractionFormContentState
     _coverImageUrlController = TextEditingController(
       text: attraction?.coverImageUrl ?? '',
     )..addListener(_handleCoverImageChanged);
-    _aboutController = TextEditingController(text: attraction?.about ?? '');
+    _aboutController = TextEditingController(
+      text: _preferredText(attraction?.aboutEn, attraction?.about),
+    );
+    _aboutArController = TextEditingController(text: attraction?.aboutAr ?? '');
     _phoneController = TextEditingController(text: attraction?.phone ?? '');
-    _addressController = TextEditingController(text: attraction?.address ?? '');
+    _addressController = TextEditingController(
+      text: _preferredText(attraction?.addressEn, attraction?.address),
+    );
+    _addressArController = TextEditingController(
+      text: attraction?.addressAr ?? '',
+    );
     _highlightsController = TextEditingController(
-      text: _joinCsv(attraction?.highlights),
+      text: _joinCsv(
+        _preferredList(attraction?.highlightsEn, attraction?.highlights),
+      ),
+    );
+    _highlightsArController = TextEditingController(
+      text: _joinCsv(attraction?.highlightsAr),
     );
     _inclusionsController = TextEditingController(
-      text: _joinCsv(attraction?.inclusions),
+      text: _joinCsv(
+        _preferredList(attraction?.inclusionsEn, attraction?.inclusions),
+      ),
+    );
+    _inclusionsArController = TextEditingController(
+      text: _joinCsv(attraction?.inclusionsAr),
     );
     _catalogDescriptionController = TextEditingController(
-      text: attraction?.catalogDescription ?? '',
+      text: _preferredText(
+        attraction?.catalogDescriptionEn,
+        attraction?.catalogDescription,
+      ),
+    );
+    _catalogDescriptionArController = TextEditingController(
+      text: attraction?.catalogDescriptionAr ?? '',
     );
     _catalogHighlightsController = TextEditingController(
-      text: _joinLines(attraction?.catalogHighlights),
+      text: _joinLines(
+        _preferredList(
+          attraction?.catalogHighlightsEn,
+          attraction?.catalogHighlights,
+        ),
+      ),
+    );
+    _catalogHighlightsArController = TextEditingController(
+      text: _joinLines(attraction?.catalogHighlightsAr),
     );
     _catalogIncludedController = TextEditingController(
-      text: _joinLines(attraction?.catalogIncluded),
+      text: _joinLines(
+        _preferredList(
+          attraction?.catalogIncludedEn,
+          attraction?.catalogIncluded,
+        ),
+      ),
+    );
+    _catalogIncludedArController = TextEditingController(
+      text: _joinLines(attraction?.catalogIncludedAr),
     );
     _packageOverviewController = TextEditingController(
-      text: _joinLines(attraction?.packageOverview),
+      text: _joinLines(
+        _preferredList(
+          attraction?.packageOverviewEn,
+          attraction?.packageOverview,
+        ),
+      ),
+    );
+    _packageOverviewArController = TextEditingController(
+      text: _joinLines(attraction?.packageOverviewAr),
     );
     _bookingNotesController = TextEditingController(
-      text: _joinLines(attraction?.bookingNotes),
+      text: _joinLines(
+        _preferredList(attraction?.bookingNotesEn, attraction?.bookingNotes),
+      ),
+    );
+    _bookingNotesArController = TextEditingController(
+      text: _joinLines(attraction?.bookingNotesAr),
     );
     _badgeController = TextEditingController(text: attraction?.badge ?? '');
     _priceFromController = TextEditingController(
@@ -115,23 +191,35 @@ class _AdminAttractionFormContentState
   @override
   void dispose() {
     _nameController.dispose();
+    _nameArController.dispose();
     _cityIdController.dispose();
+    _cityIdArController.dispose();
     _areaController.dispose();
+    _areaArController.dispose();
     _ratingController.dispose();
     _reviewsCountController.dispose();
     _coverImageUrlController
       ..removeListener(_handleCoverImageChanged)
       ..dispose();
     _aboutController.dispose();
+    _aboutArController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _addressArController.dispose();
     _highlightsController.dispose();
+    _highlightsArController.dispose();
     _inclusionsController.dispose();
+    _inclusionsArController.dispose();
     _catalogDescriptionController.dispose();
+    _catalogDescriptionArController.dispose();
     _catalogHighlightsController.dispose();
+    _catalogHighlightsArController.dispose();
     _catalogIncludedController.dispose();
+    _catalogIncludedArController.dispose();
     _packageOverviewController.dispose();
+    _packageOverviewArController.dispose();
     _bookingNotesController.dispose();
+    _bookingNotesArController.dispose();
     _badgeController.dispose();
     _priceFromController.dispose();
     _discountController.dispose();
@@ -158,15 +246,22 @@ class _AdminAttractionFormContentState
             title: 'Basics',
             child: Column(
               children: [
-                _textField(_nameController, 'Name'),
-                _textField(_cityIdController, 'City ID'),
-                _textField(_areaController, 'Area'),
+                ..._localizedTextFields(
+                  englishController: _nameController,
+                  arabicController: _nameArController,
+                  label: 'Name',
+                ),
+                ..._localizedTextFields(
+                  englishController: _cityIdController,
+                  arabicController: _cityIdArController,
+                  label: 'City ID',
+                ),
+                ..._localizedTextFields(
+                  englishController: _areaController,
+                  arabicController: _areaArController,
+                  label: 'Area',
+                ),
                 _numberField(_ratingController, 'Rating'),
-                _intField(_reviewsCountController, 'Reviews Count'),
-                _optionalField(_badgeController, 'Badge'),
-                _optionalField(_priceFromController, 'Price From'),
-                _optionalField(_discountController, 'Discount'),
-                _optionalField(_slotsLeftController, 'Slots Left'),
               ],
             ),
           ),
@@ -176,7 +271,12 @@ class _AdminAttractionFormContentState
             child: Column(
               children: [
                 _textField(_phoneController, 'Phone'),
-                _textField(_addressController, 'Address', maxLines: 2),
+                ..._localizedTextFields(
+                  englishController: _addressController,
+                  arabicController: _addressArController,
+                  label: 'Address',
+                  maxLines: 2,
+                ),
               ],
             ),
           ),
@@ -185,15 +285,22 @@ class _AdminAttractionFormContentState
             title: 'Content',
             child: Column(
               children: [
-                _textField(_aboutController, 'About', maxLines: 4),
-                _textField(
-                  _highlightsController,
-                  'Highlights (comma separated)',
+                ..._localizedTextFields(
+                  englishController: _aboutController,
+                  arabicController: _aboutArController,
+                  label: 'About',
+                  maxLines: 4,
+                ),
+                ..._localizedTextFields(
+                  englishController: _highlightsController,
+                  arabicController: _highlightsArController,
+                  label: 'Highlights (comma separated)',
                   maxLines: 2,
                 ),
-                _textField(
-                  _inclusionsController,
-                  'Inclusions (comma separated)',
+                ..._localizedTextFields(
+                  englishController: _inclusionsController,
+                  arabicController: _inclusionsArController,
+                  label: 'Inclusions (comma separated)',
                   maxLines: 2,
                 ),
               ],
@@ -204,30 +311,36 @@ class _AdminAttractionFormContentState
             title: 'Booking Catalog',
             child: Column(
               children: [
-                _textField(
-                  _catalogDescriptionController,
-                  'Catalog Description',
+                ..._localizedTextFields(
+                  englishController: _catalogDescriptionController,
+                  arabicController: _catalogDescriptionArController,
+                  label: 'Catalog Description',
                   maxLines: 4,
                 ),
-                _textField(
-                  _catalogHighlightsController,
-                  'Catalog Highlights (one per line)',
+                ..._localizedTextFields(
+                  englishController: _catalogHighlightsController,
+                  arabicController: _catalogHighlightsArController,
+                  label: 'Catalog Highlights (one per line)',
                   maxLines: 4,
                 ),
-                _textField(
-                  _catalogIncludedController,
-                  'Included Items (one per line)',
+                ..._localizedTextFields(
+                  englishController: _catalogIncludedController,
+                  arabicController: _catalogIncludedArController,
+                  label: 'Included Items (one per line)',
                   maxLines: 4,
                 ),
-                _textField(
-                  _packageOverviewController,
-                  'Package Overview (one per line)',
+                ..._localizedTextFields(
+                  englishController: _packageOverviewController,
+                  arabicController: _packageOverviewArController,
+                  label: 'Package Overview (one per line)',
                   maxLines: 4,
                 ),
-                _optionalField(
-                  _bookingNotesController,
-                  'Booking Notes (one per line)',
+                ..._localizedTextFields(
+                  englishController: _bookingNotesController,
+                  arabicController: _bookingNotesArController,
+                  label: 'Booking Notes (one per line)',
                   maxLines: 4,
+                  englishRequired: false,
                 ),
               ],
             ),
@@ -344,6 +457,29 @@ class _AdminAttractionFormContentState
     );
   }
 
+  List<Widget> _localizedTextFields({
+    required TextEditingController englishController,
+    required TextEditingController arabicController,
+    required String label,
+    int maxLines = 1,
+    bool englishRequired = true,
+  }) {
+    return [
+      _textField(
+        englishController,
+        '$label (EN)',
+        maxLines: maxLines,
+        required: englishRequired,
+      ),
+      _textField(
+        arabicController,
+        '$label (AR optional)',
+        maxLines: maxLines,
+        required: false,
+      ),
+    ];
+  }
+
   Widget _textField(
     TextEditingController controller,
     String label, {
@@ -389,23 +525,6 @@ class _AdminAttractionFormContentState
     );
   }
 
-  Widget _intField(TextEditingController controller, String label) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 18.h),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        decoration: adminInputDecoration(label),
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) return 'Required';
-          final parsed = int.tryParse(value);
-          if (parsed == null) return 'Invalid number';
-          return null;
-        },
-      ),
-    );
-  }
-
   List<String> _splitCsv(String value) {
     return value
         .split(',')
@@ -432,33 +551,96 @@ class _AdminAttractionFormContentState
     return values.join('\n');
   }
 
+  List<String> _preferredList(List<String>? english, List<String>? fallback) {
+    final normalizedEnglish = _cleanList(english);
+    if (normalizedEnglish.isNotEmpty) return normalizedEnglish;
+    return _cleanList(fallback);
+  }
+
+  String _preferredText(String? english, String? fallback) {
+    final normalizedEnglish = english?.trim() ?? '';
+    if (normalizedEnglish.isNotEmpty) return normalizedEnglish;
+    return fallback?.trim() ?? '';
+  }
+
+  List<String> _cleanList(List<String>? values) {
+    if (values == null) return const [];
+    return values
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final now = DateTime.now();
+    final nameEn = _nameController.text.trim();
+    final cityIdEn = _cityIdController.text.trim();
+    final areaEn = _areaController.text.trim();
+    final aboutEn = _aboutController.text.trim();
+    final addressEn = _addressController.text.trim();
+    final existingAttraction = widget.attraction;
+    final highlightsEn = _splitCsv(_highlightsController.text);
+    final inclusionsEn = _splitCsv(_inclusionsController.text);
+    final catalogDescriptionEn = _catalogDescriptionController.text.trim();
+    final catalogHighlightsEn = _splitLines(_catalogHighlightsController.text);
+    final catalogIncludedEn = _splitLines(_catalogIncludedController.text);
+    final packageOverviewEn = _splitLines(_packageOverviewController.text);
+    final bookingNotesEn = _splitLines(_bookingNotesController.text);
+
     final attraction = AttractionModel(
       id: widget.attraction?.id ?? '',
-      name: _nameController.text.trim(),
-      cityId: _cityIdController.text.trim(),
-      area: _areaController.text.trim(),
+      name: nameEn,
+      cityId: cityIdEn,
+      area: areaEn,
       rating: double.parse(_ratingController.text.trim()),
-      reviewsCount: int.parse(_reviewsCountController.text.trim()),
+      reviewsCount:
+          int.tryParse(_reviewsCountController.text.trim()) ??
+          existingAttraction?.reviewsCount ??
+          0,
       coverImageUrl: _coverImageUrlController.text.trim(),
-      about: _aboutController.text.trim(),
+      about: aboutEn,
       phone: _phoneController.text.trim(),
-      address: _addressController.text.trim(),
-      highlights: _splitCsv(_highlightsController.text),
-      inclusions: _splitCsv(_inclusionsController.text),
-      catalogDescription: _catalogDescriptionController.text.trim(),
-      catalogHighlights: _splitLines(_catalogHighlightsController.text),
-      catalogIncluded: _splitLines(_catalogIncludedController.text),
-      packageOverview: _splitLines(_packageOverviewController.text),
-      bookingNotes: _splitLines(_bookingNotesController.text),
+      address: addressEn,
+      highlights: highlightsEn,
+      inclusions: inclusionsEn,
+      catalogDescription: catalogDescriptionEn,
+      catalogHighlights: catalogHighlightsEn,
+      catalogIncluded: catalogIncludedEn,
+      packageOverview: packageOverviewEn,
+      bookingNotes: bookingNotesEn,
       isActive: _isActive,
-      createdAt: widget.attraction?.createdAt ?? now,
-      badge: _badgeController.text.trim(),
-      priceFrom: _priceFromController.text.trim(),
-      discount: _discountController.text.trim(),
-      slotsLeft: _slotsLeftController.text.trim(),
+      createdAt: existingAttraction?.createdAt ?? now,
+      badge: existingAttraction?.badge ?? _badgeController.text.trim(),
+      priceFrom:
+          existingAttraction?.priceFrom ?? _priceFromController.text.trim(),
+      discount: existingAttraction?.discount ?? _discountController.text.trim(),
+      slotsLeft:
+          existingAttraction?.slotsLeft ?? _slotsLeftController.text.trim(),
+      nameEn: nameEn,
+      nameAr: _nameArController.text.trim(),
+      cityIdEn: cityIdEn,
+      cityIdAr: _cityIdArController.text.trim(),
+      areaEn: areaEn,
+      areaAr: _areaArController.text.trim(),
+      aboutEn: aboutEn,
+      aboutAr: _aboutArController.text.trim(),
+      addressEn: addressEn,
+      addressAr: _addressArController.text.trim(),
+      highlightsEn: highlightsEn,
+      highlightsAr: _splitCsv(_highlightsArController.text),
+      inclusionsEn: inclusionsEn,
+      inclusionsAr: _splitCsv(_inclusionsArController.text),
+      catalogDescriptionEn: catalogDescriptionEn,
+      catalogDescriptionAr: _catalogDescriptionArController.text.trim(),
+      catalogHighlightsEn: catalogHighlightsEn,
+      catalogHighlightsAr: _splitLines(_catalogHighlightsArController.text),
+      catalogIncludedEn: catalogIncludedEn,
+      catalogIncludedAr: _splitLines(_catalogIncludedArController.text),
+      packageOverviewEn: packageOverviewEn,
+      packageOverviewAr: _splitLines(_packageOverviewArController.text),
+      bookingNotesEn: bookingNotesEn,
+      bookingNotesAr: _splitLines(_bookingNotesArController.text),
     );
 
     setState(() => _isSubmitting = true);

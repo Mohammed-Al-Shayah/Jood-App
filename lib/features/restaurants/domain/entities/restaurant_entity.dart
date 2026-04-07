@@ -31,6 +31,26 @@ class RestaurantEntity extends Equatable {
     this.discountValue = 0,
     this.supportsBuffet = true,
     this.supportsSetMenu = false,
+    this.nameEn = '',
+    this.nameAr = '',
+    this.cityIdEn = '',
+    this.cityIdAr = '',
+    this.areaEn = '',
+    this.areaAr = '',
+    this.aboutEn = '',
+    this.aboutAr = '',
+    this.addressEn = '',
+    this.addressAr = '',
+    this.highlightsEn = const [],
+    this.highlightsAr = const [],
+    this.inclusionsEn = const [],
+    this.inclusionsAr = const [],
+    this.exclusionsEn = const [],
+    this.exclusionsAr = const [],
+    this.cancellationPolicyEn = const [],
+    this.cancellationPolicyAr = const [],
+    this.knowBeforeYouGoEn = const [],
+    this.knowBeforeYouGoAr = const [],
   });
 
   final String id;
@@ -62,6 +82,26 @@ class RestaurantEntity extends Equatable {
   final double discountValue;
   final bool supportsBuffet;
   final bool supportsSetMenu;
+  final String nameEn;
+  final String nameAr;
+  final String cityIdEn;
+  final String cityIdAr;
+  final String areaEn;
+  final String areaAr;
+  final String aboutEn;
+  final String aboutAr;
+  final String addressEn;
+  final String addressAr;
+  final List<String> highlightsEn;
+  final List<String> highlightsAr;
+  final List<String> inclusionsEn;
+  final List<String> inclusionsAr;
+  final List<String> exclusionsEn;
+  final List<String> exclusionsAr;
+  final List<String> cancellationPolicyEn;
+  final List<String> cancellationPolicyAr;
+  final List<String> knowBeforeYouGoEn;
+  final List<String> knowBeforeYouGoAr;
 
   @override
   List<Object?> get props => [
@@ -94,5 +134,25 @@ class RestaurantEntity extends Equatable {
     discountValue,
     supportsBuffet,
     supportsSetMenu,
+    nameEn,
+    nameAr,
+    cityIdEn,
+    cityIdAr,
+    areaEn,
+    areaAr,
+    aboutEn,
+    aboutAr,
+    addressEn,
+    addressAr,
+    highlightsEn,
+    highlightsAr,
+    inclusionsEn,
+    inclusionsAr,
+    exclusionsEn,
+    exclusionsAr,
+    cancellationPolicyEn,
+    cancellationPolicyAr,
+    knowBeforeYouGoEn,
+    knowBeforeYouGoAr,
   ];
 }

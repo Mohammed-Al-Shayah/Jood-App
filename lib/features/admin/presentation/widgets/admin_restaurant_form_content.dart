@@ -34,23 +34,33 @@ class _AdminRestaurantFormContentState
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nameController;
+  late final TextEditingController _nameArController;
   late final TextEditingController _cityIdController;
+  late final TextEditingController _cityIdArController;
   late final TextEditingController _areaController;
+  late final TextEditingController _areaArController;
   late final TextEditingController _ratingController;
   late final TextEditingController _reviewsCountController;
   late final TextEditingController _coverImageUrlController;
   late final TextEditingController _aboutController;
+  late final TextEditingController _aboutArController;
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
+  late final TextEditingController _addressArController;
   late final TextEditingController _geoLatController;
   late final TextEditingController _geoLngController;
   late final TextEditingController _openFromController;
   late final TextEditingController _openToController;
   late final TextEditingController _highlightsController;
+  late final TextEditingController _highlightsArController;
   late final TextEditingController _inclusionsController;
+  late final TextEditingController _inclusionsArController;
   late final TextEditingController _exclusionsController;
+  late final TextEditingController _exclusionsArController;
   late final TextEditingController _cancellationController;
+  late final TextEditingController _cancellationArController;
   late final TextEditingController _knowBeforeController;
+  late final TextEditingController _knowBeforeArController;
   late final TextEditingController _badgeController;
   late final TextEditingController _priceFromController;
   late final TextEditingController _discountController;
@@ -67,9 +77,20 @@ class _AdminRestaurantFormContentState
   void initState() {
     super.initState();
     final restaurant = widget.restaurant;
-    _nameController = TextEditingController(text: restaurant?.name ?? '');
-    _cityIdController = TextEditingController(text: restaurant?.cityId ?? '');
-    _areaController = TextEditingController(text: restaurant?.area ?? '');
+    _nameController = TextEditingController(
+      text: _preferredText(restaurant?.nameEn, restaurant?.name),
+    );
+    _nameArController = TextEditingController(text: restaurant?.nameAr ?? '');
+    _cityIdController = TextEditingController(
+      text: _preferredText(restaurant?.cityIdEn, restaurant?.cityId),
+    );
+    _cityIdArController = TextEditingController(
+      text: restaurant?.cityIdAr ?? '',
+    );
+    _areaController = TextEditingController(
+      text: _preferredText(restaurant?.areaEn, restaurant?.area),
+    );
+    _areaArController = TextEditingController(text: restaurant?.areaAr ?? '');
     _ratingController = TextEditingController(
       text: restaurant?.rating.toString() ?? '',
     );
@@ -79,9 +100,17 @@ class _AdminRestaurantFormContentState
     _coverImageUrlController = TextEditingController(
       text: restaurant?.coverImageUrl ?? '',
     )..addListener(_handleCoverImageChanged);
-    _aboutController = TextEditingController(text: restaurant?.about ?? '');
+    _aboutController = TextEditingController(
+      text: _preferredText(restaurant?.aboutEn, restaurant?.about),
+    );
+    _aboutArController = TextEditingController(text: restaurant?.aboutAr ?? '');
     _phoneController = TextEditingController(text: restaurant?.phone ?? '');
-    _addressController = TextEditingController(text: restaurant?.address ?? '');
+    _addressController = TextEditingController(
+      text: _preferredText(restaurant?.addressEn, restaurant?.address),
+    );
+    _addressArController = TextEditingController(
+      text: restaurant?.addressAr ?? '',
+    );
     _geoLatController = TextEditingController(
       text: restaurant?.geoLat.toString() ?? '',
     );
@@ -93,19 +122,50 @@ class _AdminRestaurantFormContentState
     );
     _openToController = TextEditingController(text: restaurant?.openTo ?? '');
     _highlightsController = TextEditingController(
-      text: _joinList(restaurant?.highlights),
+      text: _joinList(
+        _preferredList(restaurant?.highlightsEn, restaurant?.highlights),
+      ),
+    );
+    _highlightsArController = TextEditingController(
+      text: _joinList(restaurant?.highlightsAr),
     );
     _inclusionsController = TextEditingController(
-      text: _joinList(restaurant?.inclusions),
+      text: _joinList(
+        _preferredList(restaurant?.inclusionsEn, restaurant?.inclusions),
+      ),
+    );
+    _inclusionsArController = TextEditingController(
+      text: _joinList(restaurant?.inclusionsAr),
     );
     _exclusionsController = TextEditingController(
-      text: _joinList(restaurant?.exclusions),
+      text: _joinList(
+        _preferredList(restaurant?.exclusionsEn, restaurant?.exclusions),
+      ),
+    );
+    _exclusionsArController = TextEditingController(
+      text: _joinList(restaurant?.exclusionsAr),
     );
     _cancellationController = TextEditingController(
-      text: _joinList(restaurant?.cancellationPolicy),
+      text: _joinList(
+        _preferredList(
+          restaurant?.cancellationPolicyEn,
+          restaurant?.cancellationPolicy,
+        ),
+      ),
+    );
+    _cancellationArController = TextEditingController(
+      text: _joinList(restaurant?.cancellationPolicyAr),
     );
     _knowBeforeController = TextEditingController(
-      text: _joinList(restaurant?.knowBeforeYouGo),
+      text: _joinList(
+        _preferredList(
+          restaurant?.knowBeforeYouGoEn,
+          restaurant?.knowBeforeYouGo,
+        ),
+      ),
+    );
+    _knowBeforeArController = TextEditingController(
+      text: _joinList(restaurant?.knowBeforeYouGoAr),
     );
     _badgeController = TextEditingController(text: restaurant?.badge ?? '');
     _priceFromController = TextEditingController(
@@ -129,25 +189,35 @@ class _AdminRestaurantFormContentState
   @override
   void dispose() {
     _nameController.dispose();
+    _nameArController.dispose();
     _cityIdController.dispose();
+    _cityIdArController.dispose();
     _areaController.dispose();
+    _areaArController.dispose();
     _ratingController.dispose();
     _reviewsCountController.dispose();
     _coverImageUrlController
       ..removeListener(_handleCoverImageChanged)
       ..dispose();
     _aboutController.dispose();
+    _aboutArController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _addressArController.dispose();
     _geoLatController.dispose();
     _geoLngController.dispose();
     _openFromController.dispose();
     _openToController.dispose();
     _highlightsController.dispose();
+    _highlightsArController.dispose();
     _inclusionsController.dispose();
+    _inclusionsArController.dispose();
     _exclusionsController.dispose();
+    _exclusionsArController.dispose();
     _cancellationController.dispose();
+    _cancellationArController.dispose();
     _knowBeforeController.dispose();
+    _knowBeforeArController.dispose();
     _badgeController.dispose();
     _priceFromController.dispose();
     _discountController.dispose();
@@ -176,17 +246,22 @@ class _AdminRestaurantFormContentState
             title: 'Basics',
             child: Column(
               children: [
-                _textField(_nameController, 'Name'),
-                _textField(_cityIdController, 'City ID'),
-                _textField(_areaController, 'Area'),
+                ..._localizedFields(
+                  englishController: _nameController,
+                  arabicController: _nameArController,
+                  label: 'Name',
+                ),
+                ..._localizedFields(
+                  englishController: _cityIdController,
+                  arabicController: _cityIdArController,
+                  label: 'City ID',
+                ),
+                ..._localizedFields(
+                  englishController: _areaController,
+                  arabicController: _areaArController,
+                  label: 'Area',
+                ),
                 _numberField(_ratingController, 'Rating (double)'),
-                _intField(_reviewsCountController, 'Reviews Count'),
-                _textField(_badgeController, 'Badge'),
-                _textField(_priceFromController, 'Price From'),
-                _textField(_discountController, 'Discount'),
-                _textField(_slotsLeftController, 'Slots Left'),
-                _numberField(_priceFromValueController, 'Price From Value'),
-                _numberField(_discountValueController, 'Discount Value'),
               ],
             ),
           ),
@@ -196,7 +271,12 @@ class _AdminRestaurantFormContentState
             child: Column(
               children: [
                 _textField(_phoneController, 'Phone'),
-                _textField(_addressController, 'Address'),
+                ..._localizedFields(
+                  englishController: _addressController,
+                  arabicController: _addressArController,
+                  label: 'Address',
+                  maxLines: 2,
+                ),
                 _numberField(_geoLatController, 'Geo Lat'),
                 _numberField(_geoLngController, 'Geo Lng'),
               ],
@@ -207,7 +287,12 @@ class _AdminRestaurantFormContentState
             title: 'About & Hours',
             child: Column(
               children: [
-                _textField(_aboutController, 'About', maxLines: 3),
+                ..._localizedFields(
+                  englishController: _aboutController,
+                  arabicController: _aboutArController,
+                  label: 'About',
+                  maxLines: 3,
+                ),
                 _timeField(_openFromController, 'Open From'),
                 _timeField(_openToController, 'Open To'),
               ],
@@ -218,11 +303,36 @@ class _AdminRestaurantFormContentState
             title: 'Lists (comma separated)',
             child: Column(
               children: [
-                _textField(_highlightsController, 'Highlights'),
-                _textField(_inclusionsController, 'Inclusions'),
-                _textField(_exclusionsController, 'Exclusions'),
-                _textField(_cancellationController, 'Cancellation Policy'),
-                _textField(_knowBeforeController, 'Know Before You Go'),
+                ..._localizedFields(
+                  englishController: _highlightsController,
+                  arabicController: _highlightsArController,
+                  label: 'Highlights',
+                  maxLines: 2,
+                ),
+                ..._localizedFields(
+                  englishController: _inclusionsController,
+                  arabicController: _inclusionsArController,
+                  label: 'Inclusions',
+                  maxLines: 2,
+                ),
+                ..._localizedFields(
+                  englishController: _exclusionsController,
+                  arabicController: _exclusionsArController,
+                  label: 'Exclusions',
+                  maxLines: 2,
+                ),
+                ..._localizedFields(
+                  englishController: _cancellationController,
+                  arabicController: _cancellationArController,
+                  label: 'Cancellation Policy',
+                  maxLines: 2,
+                ),
+                ..._localizedFields(
+                  englishController: _knowBeforeController,
+                  arabicController: _knowBeforeArController,
+                  label: 'Know Before You Go',
+                  maxLines: 2,
+                ),
               ],
             ),
           ),
@@ -338,11 +448,29 @@ class _AdminRestaurantFormContentState
     );
   }
 
+  List<Widget> _localizedFields({
+    required TextEditingController englishController,
+    required TextEditingController arabicController,
+    required String label,
+    int maxLines = 1,
+  }) {
+    return [
+      _textField(englishController, '$label (EN)', maxLines: maxLines),
+      _textField(
+        arabicController,
+        '$label (AR optional)',
+        maxLines: maxLines,
+        required: false,
+      ),
+    ];
+  }
+
   Widget _textField(
     TextEditingController controller,
     String label, {
     int maxLines = 1,
     bool readOnly = false,
+    bool required = true,
     VoidCallback? onTap,
   }) {
     return Padding(
@@ -353,8 +481,10 @@ class _AdminRestaurantFormContentState
         readOnly: readOnly,
         onTap: onTap,
         decoration: adminInputDecoration(label),
-        validator: (value) =>
-            (value == null || value.trim().isEmpty) ? 'Required' : null,
+        validator: required
+            ? (value) =>
+                  (value == null || value.trim().isEmpty) ? 'Required' : null
+            : null,
       ),
     );
   }
@@ -385,23 +515,6 @@ class _AdminRestaurantFormContentState
     );
   }
 
-  Widget _intField(TextEditingController controller, String label) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 18.h),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        decoration: adminInputDecoration(label),
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) return 'Required';
-          final parsed = int.tryParse(value);
-          if (parsed == null) return 'Invalid number';
-          return null;
-        },
-      ),
-    );
-  }
-
   List<String> _splitList(String value) {
     return value
         .split(',')
@@ -413,6 +526,26 @@ class _AdminRestaurantFormContentState
   String _joinList(List<String>? values) {
     if (values == null || values.isEmpty) return '';
     return values.join(', ');
+  }
+
+  List<String> _preferredList(List<String>? english, List<String>? fallback) {
+    final normalizedEnglish = _cleanList(english);
+    if (normalizedEnglish.isNotEmpty) return normalizedEnglish;
+    return _cleanList(fallback);
+  }
+
+  String _preferredText(String? english, String? fallback) {
+    final normalizedEnglish = english?.trim() ?? '';
+    if (normalizedEnglish.isNotEmpty) return normalizedEnglish;
+    return fallback?.trim() ?? '';
+  }
+
+  List<String> _cleanList(List<String>? values) {
+    if (values == null) return const [];
+    return values
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
   }
 
   Future<void> _pickTime(TextEditingController controller) async {
@@ -433,34 +566,75 @@ class _AdminRestaurantFormContentState
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final now = DateTime.now();
+    final nameEn = _nameController.text.trim();
+    final cityIdEn = _cityIdController.text.trim();
+    final areaEn = _areaController.text.trim();
+    final aboutEn = _aboutController.text.trim();
+    final addressEn = _addressController.text.trim();
+    final existingRestaurant = widget.restaurant;
+    final highlightsEn = _splitList(_highlightsController.text);
+    final inclusionsEn = _splitList(_inclusionsController.text);
+    final exclusionsEn = _splitList(_exclusionsController.text);
+    final cancellationPolicyEn = _splitList(_cancellationController.text);
+    final knowBeforeYouGoEn = _splitList(_knowBeforeController.text);
+
     final restaurant = RestaurantModel(
       id: widget.restaurant?.id ?? '',
-      name: _nameController.text.trim(),
-      cityId: _cityIdController.text.trim(),
-      area: _areaController.text.trim(),
+      name: nameEn,
+      cityId: cityIdEn,
+      area: areaEn,
       rating: double.parse(_ratingController.text.trim()),
-      reviewsCount: int.parse(_reviewsCountController.text.trim()),
+      reviewsCount:
+          int.tryParse(_reviewsCountController.text.trim()) ??
+          existingRestaurant?.reviewsCount ??
+          0,
       coverImageUrl: _coverImageUrlController.text.trim(),
-      about: _aboutController.text.trim(),
+      about: aboutEn,
       phone: _phoneController.text.trim(),
-      address: _addressController.text.trim(),
+      address: addressEn,
       geoLat: double.parse(_geoLatController.text.trim()),
       geoLng: double.parse(_geoLngController.text.trim()),
       openFrom: _openFromController.text.trim(),
       openTo: _openToController.text.trim(),
-      highlights: _splitList(_highlightsController.text),
-      inclusions: _splitList(_inclusionsController.text),
-      exclusions: _splitList(_exclusionsController.text),
-      cancellationPolicy: _splitList(_cancellationController.text),
-      knowBeforeYouGo: _splitList(_knowBeforeController.text),
+      highlights: highlightsEn,
+      inclusions: inclusionsEn,
+      exclusions: exclusionsEn,
+      cancellationPolicy: cancellationPolicyEn,
+      knowBeforeYouGo: knowBeforeYouGoEn,
       isActive: _isActive,
-      createdAt: widget.restaurant?.createdAt ?? now,
+      createdAt: existingRestaurant?.createdAt ?? now,
       badge: _badgeController.text.trim(),
       priceFrom: _priceFromController.text.trim(),
       discount: _discountController.text.trim(),
       slotsLeft: _slotsLeftController.text.trim(),
-      priceFromValue: double.parse(_priceFromValueController.text.trim()),
-      discountValue: double.parse(_discountValueController.text.trim()),
+      priceFromValue:
+          double.tryParse(_priceFromValueController.text.trim()) ??
+          existingRestaurant?.priceFromValue ??
+          0,
+      discountValue:
+          double.tryParse(_discountValueController.text.trim()) ??
+          existingRestaurant?.discountValue ??
+          0,
+      nameEn: nameEn,
+      nameAr: _nameArController.text.trim(),
+      cityIdEn: cityIdEn,
+      cityIdAr: _cityIdArController.text.trim(),
+      areaEn: areaEn,
+      areaAr: _areaArController.text.trim(),
+      aboutEn: aboutEn,
+      aboutAr: _aboutArController.text.trim(),
+      addressEn: addressEn,
+      addressAr: _addressArController.text.trim(),
+      highlightsEn: highlightsEn,
+      highlightsAr: _splitList(_highlightsArController.text),
+      inclusionsEn: inclusionsEn,
+      inclusionsAr: _splitList(_inclusionsArController.text),
+      exclusionsEn: exclusionsEn,
+      exclusionsAr: _splitList(_exclusionsArController.text),
+      cancellationPolicyEn: cancellationPolicyEn,
+      cancellationPolicyAr: _splitList(_cancellationArController.text),
+      knowBeforeYouGoEn: knowBeforeYouGoEn,
+      knowBeforeYouGoAr: _splitList(_knowBeforeArController.text),
     );
 
     setState(() => _isSubmitting = true);

@@ -111,6 +111,16 @@ class _HomeTabState extends State<HomeTab> {
               state.userCity,
               state.userCountry,
             );
+            final hotDeals = isLoading
+                ? items.take(3).toList()
+                : _hotDeals(items);
+            final nearbyItems = isLoading
+                ? items.take(3).toList()
+                : _nearbyItems(
+                    items,
+                    userCity: state.userCity,
+                    userCountry: state.userCountry,
+                  );
 
             return Skeletonizer(
               enabled: isLoading,
@@ -145,22 +155,17 @@ class _HomeTabState extends State<HomeTab> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    HomeSearchBar(
-                                      onChanged: (value) => context
+                                    _HomeHeroBanner(
+                                      locationText: locationText,
+                                      onSearchChanged: (value) => context
                                           .read<HomeCubit>()
                                           .updateQuery(value),
                                     ),
                                     SizedBox(height: 24.h),
-                                    Text(
-                                      AppStrings.bookByCategory,
-                                      style: AppTextStyles.sectionTitle,
-                                    ),
-                                    SizedBox(height: 6.h),
-                                    Text(
-                                      AppStrings.bookByCategorySubtitle,
-                                      style: AppTextStyles.cardMeta.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
+                                    _HomeSectionHeader(
+                                      title: AppStrings.bookByCategory,
+                                      subtitle:
+                                          AppStrings.bookByCategorySubtitle,
                                     ),
                                     SizedBox(height: 14.h),
                                     SizedBox(
@@ -218,20 +223,82 @@ class _HomeTabState extends State<HomeTab> {
                                         ],
                                       ),
                                     ),
-                                    SizedBox(height: 24.h),
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          AppStrings.discoverForYou,
-                                          style: AppTextStyles.sectionTitle,
+                                    if (hotDeals.isNotEmpty) ...[
+                                      SizedBox(height: 26.h),
+                                      _HomeSectionHeader(
+                                        title: AppStrings.hotDeals,
+                                        subtitle: AppStrings.hotDealsSubtitle,
+                                        trailing: AppStrings.itemsFound(
+                                          hotDeals.length,
                                         ),
-                                        Text(
-                                          AppStrings.itemsFound(items.length),
-                                          style: AppTextStyles.sectionCount,
+                                      ),
+                                      SizedBox(height: 14.h),
+                                      SizedBox(
+                                        height: 272.h,
+                                        child: ListView.separated(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: hotDeals.length,
+                                          separatorBuilder: (_, _) =>
+                                              SizedBox(width: 14.w),
+                                          itemBuilder: (context, index) {
+                                            final item = hotDeals[index];
+                                            return _ShowcaseCard(
+                                              item: item,
+                                              width: 256.w,
+                                              highlightDeal: true,
+                                              onTap: isLoading
+                                                  ? null
+                                                  : () => _openItemDetails(
+                                                      context,
+                                                      item,
+                                                    ),
+                                            );
+                                          },
                                         ),
-                                      ],
+                                      ),
+                                    ],
+                                    if (nearbyItems.isNotEmpty) ...[
+                                      SizedBox(height: 26.h),
+                                      _HomeSectionHeader(
+                                        title: AppStrings.nearToMe,
+                                        subtitle: AppStrings.nearToMeSubtitle(
+                                          locationText,
+                                        ),
+                                        trailing: AppStrings.itemsFound(
+                                          nearbyItems.length,
+                                        ),
+                                      ),
+                                      SizedBox(height: 14.h),
+                                      SizedBox(
+                                        height: 236.h,
+                                        child: ListView.separated(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: nearbyItems.length,
+                                          separatorBuilder: (_, _) =>
+                                              SizedBox(width: 14.w),
+                                          itemBuilder: (context, index) {
+                                            final item = nearbyItems[index];
+                                            return _ShowcaseCard(
+                                              item: item,
+                                              width: 214.w,
+                                              highlightDeal: false,
+                                              onTap: isLoading
+                                                  ? null
+                                                  : () => _openItemDetails(
+                                                      context,
+                                                      item,
+                                                    ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                    SizedBox(height: 26.h),
+                                    _HomeSectionHeader(
+                                      title: AppStrings.discoverForYou,
+                                      trailing: AppStrings.itemsFound(
+                                        items.length,
+                                      ),
                                     ),
                                     SizedBox(height: 12.h),
                                     if (showEmptyFilter)
@@ -279,14 +346,8 @@ class _HomeTabState extends State<HomeTab> {
                                       ),
                                       onTap: isLoading
                                           ? null
-                                          : () {
-                                              context.pushNamed(
-                                                Routes.catalogDetailScreen,
-                                                arguments: CatalogDetailArgs(
-                                                  item: item,
-                                                ),
-                                              );
-                                            },
+                                          : () =>
+                                                _openItemDetails(context, item),
                                     ),
                                   );
                                 },
@@ -323,6 +384,13 @@ class _HomeTabState extends State<HomeTab> {
       ),
     );
   }
+}
+
+void _openItemDetails(BuildContext context, CatalogItemEntity item) {
+  context.pushNamed(
+    Routes.catalogDetailScreen,
+    arguments: CatalogDetailArgs(item: item),
+  );
 }
 
 class _ScrollToTopButton extends StatelessWidget {
@@ -362,6 +430,136 @@ class _ScrollToTopButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HomeHeroBanner extends StatelessWidget {
+  const _HomeHeroBanner({
+    required this.locationText,
+    required this.onSearchChanged,
+  });
+
+  final String locationText;
+  final ValueChanged<String> onSearchChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      padding: EdgeInsets.all(20.r),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28.r),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0D857D), Color(0xFF1EC5B6), Color(0xFF74DED3)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.24),
+            blurRadius: 22.r,
+            offset: Offset(0, 12.h),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -18.h,
+            right: -10.w,
+            child: _HeroOrb(size: 108.r, opacity: 0.18),
+          ),
+          Positioned(
+            bottom: -24.h,
+            left: -16.w,
+            child: _HeroOrb(size: 132.r, opacity: 0.14),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                AppStrings.homeHeroTitle,
+                style: AppTextStyles.headingLarge.copyWith(
+                  color: Colors.white,
+                  height: 1.15,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                AppStrings.homeHeroSubtitle(locationText),
+                style: AppTextStyles.body.copyWith(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  height: 1.45,
+                ),
+              ),
+              SizedBox(height: 18.h),
+              HomeSearchBar(onChanged: onSearchChanged),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroOrb extends StatelessWidget {
+  const _HeroOrb({required this.size, required this.opacity});
+
+  final double size;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withValues(alpha: opacity),
+      ),
+    );
+  }
+}
+
+class _HomeSectionHeader extends StatelessWidget {
+  const _HomeSectionHeader({required this.title, this.subtitle, this.trailing});
+
+  final String title;
+  final String? subtitle;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AppTextStyles.sectionTitle),
+              if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+                SizedBox(height: 6.h),
+                Text(
+                  subtitle!,
+                  style: AppTextStyles.cardMeta.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (trailing != null && trailing!.trim().isNotEmpty) ...[
+          SizedBox(width: 12.w),
+          Padding(
+            padding: EdgeInsets.only(top: 2.h),
+            child: Text(trailing!, style: AppTextStyles.sectionCount),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -463,6 +661,233 @@ class _HomeActionButton extends StatelessWidget {
   }
 }
 
+class _ShowcaseCard extends StatelessWidget {
+  const _ShowcaseCard({
+    required this.item,
+    required this.width,
+    required this.highlightDeal,
+    this.onTap,
+  });
+
+  final CatalogItemEntity item;
+  final double width;
+  final bool highlightDeal;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final price = item.priceFrom.trim();
+    final discount = item.discount.trim();
+    final priceValue = _stripFromPrice(price);
+    final hasFromPrefix = priceValue != price;
+    final hasDualPrice = price.isNotEmpty && discount.isNotEmpty;
+    final hasBadge = item.badge.trim().isNotEmpty;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22.r),
+        child: Container(
+          width: width,
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(22.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 14.r,
+                spreadRadius: -3,
+                offset: Offset(0, 9.h),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(22.r),
+                      ),
+                      child: SizedBox.expand(
+                        child: _RestaurantImage(
+                          url: item.coverImageUrl,
+                          name: item.name,
+                          showLabel: false,
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(22.r),
+                          ),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withValues(alpha: 0.02),
+                              Colors.black.withValues(alpha: 0.18),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ),
+                    PositionedDirectional(
+                      top: 12.h,
+                      start: 12.w,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 7.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: hasBadge
+                              ? const Color(0xFF0C1022).withValues(alpha: 0.78)
+                              : Colors.white.withValues(alpha: 0.88),
+                          borderRadius: BorderRadius.circular(999.r),
+                        ),
+                        child: Text(
+                          hasBadge
+                              ? item.badge
+                              : _localizedCategoryTitle(item.category),
+                          style: AppTextStyles.cardMeta.copyWith(
+                            color: hasBadge
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    PositionedDirectional(
+                      top: 12.h,
+                      end: 12.w,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 7.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(999.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.star_rounded,
+                              color: AppColors.ratingStar,
+                              size: 14.sp,
+                            ),
+                            SizedBox(width: 4.w),
+                            Text(
+                              item.ratingLabel,
+                              style: AppTextStyles.cardMeta.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(14.w, 12.h, 14.w, 14.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.sectionTitle.copyWith(
+                        fontSize: 17.sp,
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+                    Text(
+                      _discoveryMetaLabel(item),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.cardMeta,
+                    ),
+                    SizedBox(height: 12.h),
+                    if (hasDualPrice) ...[
+                      Wrap(
+                        spacing: 8.w,
+                        runSpacing: 4.h,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (hasFromPrefix)
+                            Text(
+                              AppStrings.from,
+                              style: AppTextStyles.cardMeta.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          Text(
+                            discount,
+                            style: (highlightDeal
+                                    ? AppTextStyles.cardDiscount
+                                    : AppTextStyles.cardPrice)
+                                .copyWith(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                          Text(
+                            priceValue,
+                            style: AppTextStyles.cardMeta.copyWith(
+                              color: const Color(0xFF5D6875),
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w700,
+                              decoration: TextDecoration.lineThrough,
+                              decorationColor: const Color(0xFFE53935),
+                              decorationThickness: 2.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else if (price.isNotEmpty) ...[
+                      Text(
+                        price,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.cardPrice.copyWith(
+                          fontSize: 16.sp,
+                        ),
+                      ),
+                    ] else if (item.slotsLeft.trim().isNotEmpty) ...[
+                      Text(
+                        item.slotsLeft,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.cardMeta.copyWith(
+                          color: AppColors.primaryDark,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RestaurantImage extends StatelessWidget {
   const _RestaurantImage({
     required this.url,
@@ -527,6 +952,82 @@ String _locationLabel(String? city, String? country) {
   if (safeCity.isEmpty) return safeCountry;
   if (safeCountry.isEmpty) return safeCity;
   return '$safeCity, $safeCountry';
+}
+
+String _stripFromPrice(String value) {
+  final trimmed = value.trim();
+  final localizedPrefix = AppStrings.from.trim();
+  if (trimmed.startsWith(localizedPrefix)) {
+    return trimmed.substring(localizedPrefix.length).trim();
+  }
+
+  const englishPrefix = 'From';
+  if (trimmed.toLowerCase().startsWith(englishPrefix.toLowerCase())) {
+    return trimmed.substring(englishPrefix.length).trim();
+  }
+
+  return trimmed;
+}
+
+List<CatalogItemEntity> _hotDeals(List<CatalogItemEntity> items) {
+  final ranked = List<CatalogItemEntity>.from(items)
+    ..sort(
+      (left, right) => _discountScore(right).compareTo(_discountScore(left)),
+    );
+
+  final withDeals = ranked.where((item) => _discountScore(item) > 0).toList();
+  final source = withDeals.isNotEmpty ? withDeals : ranked;
+  return source.take(6).toList(growable: false);
+}
+
+List<CatalogItemEntity> _nearbyItems(
+  List<CatalogItemEntity> items, {
+  String? userCity,
+  String? userCountry,
+}) {
+  final normalizedCity = (userCity ?? '').trim().toLowerCase();
+  final normalizedCountry = (userCountry ?? '').trim().toLowerCase();
+
+  final matched = items.where((item) {
+    final city = item.cityId.trim().toLowerCase();
+    final address = item.address.trim().toLowerCase();
+    final area = item.area.trim().toLowerCase();
+    final cityMatch = normalizedCity.isNotEmpty && city == normalizedCity;
+    final countryMatch =
+        normalizedCountry.isNotEmpty && address.contains(normalizedCountry);
+    final areaMatch =
+        normalizedCity.isNotEmpty && area.contains(normalizedCity);
+    return cityMatch || countryMatch || areaMatch;
+  }).toList();
+
+  final source =
+      matched.isNotEmpty ? matched : List<CatalogItemEntity>.from(items)
+        ..sort((left, right) => right.rating.compareTo(left.rating));
+  return source.take(6).toList(growable: false);
+}
+
+double _discountScore(CatalogItemEntity item) {
+  final badgePercent = _extractPercent(item.badge);
+  if (badgePercent > 0) return badgePercent;
+
+  final original = _extractAmount(item.priceFrom);
+  final current = _extractAmount(item.discount);
+  if (original > 0 && current > 0 && original >= current) {
+    return ((original - current) / original) * 100;
+  }
+  return 0;
+}
+
+double _extractPercent(String value) {
+  final match = RegExp(r'(\d+(?:\.\d+)?)\s*%').firstMatch(value);
+  return double.tryParse(match?.group(1) ?? '') ?? 0;
+}
+
+double _extractAmount(String value) {
+  final match = RegExp(
+    r'(\d+(?:\.\d+)?)',
+  ).firstMatch(value.replaceAll(',', ''));
+  return double.tryParse(match?.group(1) ?? '') ?? 0;
 }
 
 String _discoveryMetaLabel(CatalogItemEntity item) {

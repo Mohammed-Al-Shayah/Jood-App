@@ -135,8 +135,12 @@ class AppStrings {
   static String get backToHome => _tr('back_to_home');
   static String get somethingWentWrong => _tr('something_went_wrong');
   static String get tooManyAttempts => _tr('too_many_attempts');
+  static String get homeHeroTitle => _tr('home_hero_title');
   static String get bookByCategory => _tr('book_by_category');
   static String get bookByCategorySubtitle => _tr('book_by_category_subtitle');
+  static String get hotDeals => _tr('hot_deals');
+  static String get hotDealsSubtitle => _tr('hot_deals_subtitle');
+  static String get nearToMe => _tr('near_to_me');
   static String get discoverForYou => _tr('discover_for_you');
   static String get failedToLoadDiscoveryItems =>
       _tr('failed_to_load_discovery_items');
@@ -543,6 +547,14 @@ class AppStrings {
 
   static String otpResetMessage(String phone) {
     return _tr('otp_reset_message', params: {'phone': phone});
+  }
+
+  static String homeHeroSubtitle(String location) {
+    return _tr('home_hero_subtitle', params: {'location': location});
+  }
+
+  static String nearToMeSubtitle(String location) {
+    return _tr('near_to_me_subtitle', params: {'location': location});
   }
 
   static String guestsSummary(int adultsCount, int childrenCount) {

@@ -304,12 +304,12 @@ class CatalogRemoteDataSource {
     required double originalPrice,
     required double currentPrice,
   }) {
-    final existing = _stringValue(data['badge']).trim();
-    if (existing.isNotEmpty) return _localizedBadge(existing);
     if (originalPrice > 0 && currentPrice > 0 && originalPrice > currentPrice) {
       final percent = ((originalPrice - currentPrice) / originalPrice) * 100;
       return AppStrings.percentOff(percent.round());
     }
+    final existing = _stringValue(data['badge']).trim();
+    if (existing.isNotEmpty) return _localizedBadge(existing);
     final rating = NumberUtils.toDouble(data['rating']);
     if (rating >= 4.5) return AppStrings.topRated;
     if (rating >= 4.0) return AppStrings.popular;
@@ -391,3 +391,4 @@ class CatalogRemoteDataSource {
     return a > b ? a : b;
   }
 }
+

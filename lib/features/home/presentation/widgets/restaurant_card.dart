@@ -32,19 +32,15 @@ class RestaurantCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trimmedPrice = price.trim();
+    final trimmedDiscount = discount.trim();
     final trimmedSlots = slots.trim();
-    final lowerPrice = trimmedPrice.toLowerCase();
-    final hasFromLabel = lowerPrice.startsWith('from ');
-    final priceLabel = hasFromLabel ? AppStrings.from : '';
-    final priceValue = hasFromLabel
-        ? trimmedPrice.substring(5).trim()
-        : trimmedPrice;
+    final priceValue = _stripFromPrice(trimmedPrice);
+    final hasFromLabel = priceValue != trimmedPrice;
     final hasBadge = badge.trim().isNotEmpty;
-    final hasDiscount = discount.trim().isNotEmpty || hasBadge;
-    final showDiscountValue = discount.trim().isNotEmpty;
+    final hasDualPrice = trimmedPrice.isNotEmpty && trimmedDiscount.isNotEmpty;
     final showNoOffersMessage =
         trimmedPrice.isEmpty &&
-        discount.trim().isEmpty &&
+        trimmedDiscount.isEmpty &&
         trimmedSlots.isNotEmpty &&
         !hasBadge;
 
@@ -85,24 +81,22 @@ class RestaurantCard extends StatelessWidget {
                       top: 12.h,
                       start: 12.w,
                       child: Container(
-                        width: 80.w,
-                        height: 40.h,
+                        constraints: BoxConstraints(minHeight: 38.h),
                         padding: EdgeInsets.symmetric(
-                          horizontal: 10.w,
-                          vertical: 6.h,
+                          horizontal: 14.w,
+                          vertical: 8.h,
                         ),
                         decoration: BoxDecoration(
-                          color: Color(0xff7c3aed),
-                          // color: Colors.green,
+                          color: const Color(0xff7c3aed),
                           borderRadius: BorderRadius.circular(20.r),
                         ),
-                        child: Center(
-                          child: Text(
-                            badge,
-                            style: AppTextStyles.badge.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16.sp,
-                            ),
+                        child: Text(
+                          badge,
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.badge.copyWith(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.sp,
+                            height: 1.1,
                           ),
                         ),
                       ),
@@ -180,59 +174,41 @@ class RestaurantCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        if (hasFromLabel)
-                          Row(
+                        if (hasDualPrice)
+                          Wrap(
+                            spacing: 8.w,
+                            runSpacing: 4.h,
+                            crossAxisAlignment: WrapCrossAlignment.center,
                             children: [
+                              if (hasFromLabel)
+                                Text(
+                                  AppStrings.from,
+                                  style: AppTextStyles.cardSlots.copyWith(
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               Text(
-                                priceLabel,
-                                style: AppTextStyles.cardSlots.copyWith(
-                                  fontSize: 16.sp,
+                                trimmedDiscount,
+                                style: AppTextStyles.cardDiscount.copyWith(
+                                  fontSize: 18.sp,
                                 ),
                               ),
-                              SizedBox(width: 10.w),
                               Text(
                                 priceValue,
                                 style: AppTextStyles.cardPrice.copyWith(
-                                  fontSize: 18.sp,
-                                  color: AppColors.textPrimary,
-                                  decoration: hasDiscount
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                  decorationColor: hasDiscount
-                                      ? Colors.red
-                                      : null,
-                                  decorationThickness: hasDiscount ? 3 : null,
+                                  fontSize: 16.sp,
+                                  color: const Color(0xFF5D6875),
+                                  fontWeight: FontWeight.w700,
+                                  decoration: TextDecoration.lineThrough,
+                                  decorationColor: const Color(0xFFE53935),
+                                  decorationThickness: 2.6,
                                 ),
                               ),
-                              SizedBox(width: 10.w),
-
-                              if (hasDiscount) ...[
-                                if (showDiscountValue)
-                                  Text(
-                                    discount,
-                                    style: AppTextStyles.cardDiscount,
-                                  ),
-                                const Spacer(),
-                                // if (hasBadge)
-                                //   Container(
-                                //     padding: EdgeInsets.symmetric(
-                                //       horizontal: 10.w,
-                                //       vertical: 6.h,
-                                //     ),
-                                //     decoration: BoxDecoration(
-                                //       color: Color(0xff7c3aed),
-                                //       borderRadius: BorderRadius.circular(20.r),
-                                //     ),
-                                //     child: Text(
-                                //       badge,
-                                //       style: AppTextStyles.badge,
-                                //     ),
-                                //   ),
-                              ],
                             ],
                           ),
 
-                        if (!hasFromLabel && trimmedPrice.isNotEmpty)
+                        if (!hasDualPrice && trimmedPrice.isNotEmpty)
                           Text(
                             trimmedPrice,
                             style: AppTextStyles.cardPrice.copyWith(
@@ -277,4 +253,19 @@ class RestaurantCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _stripFromPrice(String value) {
+  final trimmed = value.trim();
+  final localizedPrefix = AppStrings.from.trim();
+  if (trimmed.startsWith(localizedPrefix)) {
+    return trimmed.substring(localizedPrefix.length).trim();
+  }
+
+  const englishPrefix = 'From';
+  if (trimmed.toLowerCase().startsWith(englishPrefix.toLowerCase())) {
+    return trimmed.substring(englishPrefix.length).trim();
+  }
+
+  return trimmed;
 }

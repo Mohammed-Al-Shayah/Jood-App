@@ -14,8 +14,9 @@ class HomeSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.iconStroke,
+        color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: const Color(0xFFE6EAEE)),
       ),
       child: TextFormField(
         decoration: InputDecoration(
@@ -34,7 +35,7 @@ class HomeSearchBar extends StatelessWidget {
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: AppColors.iconStroke,
+          fillColor: AppColors.cardBackground,
           prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
           contentPadding: EdgeInsets.symmetric(
             horizontal: 12.w,

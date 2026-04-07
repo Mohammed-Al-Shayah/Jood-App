@@ -23,15 +23,18 @@ Future<void> initializeFirebase() async {
     );
   }
 
-  const useDebugAppCheck = false;
+  const enableAppCheckInDebug = false;
+
+  if (kDebugMode && !enableAppCheckInDebug) {
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    return;
+  }
 
   await FirebaseAppCheck.instance.activate(
-    androidProvider: (kReleaseMode && !useDebugAppCheck)
+    androidProvider: kReleaseMode
         ? AndroidProvider.playIntegrity
         : AndroidProvider.debug,
-    appleProvider: (kReleaseMode && !useDebugAppCheck)
-        ? AppleProvider.appAttest
-        : AppleProvider.debug,
+    appleProvider: kReleaseMode ? AppleProvider.appAttest : AppleProvider.debug,
   );
 
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);

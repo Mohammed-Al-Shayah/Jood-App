@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../domain/entities/attraction_entity.dart';
+import '../../../../core/utils/localized_value_utils.dart';
 import '../../../../core/utils/number_utils.dart';
+import '../../domain/entities/attraction_entity.dart';
 
 class AttractionModel extends AttractionEntity {
   const AttractionModel({
@@ -28,6 +29,30 @@ class AttractionModel extends AttractionEntity {
     super.priceFrom,
     super.discount,
     super.slotsLeft,
+    super.nameEn,
+    super.nameAr,
+    super.cityIdEn,
+    super.cityIdAr,
+    super.areaEn,
+    super.areaAr,
+    super.aboutEn,
+    super.aboutAr,
+    super.addressEn,
+    super.addressAr,
+    super.highlightsEn,
+    super.highlightsAr,
+    super.inclusionsEn,
+    super.inclusionsAr,
+    super.catalogDescriptionEn,
+    super.catalogDescriptionAr,
+    super.catalogHighlightsEn,
+    super.catalogHighlightsAr,
+    super.catalogIncludedEn,
+    super.catalogIncludedAr,
+    super.packageOverviewEn,
+    super.packageOverviewAr,
+    super.bookingNotesEn,
+    super.bookingNotesAr,
   });
 
   factory AttractionModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -40,36 +65,102 @@ class AttractionModel extends AttractionEntity {
     required Map<String, dynamic> data,
   }) {
     final bookingCatalog = _asMap(data['bookingCatalog']);
-    final rootHighlights = _stringList(data['highlights']);
-    final rootInclusions = _stringList(data['inclusions']);
+
+    final nameEn = _stringValue(data['name']);
+    final nameAr = _stringValue(data['nameAr']);
+    final cityIdEn = _stringValue(data['cityId']);
+    final cityIdAr = _stringValue(data['cityIdAr']);
+    final areaEn = _stringValue(data['area']);
+    final areaAr = _stringValue(data['areaAr']);
+    final aboutEn = _stringValue(data['about']);
+    final aboutAr = _stringValue(data['aboutAr']);
+    final addressEn = _stringValue(data['address']);
+    final addressAr = _stringValue(data['addressAr']);
+    final highlightsEn = _stringList(data['highlights']);
+    final highlightsAr = _stringList(data['highlightsAr']);
+    final inclusionsEn = _stringList(data['inclusions']);
+    final inclusionsAr = _stringList(data['inclusionsAr']);
+
+    final catalogDescriptionEn = _firstNonEmptyString(
+      _stringValue(bookingCatalog['description']),
+      aboutEn,
+    );
+    final catalogDescriptionAr = _firstNonEmptyString(
+      _stringValue(bookingCatalog['descriptionAr']),
+      aboutAr,
+    );
+    final catalogHighlightsEn = _firstNonEmptyList(
+      _stringList(bookingCatalog['highlights']),
+      highlightsEn,
+    );
+    final catalogHighlightsAr = _firstNonEmptyList(
+      _stringList(bookingCatalog['highlightsAr']),
+      highlightsAr,
+    );
+    final catalogIncludedEn = _firstNonEmptyList(
+      _stringList(bookingCatalog['included']),
+      inclusionsEn,
+    );
+    final catalogIncludedAr = _firstNonEmptyList(
+      _stringList(bookingCatalog['includedAr']),
+      inclusionsAr,
+    );
+    final packageOverviewEn = _firstNonEmptyList(
+      _stringList(bookingCatalog['packageOverview']),
+      _firstNonEmptyList(
+        _stringList(data['packageOverview']),
+        _stringList(data['packagesOverview']),
+      ),
+    );
+    final packageOverviewAr = _firstNonEmptyList(
+      _stringList(bookingCatalog['packageOverviewAr']),
+      _firstNonEmptyList(
+        _stringList(data['packageOverviewAr']),
+        _stringList(data['packagesOverviewAr']),
+      ),
+    );
+    final bookingNotesEn = _stringList(bookingCatalog['notes']);
+    final bookingNotesAr = _stringList(bookingCatalog['notesAr']);
 
     return AttractionModel(
       id: id,
-      name: _stringValue(data['name']),
-      cityId: _stringValue(data['cityId']),
-      area: _stringValue(data['area']),
+      name: resolveLocalizedText(english: nameEn, arabic: nameAr),
+      cityId: resolveLocalizedText(english: cityIdEn, arabic: cityIdAr),
+      area: resolveLocalizedText(english: areaEn, arabic: areaAr),
       rating: NumberUtils.toDouble(data['rating']),
       reviewsCount: NumberUtils.toInt(data['reviewsCount']),
       coverImageUrl: _stringValue(data['coverImageUrl']),
-      about: _stringValue(data['about']),
+      about: resolveLocalizedText(english: aboutEn, arabic: aboutAr),
       phone: _stringValue(data['phone']),
-      address: _stringValue(data['address']),
-      highlights: rootHighlights,
-      inclusions: rootInclusions,
-      catalogDescription:
-          _stringValue(bookingCatalog['description']).trim().isNotEmpty
-          ? _stringValue(bookingCatalog['description']).trim()
-          : _stringValue(data['about']).trim(),
-      catalogHighlights: _stringList(
-        bookingCatalog['highlights'],
-        fallback: rootHighlights,
+      address: resolveLocalizedText(english: addressEn, arabic: addressAr),
+      highlights: resolveLocalizedList(
+        english: highlightsEn,
+        arabic: highlightsAr,
       ),
-      catalogIncluded: _stringList(
-        bookingCatalog['included'],
-        fallback: rootInclusions,
+      inclusions: resolveLocalizedList(
+        english: inclusionsEn,
+        arabic: inclusionsAr,
       ),
-      packageOverview: _stringList(bookingCatalog['packageOverview']),
-      bookingNotes: _stringList(bookingCatalog['notes']),
+      catalogDescription: resolveLocalizedText(
+        english: catalogDescriptionEn,
+        arabic: catalogDescriptionAr,
+      ),
+      catalogHighlights: resolveLocalizedList(
+        english: catalogHighlightsEn,
+        arabic: catalogHighlightsAr,
+      ),
+      catalogIncluded: resolveLocalizedList(
+        english: catalogIncludedEn,
+        arabic: catalogIncludedAr,
+      ),
+      packageOverview: resolveLocalizedList(
+        english: packageOverviewEn,
+        arabic: packageOverviewAr,
+      ),
+      bookingNotes: resolveLocalizedList(
+        english: bookingNotesEn,
+        arabic: bookingNotesAr,
+      ),
       isActive: data['isActive'] as bool? ?? true,
       createdAt: _toDateTime(data['createdAt']),
       badge: _catalogLabelValue(
@@ -92,33 +183,69 @@ class AttractionModel extends AttractionEntity {
         rootValue: data['slotsLeft'],
         key: 'slotsLeft',
       ),
+      nameEn: nameEn,
+      nameAr: nameAr,
+      cityIdEn: cityIdEn,
+      cityIdAr: cityIdAr,
+      areaEn: areaEn,
+      areaAr: areaAr,
+      aboutEn: aboutEn,
+      aboutAr: aboutAr,
+      addressEn: addressEn,
+      addressAr: addressAr,
+      highlightsEn: highlightsEn,
+      highlightsAr: highlightsAr,
+      inclusionsEn: inclusionsEn,
+      inclusionsAr: inclusionsAr,
+      catalogDescriptionEn: catalogDescriptionEn,
+      catalogDescriptionAr: catalogDescriptionAr,
+      catalogHighlightsEn: catalogHighlightsEn,
+      catalogHighlightsAr: catalogHighlightsAr,
+      catalogIncludedEn: catalogIncludedEn,
+      catalogIncludedAr: catalogIncludedAr,
+      packageOverviewEn: packageOverviewEn,
+      packageOverviewAr: packageOverviewAr,
+      bookingNotesEn: bookingNotesEn,
+      bookingNotesAr: bookingNotesAr,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'name': name,
-      'cityId': cityId,
-      'area': area,
+      'name': _baseText(nameEn, name),
+      'nameAr': nameAr.trim(),
+      'cityId': _baseText(cityIdEn, cityId),
+      'cityIdAr': cityIdAr.trim(),
+      'area': _baseText(areaEn, area),
+      'areaAr': areaAr.trim(),
       'rating': rating,
       'reviewsCount': reviewsCount,
       'coverImageUrl': coverImageUrl,
-      'about': about,
+      'about': _baseText(aboutEn, about),
+      'aboutAr': aboutAr.trim(),
       'phone': phone,
-      'address': address,
-      'highlights': highlights,
-      'inclusions': inclusions,
+      'address': _baseText(addressEn, address),
+      'addressAr': addressAr.trim(),
+      'highlights': _baseList(highlightsEn, highlights),
+      'highlightsAr': _cleanList(highlightsAr),
+      'inclusions': _baseList(inclusionsEn, inclusions),
+      'inclusionsAr': _cleanList(inclusionsAr),
       'badge': badge,
       'priceFrom': priceFrom,
       'discount': discount,
       'slotsLeft': slotsLeft,
       'isActive': isActive,
       'bookingCatalog': {
-        'description': catalogDescription,
-        'highlights': catalogHighlights,
-        'included': catalogIncluded,
-        'packageOverview': packageOverview,
-        'notes': bookingNotes,
+        'description': _baseText(catalogDescriptionEn, catalogDescription),
+        'descriptionAr': catalogDescriptionAr.trim(),
+        'highlights': _baseList(catalogHighlightsEn, catalogHighlights),
+        'highlightsAr': _cleanList(catalogHighlightsAr),
+        'included': _baseList(catalogIncludedEn, catalogIncluded),
+        'includedAr': _cleanList(catalogIncludedAr),
+        'packageOverview': _baseList(packageOverviewEn, packageOverview),
+        'packageOverviewAr': _cleanList(packageOverviewAr),
+        'notes': _baseList(bookingNotesEn, bookingNotes),
+        'notesAr': _cleanList(bookingNotesAr),
         'badge': badge,
         'priceFrom': priceFrom,
         'discount': discount,
@@ -135,26 +262,22 @@ class AttractionModel extends AttractionEntity {
     return const <String, dynamic>{};
   }
 
-  static List<String> _stringList(
-    dynamic value, {
-    List<String> fallback = const [],
-  }) {
+  static List<String> _stringList(dynamic value) {
     if (value is List) {
-      final result = value
+      return value
           .map((item) => item.toString().trim())
           .where((item) => item.isNotEmpty)
           .toList(growable: false);
-      if (result.isNotEmpty) return result;
     }
     if (value is String && value.trim().isNotEmpty) {
       return [value.trim()];
     }
-    return fallback;
+    return const [];
   }
 
   static String _stringValue(dynamic value) {
     if (value == null) return '';
-    return value.toString();
+    return value.toString().trim();
   }
 
   static String _catalogLabelValue({
@@ -171,5 +294,41 @@ class AttractionModel extends AttractionEntity {
     if (value is Timestamp) return value.toDate();
     if (value is DateTime) return value;
     return DateTime.now();
+  }
+
+  static String _baseText(String rawEnglish, String fallback) {
+    final english = rawEnglish.trim();
+    if (english.isNotEmpty) return english;
+    return fallback.trim();
+  }
+
+  static List<String> _baseList(
+    List<String> rawEnglish,
+    List<String> fallback,
+  ) {
+    final english = _cleanList(rawEnglish);
+    if (english.isNotEmpty) return english;
+    return _cleanList(fallback);
+  }
+
+  static List<String> _cleanList(List<String> values) {
+    return values
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  static String _firstNonEmptyString(String primary, String fallback) {
+    if (primary.trim().isNotEmpty) return primary.trim();
+    return fallback.trim();
+  }
+
+  static List<String> _firstNonEmptyList(
+    List<String> primary,
+    List<String> fallback,
+  ) {
+    final normalizedPrimary = _cleanList(primary);
+    if (normalizedPrimary.isNotEmpty) return normalizedPrimary;
+    return _cleanList(fallback);
   }
 }

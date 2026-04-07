@@ -25,6 +25,14 @@ class OfferEntity extends Equatable {
     this.mealType = '',
     this.packageName = '',
     this.packageDescription = '',
+    this.titleEn = '',
+    this.titleAr = '',
+    this.entryConditionsEn = const [],
+    this.entryConditionsAr = const [],
+    this.packageNameEn = '',
+    this.packageNameAr = '',
+    this.packageDescriptionEn = '',
+    this.packageDescriptionAr = '',
   });
 
   final String id;
@@ -50,34 +58,50 @@ class OfferEntity extends Equatable {
   final String mealType;
   final String packageName;
   final String packageDescription;
+  final String titleEn;
+  final String titleAr;
+  final List<String> entryConditionsEn;
+  final List<String> entryConditionsAr;
+  final String packageNameEn;
+  final String packageNameAr;
+  final String packageDescriptionEn;
+  final String packageDescriptionAr;
 
   int get remainingAdult => capacityAdult - bookedAdult;
   int get remainingChild => capacityChild - bookedChild;
 
   @override
   List<Object?> get props => [
-        id,
-        restaurantId,
-        date,
-        startTime,
-        endTime,
-        currency,
-        priceAdult,
-        priceAdultOriginal,
-        priceChild,
-        capacityAdult,
-        capacityChild,
-        bookedAdult,
-        bookedChild,
-        status,
-        title,
-        entryConditions,
-        createdAt,
-        updatedAt,
-        bookingCategory,
-        bookableType,
-        mealType,
-        packageName,
-        packageDescription,
-      ];
+    id,
+    restaurantId,
+    date,
+    startTime,
+    endTime,
+    currency,
+    priceAdult,
+    priceAdultOriginal,
+    priceChild,
+    capacityAdult,
+    capacityChild,
+    bookedAdult,
+    bookedChild,
+    status,
+    title,
+    entryConditions,
+    createdAt,
+    updatedAt,
+    bookingCategory,
+    bookableType,
+    mealType,
+    packageName,
+    packageDescription,
+    titleEn,
+    titleAr,
+    entryConditionsEn,
+    entryConditionsAr,
+    packageNameEn,
+    packageNameAr,
+    packageDescriptionEn,
+    packageDescriptionAr,
+  ];
 }

@@ -394,6 +394,15 @@ function getOtpSecurityConfig() {
   };
 }
 
+function shouldEnforceOtpAppCheck() {
+  const cfg = (functions.config() && functions.config().otp) || {};
+  const rawValue = cfg.enforce_app_check || process.env.OTP_ENFORCE_APP_CHECK;
+  if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') {
+    return false;
+  }
+  return parseBooleanFlag(rawValue);
+}
+
 function extractCountryCode(phoneNumber, config) {
   const source = config.allowAllCountries
     ? GLOBAL_COUNTRY_CALLING_CODES
@@ -732,7 +741,7 @@ function mapTwilioErrorToHttpsError({ status, code, message }) {
 }
 
 exports.sendSmsOtp = functions
-  .runWith({ enforceAppCheck: true })
+  .runWith({ enforceAppCheck: shouldEnforceOtpAppCheck() })
   .https.onCall(async (data, context) => {
   const config = getOtpSecurityConfig();
   const request = validateOtpSendRequest({ data, context, config });
@@ -762,7 +771,7 @@ exports.sendSmsOtp = functions
 });
 
 exports.verifySmsOtp = functions
-  .runWith({ enforceAppCheck: true })
+  .runWith({ enforceAppCheck: shouldEnforceOtpAppCheck() })
   .https.onCall(async (data, context) => {
   const verificationId = String(data && data.verificationId ? data.verificationId : '').trim();
   const code = String(data && data.code ? data.code : '').trim();

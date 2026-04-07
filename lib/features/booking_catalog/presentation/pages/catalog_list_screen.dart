@@ -10,21 +10,36 @@ import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../home/presentation/widgets/home_search_bar.dart';
 import '../../../home/presentation/widgets/restaurant_card.dart';
 import '../../domain/entities/catalog_category_type.dart';
+import '../../domain/entities/catalog_item_entity.dart';
 import '../../presentation/cubit/catalog_list_cubit.dart';
 import '../../presentation/cubit/catalog_list_state.dart';
 import '../widgets/catalog_image.dart';
 
-class CatalogListScreen extends StatelessWidget {
+class CatalogListScreen extends StatefulWidget {
   const CatalogListScreen({super.key, required this.category});
 
   final CatalogCategoryType category;
 
   @override
+  State<CatalogListScreen> createState() => _CatalogListScreenState();
+}
+
+class _CatalogListScreenState extends State<CatalogListScreen> {
+  String _query = '';
+
+  void _handleQueryChanged(String value) {
+    setState(() {
+      _query = value;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => getIt<CatalogListCubit>()..load(category),
+      create: (_) => getIt<CatalogListCubit>()..load(widget.category),
       child: Scaffold(
         backgroundColor: AppColors.cardBackground,
         appBar: PreferredSize(
@@ -48,12 +63,12 @@ class CatalogListScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  _categoryText(category, 'title'),
+                  _categoryText(widget.category, 'title'),
                   style: AppTextStyles.headingMedium,
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  _categoryText(category, 'short_description'),
+                  _categoryText(widget.category, 'short_description'),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.cardMeta.copyWith(
@@ -67,6 +82,13 @@ class CatalogListScreen extends StatelessWidget {
         ),
         body: BlocBuilder<CatalogListCubit, CatalogListState>(
           builder: (context, state) {
+            final visibleItems = _filterCatalogItems(state.items, _query);
+            final showSearchEmptyState =
+                state.status == CatalogListStatus.success &&
+                state.items.isNotEmpty &&
+                visibleItems.isEmpty &&
+                _query.trim().isNotEmpty;
+
             return CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
@@ -75,6 +97,8 @@ class CatalogListScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        HomeSearchBar(onChanged: _handleQueryChanged),
+                        SizedBox(height: 14.h),
                         if (state.status == CatalogListStatus.loading)
                           const LinearProgressIndicator(
                             color: AppColors.primary,
@@ -88,13 +112,25 @@ class CatalogListScreen extends StatelessWidget {
                               style: AppTextStyles.cardMeta,
                             ),
                           ),
+                        if (showSearchEmptyState)
+                          Padding(
+                            padding: EdgeInsets.only(top: 18.h),
+                            child: Text(
+                              AppStrings.noItemsMatchSearch,
+                              style: AppTextStyles.cardMeta.copyWith(
+                                fontSize: 14.sp,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
                         if (state.status == CatalogListStatus.success &&
-                            state.items.isEmpty)
+                            state.items.isEmpty &&
+                            !showSearchEmptyState)
                           Padding(
                             padding: EdgeInsets.only(top: 24.h),
                             child: Center(
                               child: Text(
-                                _categoryText(category, 'empty'),
+                                _categoryText(widget.category, 'empty'),
                                 style: AppTextStyles.cardMeta.copyWith(
                                   fontSize: 14.sp,
                                   color: AppColors.textSecondary,
@@ -106,13 +142,13 @@ class CatalogListScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (state.items.isNotEmpty)
+                if (visibleItems.isNotEmpty)
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 24.h),
                     sliver: SliverList.builder(
-                      itemCount: state.items.length,
+                      itemCount: visibleItems.length,
                       itemBuilder: (context, index) {
-                        final item = state.items[index];
+                        final item = visibleItems[index];
                         return Padding(
                           padding: EdgeInsets.only(bottom: 14.h),
                           child: RestaurantCard(
@@ -152,4 +188,26 @@ String _categoryText(CatalogCategoryType category, String suffix) {
   return AppLocalizationController.instance.tr(
     'catalog_category_${category.routeKey}_$suffix',
   );
+}
+
+List<CatalogItemEntity> _filterCatalogItems(
+  List<CatalogItemEntity> items,
+  String query,
+) {
+  final trimmed = query.trim().toLowerCase();
+  if (trimmed.isEmpty) return items;
+
+  return items
+      .where((item) {
+        final fields = <String>[
+          item.name,
+          item.area,
+          item.cityId,
+          item.address,
+          item.metaLabel,
+        ];
+
+        return fields.any((field) => field.toLowerCase().contains(trimmed));
+      })
+      .toList(growable: false);
 }

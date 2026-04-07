@@ -59,9 +59,13 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   late final TextEditingController _bookedChildController;
   late final TextEditingController _statusController;
   late final TextEditingController _titleController;
+  late final TextEditingController _titleArController;
   late final TextEditingController _packageNameController;
+  late final TextEditingController _packageNameArController;
   late final TextEditingController _packageDescriptionController;
+  late final TextEditingController _packageDescriptionArController;
   late final TextEditingController _entryConditionsController;
+  late final TextEditingController _entryConditionsArController;
 
   final _statusOptions = const ['active', 'low', 'sold_out'];
   final _categoryOptions = const ['buffet', 'set_menu', 'attraction'];
@@ -129,15 +133,42 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       text: isAttraction ? '0' : (offer?.bookedChild.toString() ?? '0'),
     );
     _statusController = TextEditingController(text: offer?.status ?? 'active');
-    _titleController = TextEditingController(text: offer?.title ?? '');
+    _titleController = TextEditingController(
+      text: _preferredText(offer?.titleEn, offer?.title),
+    );
+    _titleArController = TextEditingController(text: offer?.titleAr ?? '');
     _packageNameController = TextEditingController(
-      text: offer?.packageName ?? '',
+      text: _preferredText(
+        offer?.packageNameEn,
+        offer?.packageName.isNotEmpty == true
+            ? offer?.packageName
+            : offer?.title,
+      ),
+    );
+    _packageNameArController = TextEditingController(
+      text: _preferredText(
+        offer?.packageNameAr,
+        offer?.packageNameAr.isNotEmpty == true
+            ? offer?.packageNameAr
+            : offer?.titleAr,
+      ),
     );
     _packageDescriptionController = TextEditingController(
-      text: offer?.packageDescription ?? '',
+      text: _preferredText(
+        offer?.packageDescriptionEn,
+        offer?.packageDescription,
+      ),
+    );
+    _packageDescriptionArController = TextEditingController(
+      text: offer?.packageDescriptionAr ?? '',
     );
     _entryConditionsController = TextEditingController(
-      text: (offer?.entryConditions ?? const []).join('\n'),
+      text: _joinLines(
+        _preferredList(offer?.entryConditionsEn, offer?.entryConditions),
+      ),
+    );
+    _entryConditionsArController = TextEditingController(
+      text: _joinLines(offer?.entryConditionsAr),
     );
     if (!_isEdit && (_isBuffet || _isSetMenu)) {
       _titleController.text = _defaultTitleForMealType(_category, _mealType);
@@ -169,9 +200,13 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     _bookedChildController.dispose();
     _statusController.dispose();
     _titleController.dispose();
+    _titleArController.dispose();
     _packageNameController.dispose();
+    _packageNameArController.dispose();
     _packageDescriptionController.dispose();
+    _packageDescriptionArController.dispose();
     _entryConditionsController.dispose();
+    _entryConditionsArController.dispose();
     super.dispose();
   }
 
@@ -194,17 +229,35 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
                 _venueDropdown(),
                 if (_restaurantCategoryWarning != null)
                   _categoryWarningCard(_restaurantCategoryWarning!),
-                if (!_isAttraction) _titleField(),
+                if (!_isAttraction) ...[
+                  _titleField(),
+                  _textField(
+                    _titleArController,
+                    '${_titleLabel()} (AR optional)',
+                    required: false,
+                  ),
+                ],
                 if (_isEdit) _dateField() else _dateRangeField(),
                 _timeField(_startTimeController, 'Start Time'),
                 _timeField(_endTimeController, 'End Time'),
                 if (_isBuffet || _isSetMenu) _mealTypeDropdown(),
                 if (_isAttraction && !_usesAttractionPackages) ...[
-                  _textField(_packageNameController, 'Package Name'),
+                  _textField(_packageNameController, 'Package Name (EN)'),
+                  _textField(
+                    _packageNameArController,
+                    'Package Name (AR optional)',
+                    required: false,
+                  ),
                   _multilineField(
                     _packageDescriptionController,
-                    'Package Description',
+                    'Package Description (EN)',
                     minLines: 3,
+                  ),
+                  _multilineField(
+                    _packageDescriptionArController,
+                    'Package Description (AR optional)',
+                    minLines: 3,
+                    required: false,
                   ),
                 ],
                 _textField(_currencyController, 'Currency'),
@@ -258,11 +311,21 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
             SizedBox(height: 14.h),
             AdminSectionCard(
               title: 'Entry Conditions',
-              child: _multilineField(
-                _entryConditionsController,
-                'One condition per line',
-                minLines: 4,
-                required: false,
+              child: Column(
+                children: [
+                  _multilineField(
+                    _entryConditionsController,
+                    'Entry Conditions (EN, one condition per line)',
+                    minLines: 4,
+                    required: false,
+                  ),
+                  _multilineField(
+                    _entryConditionsArController,
+                    'Entry Conditions (AR optional, one condition per line)',
+                    minLines: 4,
+                    required: false,
+                  ),
+                ],
               ),
             ),
           ],
@@ -319,7 +382,9 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
             _mealType = _defaultMealTypeForCategory(value);
             if (!_isAttraction) {
               _packageNameController.clear();
+              _packageNameArController.clear();
               _packageDescriptionController.clear();
+              _packageDescriptionArController.clear();
             }
             _syncCategorySpecificFields(
               previousCategory: previousCategory,
@@ -483,11 +548,22 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
                 ),
             ],
           ),
-          _textField(package.packageNameController, 'Package Name'),
+          _textField(package.packageNameController, 'Package Name (EN)'),
+          _textField(
+            package.packageNameArController,
+            'Package Name (AR optional)',
+            required: false,
+          ),
           _multilineField(
             package.packageDescriptionController,
-            'Package Description',
+            'Package Description (EN)',
             minLines: 3,
+          ),
+          _multilineField(
+            package.packageDescriptionArController,
+            'Package Description (AR optional)',
+            minLines: 3,
+            required: false,
           ),
           _numberField(package.priceAdultController, 'Price Per Person'),
           _numberField(
@@ -518,7 +594,13 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           ),
           _multilineField(
             package.entryConditionsController,
-            'Entry Conditions (one condition per line)',
+            'Entry Conditions (EN, one condition per line)',
+            minLines: 3,
+            required: false,
+          ),
+          _multilineField(
+            package.entryConditionsArController,
+            'Entry Conditions (AR optional, one condition per line)',
             minLines: 3,
             required: false,
           ),
@@ -556,7 +638,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   Widget _titleField() {
     return _textField(
       _titleController,
-      _titleLabel(),
+      '${_titleLabel()} (EN)',
       validator: (value) {
         if (value == null || value.trim().isEmpty) return 'Required';
         return _titleMismatchError(value);
@@ -616,6 +698,31 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
             : null,
       ),
     );
+  }
+
+  List<String> _splitLines(String value) {
+    return value
+        .split('\n')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  String _joinLines(List<String>? values) {
+    if (values == null || values.isEmpty) return '';
+    return values.join('\n');
+  }
+
+  String _preferredText(String? english, String? fallback) {
+    final normalizedEnglish = english?.trim() ?? '';
+    if (normalizedEnglish.isNotEmpty) return normalizedEnglish;
+    return fallback?.trim() ?? '';
+  }
+
+  List<String> _preferredList(List<String>? english, List<String>? fallback) {
+    final normalizedEnglish = _splitLines((english ?? const []).join('\n'));
+    if (normalizedEnglish.isNotEmpty) return normalizedEnglish;
+    return _splitLines((fallback ?? const []).join('\n'));
   }
 
   Widget _dateField() {
@@ -834,13 +941,16 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   _AttractionPackageDraft _createAttractionPackageDraft() {
     return _AttractionPackageDraft(
       packageName: '',
+      packageNameAr: '',
       packageDescription: '',
+      packageDescriptionAr: '',
       priceAdult: '',
       priceAdultOriginal: '',
       capacityAdult: '',
       bookedAdult: '0',
       status: 'active',
       entryConditions: '',
+      entryConditionsAr: '',
     );
   }
 
@@ -1033,11 +1143,11 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   }
 
   List<String> _entryConditions() {
-    return _entryConditionsController.text
-        .split('\n')
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList(growable: false);
+    return _splitLines(_entryConditionsController.text);
+  }
+
+  List<String> _entryConditionsAr() {
+    return _splitLines(_entryConditionsArController.text);
   }
 
   String? _attractionPackagesCountError() {
@@ -1152,14 +1262,24 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       final packageName = _isAttraction
           ? _packageNameController.text.trim()
           : '';
+      final packageNameAr = _isAttraction
+          ? _packageNameArController.text.trim()
+          : '';
       final title = _isAttraction && packageName.isNotEmpty
           ? packageName
           : _titleController.text.trim();
+      final titleAr = _isAttraction
+          ? packageNameAr
+          : _titleArController.text.trim();
       final packageDescription = _isAttraction
           ? _packageDescriptionController.text.trim()
           : '';
+      final packageDescriptionAr = _isAttraction
+          ? _packageDescriptionArController.text.trim()
+          : '';
       final mealType = (_isBuffet || _isSetMenu) ? _mealType : '';
       final entryConditions = _entryConditions();
+      final entryConditionsAr = _entryConditionsAr();
 
       if (_isEdit) {
         final parsedDate = DateTime.tryParse(_dateController.text.trim());
@@ -1195,6 +1315,14 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           mealType: mealType,
           packageName: packageName,
           packageDescription: packageDescription,
+          titleEn: title,
+          titleAr: titleAr,
+          entryConditionsEn: entryConditions,
+          entryConditionsAr: entryConditionsAr,
+          packageNameEn: packageName,
+          packageNameAr: packageNameAr,
+          packageDescriptionEn: packageDescription,
+          packageDescriptionAr: packageDescriptionAr,
         );
       } else {
         final range = _selectedRange;
@@ -1221,14 +1349,18 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           bookedChild: bookedChild,
           status: status,
           title: title,
+          titleAr: titleAr,
           entryConditions: entryConditions,
+          entryConditionsAr: entryConditionsAr,
           createdAt: now,
           updatedAt: now,
           bookingCategory: bookingCategory,
           bookableType: bookableType,
           mealType: mealType,
           packageName: packageName,
+          packageNameAr: packageNameAr,
           packageDescription: packageDescription,
+          packageDescriptionAr: packageDescriptionAr,
         );
       }
     }
@@ -1264,6 +1396,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     final offers = <OfferEntity>[];
     for (final package in _attractionPackages) {
       final packageName = package.packageNameController.text.trim();
+      final packageNameAr = package.packageNameArController.text.trim();
       offers.addAll(
         _offersForRange(
           venueId: venueId,
@@ -1282,14 +1415,19 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           bookedChild: 0,
           status: package.status,
           title: packageName,
+          titleAr: packageNameAr,
           entryConditions: package.entryConditions(),
+          entryConditionsAr: package.entryConditionsAr(),
           createdAt: createdAt,
           updatedAt: updatedAt,
           bookingCategory: bookingCategory,
           bookableType: bookableType,
           mealType: '',
           packageName: packageName,
+          packageNameAr: packageNameAr,
           packageDescription: package.packageDescriptionController.text.trim(),
+          packageDescriptionAr: package.packageDescriptionArController.text
+              .trim(),
         ),
       );
     }
@@ -1311,14 +1449,18 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     required int bookedChild,
     required String status,
     required String title,
+    required String titleAr,
     required List<String> entryConditions,
+    required List<String> entryConditionsAr,
     required DateTime createdAt,
     required DateTime updatedAt,
     required String bookingCategory,
     required String bookableType,
     required String mealType,
     required String packageName,
+    required String packageNameAr,
     required String packageDescription,
+    required String packageDescriptionAr,
   }) {
     final start = DateTime(
       range.start.year,
@@ -1356,6 +1498,14 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           mealType: mealType,
           packageName: packageName,
           packageDescription: packageDescription,
+          titleEn: title,
+          titleAr: titleAr,
+          entryConditionsEn: entryConditions,
+          entryConditionsAr: entryConditionsAr,
+          packageNameEn: packageName,
+          packageNameAr: packageNameAr,
+          packageDescriptionEn: packageDescription,
+          packageDescriptionAr: packageDescriptionAr,
         ),
       );
     }
@@ -1366,16 +1516,23 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 class _AttractionPackageDraft {
   _AttractionPackageDraft({
     required String packageName,
+    required String packageNameAr,
     required String packageDescription,
+    required String packageDescriptionAr,
     required String priceAdult,
     required String priceAdultOriginal,
     required String capacityAdult,
     required String bookedAdult,
     required this.status,
     required String entryConditions,
+    required String entryConditionsAr,
   }) : packageNameController = TextEditingController(text: packageName),
+       packageNameArController = TextEditingController(text: packageNameAr),
        packageDescriptionController = TextEditingController(
          text: packageDescription,
+       ),
+       packageDescriptionArController = TextEditingController(
+         text: packageDescriptionAr,
        ),
        priceAdultController = TextEditingController(text: priceAdult),
        priceAdultOriginalController = TextEditingController(
@@ -1383,19 +1540,33 @@ class _AttractionPackageDraft {
        ),
        capacityAdultController = TextEditingController(text: capacityAdult),
        bookedAdultController = TextEditingController(text: bookedAdult),
-       entryConditionsController = TextEditingController(text: entryConditions);
+       entryConditionsController = TextEditingController(text: entryConditions),
+       entryConditionsArController = TextEditingController(
+         text: entryConditionsAr,
+       );
 
   final TextEditingController packageNameController;
+  final TextEditingController packageNameArController;
   final TextEditingController packageDescriptionController;
+  final TextEditingController packageDescriptionArController;
   final TextEditingController priceAdultController;
   final TextEditingController priceAdultOriginalController;
   final TextEditingController capacityAdultController;
   final TextEditingController bookedAdultController;
   final TextEditingController entryConditionsController;
+  final TextEditingController entryConditionsArController;
   String status;
 
   List<String> entryConditions() {
-    return entryConditionsController.text
+    return _splitLines(entryConditionsController.text);
+  }
+
+  List<String> entryConditionsAr() {
+    return _splitLines(entryConditionsArController.text);
+  }
+
+  static List<String> _splitLines(String value) {
+    return value
         .split('\n')
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
@@ -1404,12 +1575,15 @@ class _AttractionPackageDraft {
 
   void dispose() {
     packageNameController.dispose();
+    packageNameArController.dispose();
     packageDescriptionController.dispose();
+    packageDescriptionArController.dispose();
     priceAdultController.dispose();
     priceAdultOriginalController.dispose();
     capacityAdultController.dispose();
     bookedAdultController.dispose();
     entryConditionsController.dispose();
+    entryConditionsArController.dispose();
   }
 }
 

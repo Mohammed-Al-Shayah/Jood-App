@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../../domain/entities/offer_entity.dart';
-import '../../../../core/utils/number_utils.dart';
 import '../../../../core/utils/date_utils.dart';
+import '../../../../core/utils/localized_value_utils.dart';
+import '../../../../core/utils/number_utils.dart';
+import '../../domain/entities/offer_entity.dart';
 
 class OfferModel extends OfferEntity {
   const OfferModel({
@@ -29,10 +30,29 @@ class OfferModel extends OfferEntity {
     super.mealType,
     super.packageName,
     super.packageDescription,
+    super.titleEn,
+    super.titleAr,
+    super.entryConditionsEn,
+    super.entryConditionsAr,
+    super.packageNameEn,
+    super.packageNameAr,
+    super.packageDescriptionEn,
+    super.packageDescriptionAr,
   });
 
   factory OfferModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
+    final titleEn = (data['title'] as String? ?? '').trim();
+    final titleAr = (data['titleAr'] as String? ?? '').trim();
+    final entryConditionsEn = _stringList(data['entryConditions']);
+    final entryConditionsAr = _stringList(data['entryConditionsAr']);
+    final packageNameEn = (data['packageName'] as String? ?? '').trim();
+    final packageNameAr = (data['packageNameAr'] as String? ?? '').trim();
+    final packageDescriptionEn = (data['packageDescription'] as String? ?? '')
+        .trim();
+    final packageDescriptionAr = (data['packageDescriptionAr'] as String? ?? '')
+        .trim();
+
     return OfferModel(
       id: doc.id,
       restaurantId: data['restaurantId'] as String? ?? '',
@@ -48,15 +68,32 @@ class OfferModel extends OfferEntity {
       bookedAdult: (data['bookedAdult'] as num?)?.toInt() ?? 0,
       bookedChild: (data['bookedChild'] as num?)?.toInt() ?? 0,
       status: data['status'] as String? ?? 'active',
-      title: data['title'] as String? ?? '',
-      entryConditions: _stringList(data['entryConditions']),
+      title: resolveLocalizedText(english: titleEn, arabic: titleAr),
+      entryConditions: resolveLocalizedList(
+        english: entryConditionsEn,
+        arabic: entryConditionsAr,
+      ),
       createdAt: _toDateTime(data['createdAt']),
       updatedAt: _toDateTime(data['updatedAt']),
       bookingCategory: data['bookingCategory'] as String? ?? '',
       bookableType: data['bookableType'] as String? ?? 'restaurant',
       mealType: data['mealType'] as String? ?? '',
-      packageName: data['packageName'] as String? ?? '',
-      packageDescription: data['packageDescription'] as String? ?? '',
+      packageName: resolveLocalizedText(
+        english: packageNameEn,
+        arabic: packageNameAr,
+      ),
+      packageDescription: resolveLocalizedText(
+        english: packageDescriptionEn,
+        arabic: packageDescriptionAr,
+      ),
+      titleEn: titleEn,
+      titleAr: titleAr,
+      entryConditionsEn: entryConditionsEn,
+      entryConditionsAr: entryConditionsAr,
+      packageNameEn: packageNameEn,
+      packageNameAr: packageNameAr,
+      packageDescriptionEn: packageDescriptionEn,
+      packageDescriptionAr: packageDescriptionAr,
     );
   }
 
@@ -75,22 +112,32 @@ class OfferModel extends OfferEntity {
       'bookedAdult': bookedAdult,
       'bookedChild': bookedChild,
       'status': status,
-      'title': title,
-      'entryConditions': entryConditions,
+      'title': _baseText(titleEn, title),
+      'titleAr': titleAr.trim(),
+      'entryConditions': _baseList(entryConditionsEn, entryConditions),
+      'entryConditionsAr': _cleanList(entryConditionsAr),
       'bookingCategory': bookingCategory,
       'bookableType': bookableType,
       'mealType': mealType,
-      'packageName': packageName,
-      'packageDescription': packageDescription,
+      'packageName': _baseText(packageNameEn, packageName),
+      'packageNameAr': packageNameAr.trim(),
+      'packageDescription': _baseText(packageDescriptionEn, packageDescription),
+      'packageDescriptionAr': packageDescriptionAr.trim(),
     };
   }
 
   static List<String> _stringList(dynamic value) {
-    final list = value as List<dynamic>? ?? [];
-    return list.map((item) => item.toString()).toList();
+    if (value is List) {
+      return value
+          .map((item) => item.toString().trim())
+          .where((item) => item.isNotEmpty)
+          .toList(growable: false);
+    }
+    if (value is String && value.trim().isNotEmpty) {
+      return [value.trim()];
+    }
+    return const [];
   }
-
-  // Number parsing moved to NumberUtils
 
   static DateTime _toDateTime(dynamic value) {
     if (value is Timestamp) return value.toDate();
@@ -109,6 +156,25 @@ class OfferModel extends OfferEntity {
     return value.toString();
   }
 
-  // Date formatting moved to DateUtils
-}
+  static String _baseText(String rawEnglish, String fallback) {
+    final english = rawEnglish.trim();
+    if (english.isNotEmpty) return english;
+    return fallback.trim();
+  }
 
+  static List<String> _baseList(
+    List<String> rawEnglish,
+    List<String> fallback,
+  ) {
+    final english = _cleanList(rawEnglish);
+    if (english.isNotEmpty) return english;
+    return _cleanList(fallback);
+  }
+
+  static List<String> _cleanList(List<String> values) {
+    return values
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+  }
+}
