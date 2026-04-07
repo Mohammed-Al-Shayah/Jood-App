@@ -135,10 +135,10 @@ class _PaymentScreenState extends State<PaymentScreen>
     try {
       Thawani.pay(
         context,
-        api:'rRQ26GcsZzoEhbrP2HZvLYDbn9C9et' ,
-        pKey:'HGvTMLDssJghr9tlN9gr4DVYt0qyBy',
-        // api: ThawaniConfig.apiKey,
-        // pKey: ThawaniConfig.publishableApiKey,
+        // api:'rRQ26GcsZzoEhbrP2HZvLYDbn9C9et' ,
+        // pKey:'HGvTMLDssJghr9tlN9gr4DVYt0qyBy',
+        api: ThawaniConfig.apiKey,
+        pKey: ThawaniConfig.publishableApiKey,
         testMode:   true,
         successUrl: 'joodapp://success',
         cancelUrl: 'joodapp://cancel',
