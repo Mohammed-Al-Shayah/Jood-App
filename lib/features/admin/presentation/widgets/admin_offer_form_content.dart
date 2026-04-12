@@ -5,6 +5,7 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/date_utils.dart';
+import 'package:jood/core/utils/guest_pricing_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_input_decoration.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
@@ -44,6 +45,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   String? _venueId;
   late String _category;
   late String _mealType;
+  late String _guestPricingMode;
 
   late final TextEditingController _dateController;
   late final TextEditingController _dateRangeController;
@@ -82,6 +84,11 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   bool get _usesAttractionPackages => _isAttraction && !_isEdit;
   bool get _isCategoryLocked =>
       (widget.initialCategory ?? '').trim().isNotEmpty;
+  bool get _usesPersonPricing => usesUnifiedGuestCount(
+    guestPricingMode: _guestPricingMode,
+    bookingCategory: _category,
+    bookableType: _isAttraction ? 'attraction' : 'restaurant',
+  );
 
   List<_VenueOption> get _currentVenues =>
       _isAttraction ? _attractionVenues : _restaurantVenues;
@@ -95,9 +102,21 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     final offer = widget.offer;
     _category = _resolveInitialCategory(offer, widget.initialCategory);
     final isAttraction = _category == 'attraction';
+    _guestPricingMode = normalizeGuestPricingMode(
+      offer?.guestPricingMode,
+      bookingCategory: _category,
+      bookableType: isAttraction ? 'attraction' : 'restaurant',
+    );
+    final usesPersonPricing = usesUnifiedGuestCount(
+      guestPricingMode: _guestPricingMode,
+      bookingCategory: _category,
+      bookableType: isAttraction ? 'attraction' : 'restaurant',
+    );
     final totalCapacity =
         (offer?.capacityAdult ?? 0) + (offer?.capacityChild ?? 0);
     final totalBooked = (offer?.bookedAdult ?? 0) + (offer?.bookedChild ?? 0);
+    final combinedCapacityText = offer == null ? '' : totalCapacity.toString();
+    final combinedBookedText = offer == null ? '0' : totalBooked.toString();
     _mealType = offer?.mealType.trim().isNotEmpty == true
         ? offer!.mealType.trim().toLowerCase()
         : _defaultMealTypeForCategory(_category);
@@ -114,23 +133,23 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       text: offer?.priceAdultOriginal.toString() ?? '',
     );
     _priceChildController = TextEditingController(
-      text: isAttraction ? '0' : (offer?.priceChild.toString() ?? ''),
+      text: usesPersonPricing ? '0' : (offer?.priceChild.toString() ?? ''),
     );
     _capacityAdultController = TextEditingController(
-      text: isAttraction
-          ? totalCapacity.toString()
+      text: usesPersonPricing
+          ? combinedCapacityText
           : (offer?.capacityAdult.toString() ?? ''),
     );
     _capacityChildController = TextEditingController(
-      text: isAttraction ? '0' : (offer?.capacityChild.toString() ?? ''),
+      text: usesPersonPricing ? '0' : (offer?.capacityChild.toString() ?? ''),
     );
     _bookedAdultController = TextEditingController(
-      text: isAttraction
-          ? totalBooked.toString()
+      text: usesPersonPricing
+          ? combinedBookedText
           : (offer?.bookedAdult.toString() ?? '0'),
     );
     _bookedChildController = TextEditingController(
-      text: isAttraction ? '0' : (offer?.bookedChild.toString() ?? '0'),
+      text: usesPersonPricing ? '0' : (offer?.bookedChild.toString() ?? '0'),
     );
     _statusController = TextEditingController(text: offer?.status ?? 'active');
     _titleController = TextEditingController(
@@ -261,6 +280,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
                   ),
                 ],
                 _textField(_currencyController, 'Currency'),
+                if (_isAttraction) _guestPricingModeDropdown(),
                 if (!_usesAttractionPackages) _statusDropdown(),
               ],
             ),
@@ -274,7 +294,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
               title: 'Pricing',
               child: Column(
                 children: [
-                  if (_isAttraction) ...[
+                  if (_usesPersonPricing) ...[
                     _numberField(_priceAdultController, 'Price Per Person'),
                     _numberField(
                       _priceAdultOriginalController,
@@ -296,7 +316,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
               title: 'Capacity',
               child: Column(
                 children: [
-                  if (_isAttraction) ...[
+                  if (_usesPersonPricing) ...[
                     _intField(_capacityAdultController, 'Capacity Persons'),
                     _intField(_bookedAdultController, 'Booked Persons'),
                   ] else ...[
@@ -427,6 +447,33 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         onChanged: (value) => setState(() => _venueId = value),
         validator: (value) =>
             (value == null || value.isEmpty) ? 'Required' : null,
+      ),
+    );
+  }
+
+  Widget _guestPricingModeDropdown() {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 18.h),
+      child: DropdownButtonFormField<String>(
+        initialValue: _guestPricingMode,
+        decoration: adminInputDecoration('Guest Pricing Mode'),
+        items: const [
+          DropdownMenuItem(
+            value: guestPricingModePerson,
+            child: Text('Person'),
+          ),
+          DropdownMenuItem(
+            value: guestPricingModeAdultsChildren,
+            child: Text('Adults + Children'),
+          ),
+        ],
+        onChanged: (value) {
+          if (value == null || value == _guestPricingMode) return;
+          setState(() {
+            _guestPricingMode = value;
+            _syncGuestPricingModeFields();
+          });
+        },
       ),
     );
   }
@@ -565,13 +612,26 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
             minLines: 3,
             required: false,
           ),
-          _numberField(package.priceAdultController, 'Price Per Person'),
-          _numberField(
-            package.priceAdultOriginalController,
-            'Original Price Per Person',
-          ),
-          _intField(package.capacityAdultController, 'Capacity Persons'),
-          _intField(package.bookedAdultController, 'Booked Persons'),
+          if (_usesPersonPricing) ...[
+            _numberField(package.priceAdultController, 'Price Per Person'),
+            _numberField(
+              package.priceAdultOriginalController,
+              'Original Price Per Person',
+            ),
+            _intField(package.capacityAdultController, 'Capacity Persons'),
+            _intField(package.bookedAdultController, 'Booked Persons'),
+          ] else ...[
+            _numberField(package.priceAdultController, 'Price Adult'),
+            _numberField(
+              package.priceAdultOriginalController,
+              'Price Adult Original',
+            ),
+            _numberField(package.priceChildController, 'Price Child'),
+            _intField(package.capacityAdultController, 'Capacity Adult'),
+            _intField(package.capacityChildController, 'Capacity Child'),
+            _intField(package.bookedAdultController, 'Booked Adult'),
+            _intField(package.bookedChildController, 'Booked Child'),
+          ],
           Padding(
             padding: EdgeInsets.only(bottom: 18.h),
             child: DropdownButtonFormField<String>(
@@ -902,7 +962,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
   void _syncChildPriceFromAdult() {
     if (_syncingChildPrice) return;
-    if (_isAttraction) {
+    if (_usesPersonPricing) {
       if (_priceChildController.text.trim() == '0') return;
       _syncingChildPrice = true;
       _priceChildController.text = '0';
@@ -946,8 +1006,11 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       packageDescriptionAr: '',
       priceAdult: '',
       priceAdultOriginal: '',
+      priceChild: _usesPersonPricing ? '0' : '',
       capacityAdult: '',
+      capacityChild: _usesPersonPricing ? '0' : '',
       bookedAdult: '0',
+      bookedChild: '0',
       status: 'active',
       entryConditions: '',
       entryConditionsAr: '',
@@ -958,18 +1021,22 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     required String previousCategory,
     required String nextCategory,
   }) {
+    if (nextCategory == 'set_menu') {
+      _guestPricingMode = guestPricingModePerson;
+      _syncGuestPricingModeFields();
+      return;
+    }
+
     if (nextCategory == 'attraction') {
-      _syncingChildPrice = true;
-      _priceChildController.text = '0';
-      _syncingChildPrice = false;
-      _capacityChildController.text = '0';
-      _bookedChildController.text = '0';
+      _guestPricingMode = guestPricingModePerson;
+      _syncGuestPricingModeFields();
       if (!_isEdit && _attractionPackages.isEmpty) {
         _attractionPackages.add(_createAttractionPackageDraft());
       }
       return;
     }
 
+    _guestPricingMode = guestPricingModeAdultsChildren;
     if (previousCategory == 'attraction') {
       for (final package in _attractionPackages) {
         package.dispose();
@@ -978,8 +1045,51 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       _priceChildController.clear();
       _capacityChildController.text = '0';
       _bookedChildController.text = '0';
-      _syncChildPriceFromAdult();
     }
+    _syncGuestPricingModeFields();
+  }
+
+  void _syncGuestPricingModeFields() {
+    if (_usesPersonPricing) {
+      final totalCapacity =
+          (int.tryParse(_capacityAdultController.text.trim()) ?? 0) +
+          (int.tryParse(_capacityChildController.text.trim()) ?? 0);
+      final totalBooked =
+          (int.tryParse(_bookedAdultController.text.trim()) ?? 0) +
+          (int.tryParse(_bookedChildController.text.trim()) ?? 0);
+      _capacityAdultController.text =
+          totalCapacity == 0 &&
+              _capacityAdultController.text.trim().isEmpty &&
+              _capacityChildController.text.trim().isEmpty
+          ? ''
+          : totalCapacity.toString();
+      _bookedAdultController.text = totalBooked.toString();
+      _syncingChildPrice = true;
+      _priceChildController.text = '0';
+      _syncingChildPrice = false;
+      _capacityChildController.text = '0';
+      _bookedChildController.text = '0';
+      for (final package in _attractionPackages) {
+        final packageTotalCapacity =
+            (int.tryParse(package.capacityAdultController.text.trim()) ?? 0) +
+            (int.tryParse(package.capacityChildController.text.trim()) ?? 0);
+        final packageTotalBooked =
+            (int.tryParse(package.bookedAdultController.text.trim()) ?? 0) +
+            (int.tryParse(package.bookedChildController.text.trim()) ?? 0);
+        package.capacityAdultController.text =
+            packageTotalCapacity == 0 &&
+                package.capacityAdultController.text.trim().isEmpty &&
+                package.capacityChildController.text.trim().isEmpty
+            ? ''
+            : packageTotalCapacity.toString();
+        package.bookedAdultController.text = packageTotalBooked.toString();
+        package.priceChildController.text = '0';
+        package.capacityChildController.text = '0';
+        package.bookedChildController.text = '0';
+      }
+      return;
+    }
+    _syncChildPriceFromAdult();
   }
 
   void _syncSelectedVenue() {
@@ -1153,13 +1263,30 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   String? _attractionPackagesCountError() {
     for (var index = 0; index < _attractionPackages.length; index++) {
       final package = _attractionPackages[index];
-      final capacity = int.tryParse(
+      final adultCapacity = int.tryParse(
         package.capacityAdultController.text.trim(),
       );
-      final booked = int.tryParse(package.bookedAdultController.text.trim());
-      if (capacity == null || booked == null) continue;
-      if (booked > capacity) {
-        return 'Booked persons cannot exceed capacity in package ${index + 1}.';
+      final adultBooked = int.tryParse(
+        package.bookedAdultController.text.trim(),
+      );
+      if (adultCapacity != null &&
+          adultBooked != null &&
+          adultBooked > adultCapacity) {
+        return _usesPersonPricing
+            ? 'Booked persons cannot exceed capacity in package ${index + 1}.'
+            : 'Booked adult cannot exceed adult capacity in package ${index + 1}.';
+      }
+      if (_usesPersonPricing) continue;
+      final childCapacity = int.tryParse(
+        package.capacityChildController.text.trim(),
+      );
+      final childBooked = int.tryParse(
+        package.bookedChildController.text.trim(),
+      );
+      if (childCapacity != null &&
+          childBooked != null &&
+          childBooked > childCapacity) {
+        return 'Booked child cannot exceed child capacity in package ${index + 1}.';
       }
     }
     return null;
@@ -1195,6 +1322,9 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     final currency = _currencyController.text.trim();
     final bookingCategory = _category;
     final bookableType = _isAttraction ? 'attraction' : 'restaurant';
+    final guestPricingMode = _usesPersonPricing
+        ? guestPricingModePerson
+        : guestPricingModeAdultsChildren;
 
     Object? result;
 
@@ -1231,21 +1361,22 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         updatedAt: now,
         bookingCategory: bookingCategory,
         bookableType: bookableType,
+        guestPricingMode: guestPricingMode,
       );
     } else {
       final priceAdult = double.parse(_priceAdultController.text.trim());
       final priceAdultOriginal = double.parse(
         _priceAdultOriginalController.text.trim(),
       );
-      final priceChild = _isAttraction
+      final priceChild = _usesPersonPricing
           ? 0.0
           : double.parse(_priceChildController.text.trim());
       final capacityAdult = int.parse(_capacityAdultController.text.trim());
-      final capacityChild = _isAttraction
+      final capacityChild = _usesPersonPricing
           ? 0
           : int.parse(_capacityChildController.text.trim());
       final bookedAdult = int.parse(_bookedAdultController.text.trim());
-      final bookedChild = _isAttraction
+      final bookedChild = _usesPersonPricing
           ? 0
           : int.parse(_bookedChildController.text.trim());
       final countError = _singleOfferCountError(
@@ -1312,6 +1443,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           updatedAt: now,
           bookingCategory: bookingCategory,
           bookableType: bookableType,
+          guestPricingMode: guestPricingMode,
           mealType: mealType,
           packageName: packageName,
           packageDescription: packageDescription,
@@ -1356,6 +1488,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           updatedAt: now,
           bookingCategory: bookingCategory,
           bookableType: bookableType,
+          guestPricingMode: guestPricingMode,
           mealType: mealType,
           packageName: packageName,
           packageNameAr: packageNameAr,
@@ -1392,6 +1525,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     required DateTime updatedAt,
     required String bookingCategory,
     required String bookableType,
+    required String guestPricingMode,
   }) {
     final offers = <OfferEntity>[];
     for (final package in _attractionPackages) {
@@ -1408,11 +1542,17 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           priceAdultOriginal: double.parse(
             package.priceAdultOriginalController.text.trim(),
           ),
-          priceChild: 0,
+          priceChild: _usesPersonPricing
+              ? 0
+              : double.parse(package.priceChildController.text.trim()),
           capacityAdult: int.parse(package.capacityAdultController.text.trim()),
-          capacityChild: 0,
+          capacityChild: _usesPersonPricing
+              ? 0
+              : int.parse(package.capacityChildController.text.trim()),
           bookedAdult: int.parse(package.bookedAdultController.text.trim()),
-          bookedChild: 0,
+          bookedChild: _usesPersonPricing
+              ? 0
+              : int.parse(package.bookedChildController.text.trim()),
           status: package.status,
           title: packageName,
           titleAr: packageNameAr,
@@ -1422,6 +1562,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           updatedAt: updatedAt,
           bookingCategory: bookingCategory,
           bookableType: bookableType,
+          guestPricingMode: guestPricingMode,
           mealType: '',
           packageName: packageName,
           packageNameAr: packageNameAr,
@@ -1456,6 +1597,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     required DateTime updatedAt,
     required String bookingCategory,
     required String bookableType,
+    required String guestPricingMode,
     required String mealType,
     required String packageName,
     required String packageNameAr,
@@ -1495,6 +1637,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           updatedAt: updatedAt,
           bookingCategory: bookingCategory,
           bookableType: bookableType,
+          guestPricingMode: guestPricingMode,
           mealType: mealType,
           packageName: packageName,
           packageDescription: packageDescription,
@@ -1521,8 +1664,11 @@ class _AttractionPackageDraft {
     required String packageDescriptionAr,
     required String priceAdult,
     required String priceAdultOriginal,
+    required String priceChild,
     required String capacityAdult,
+    required String capacityChild,
     required String bookedAdult,
+    required String bookedChild,
     required this.status,
     required String entryConditions,
     required String entryConditionsAr,
@@ -1538,8 +1684,11 @@ class _AttractionPackageDraft {
        priceAdultOriginalController = TextEditingController(
          text: priceAdultOriginal,
        ),
+       priceChildController = TextEditingController(text: priceChild),
        capacityAdultController = TextEditingController(text: capacityAdult),
+       capacityChildController = TextEditingController(text: capacityChild),
        bookedAdultController = TextEditingController(text: bookedAdult),
+       bookedChildController = TextEditingController(text: bookedChild),
        entryConditionsController = TextEditingController(text: entryConditions),
        entryConditionsArController = TextEditingController(
          text: entryConditionsAr,
@@ -1551,8 +1700,11 @@ class _AttractionPackageDraft {
   final TextEditingController packageDescriptionArController;
   final TextEditingController priceAdultController;
   final TextEditingController priceAdultOriginalController;
+  final TextEditingController priceChildController;
   final TextEditingController capacityAdultController;
+  final TextEditingController capacityChildController;
   final TextEditingController bookedAdultController;
+  final TextEditingController bookedChildController;
   final TextEditingController entryConditionsController;
   final TextEditingController entryConditionsArController;
   String status;
@@ -1580,8 +1732,11 @@ class _AttractionPackageDraft {
     packageDescriptionArController.dispose();
     priceAdultController.dispose();
     priceAdultOriginalController.dispose();
+    priceChildController.dispose();
     capacityAdultController.dispose();
+    capacityChildController.dispose();
     bookedAdultController.dispose();
+    bookedChildController.dispose();
     entryConditionsController.dispose();
     entryConditionsArController.dispose();
   }

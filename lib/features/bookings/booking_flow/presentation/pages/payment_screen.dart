@@ -139,7 +139,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         // pKey:'HGvTMLDssJghr9tlN9gr4DVYt0qyBy',
         api: ThawaniConfig.apiKey,
         pKey: ThawaniConfig.publishableApiKey,
-        testMode:   true,
+        testMode: true,
         successUrl: 'joodapp://success',
         cancelUrl: 'joodapp://cancel',
         metadata: {
@@ -330,6 +330,10 @@ class _PaymentScreenState extends State<PaymentScreen>
                                   guestsLabel: buildGuestsLabel(
                                     state.adultCount,
                                     state.childCount,
+                                    guestPricingMode:
+                                        selectedOffer?.guestPricingMode ?? '',
+                                    bookingCategory:
+                                        selectedOffer?.bookingCategory ?? '',
                                     bookableType:
                                         selectedOffer?.bookableType ?? '',
                                   ),

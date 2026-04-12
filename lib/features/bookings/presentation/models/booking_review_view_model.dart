@@ -13,6 +13,8 @@ class BookingReviewViewModel {
     required this.adults,
     required this.children,
     required this.status,
+    required this.bookableType,
+    required this.guestPricingMode,
     required this.pricing,
   });
 
@@ -27,6 +29,8 @@ class BookingReviewViewModel {
   final int adults;
   final int children;
   final String status;
+  final String bookableType;
+  final String guestPricingMode;
   final BookingPricing pricing;
 
   factory BookingReviewViewModel.fromValues({
@@ -39,6 +43,8 @@ class BookingReviewViewModel {
     required int adults,
     required int children,
     required String status,
+    required String bookableType,
+    required String guestPricingMode,
     required double subtotal,
     required double tax,
     required double total,
@@ -58,6 +64,8 @@ class BookingReviewViewModel {
       adults: adults,
       children: children,
       status: status,
+      bookableType: bookableType.trim(),
+      guestPricingMode: guestPricingMode.trim(),
       pricing: BookingPricing(subtotal: subtotal, tax: tax, total: total),
     );
   }
@@ -78,6 +86,8 @@ class BookingReviewViewModel {
       adults: adults,
       children: children,
       status: status,
+      bookableType: bookableType,
+      guestPricingMode: guestPricingMode,
       pricing: pricing,
     );
   }

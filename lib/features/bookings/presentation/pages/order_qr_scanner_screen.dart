@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/utils/guest_pricing_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -73,6 +74,8 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
             startTime: bookingView.startTime,
             adults: bookingView.adults,
             children: bookingView.children,
+            bookableType: bookingView.bookableType,
+            guestPricingMode: bookingView.guestPricingMode,
             subtotal: bookingView.pricing.subtotal,
             tax: bookingView.pricing.tax,
             total: bookingView.pricing.total,
@@ -153,6 +156,8 @@ class _BookingReviewSheet extends StatelessWidget {
     required this.startTime,
     required this.adults,
     required this.children,
+    required this.bookableType,
+    required this.guestPricingMode,
     required this.subtotal,
     required this.tax,
     required this.total,
@@ -166,6 +171,8 @@ class _BookingReviewSheet extends StatelessWidget {
   final String startTime;
   final int adults;
   final int children;
+  final String bookableType;
+  final String guestPricingMode;
   final double subtotal;
   final double tax;
   final double total;
@@ -194,7 +201,12 @@ class _BookingReviewSheet extends StatelessWidget {
               _line(AppStrings.time, startTime),
               _line(
                 AppStrings.guests,
-                AppStrings.guestsSummary(adults, children),
+                buildGuestsLabel(
+                  adults,
+                  children,
+                  guestPricingMode: guestPricingMode,
+                  bookableType: bookableType,
+                ),
               ),
               _line(AppStrings.subtotal, subtotal.toStringAsFixed(1)),
               _line(AppStrings.vat, tax.toStringAsFixed(1)),

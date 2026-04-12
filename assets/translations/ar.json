@@ -305,7 +305,7 @@
   "no_meals_available_for_date": "لا توجد وجبات متاحة لهذا التاريخ.",
   "choose_set_menu": "اختر القائمة المحددة",
   "choose_meal_type": "اختر نوع الوجبة",
-  "set_menu_option_pricing_subtitle": "قد يحمل كل خيار من خيارات القائمة المحددة سعراً مختلفاً للبالغين والأطفال.",
+  "set_menu_option_pricing_subtitle": "يتم تسعير كل خيار من خيارات القائمة المحددة على أساس سعر لكل شخص.",
   "meal_type_booking_subtitle": "اختر الوجبة التي تريد حجزها للتاريخ المحدد.",
   "no_time_slots_available_for_date": "لا توجد أوقات متاحة لهذا التاريخ.",
   "select_time": "اختر الوقت",
@@ -476,4 +476,3 @@
     "يمنع إدخال الطعام من الخارج"
   ]
 }
-

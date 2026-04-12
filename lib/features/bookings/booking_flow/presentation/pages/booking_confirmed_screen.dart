@@ -69,6 +69,8 @@ class BookingConfirmedScreen extends StatelessWidget {
           guestsLabel: buildGuestsLabel(
             state.adultCount,
             state.childCount,
+            guestPricingMode: selectedOffer?.guestPricingMode ?? '',
+            bookingCategory: selectedOffer?.bookingCategory ?? '',
             bookableType: selectedOffer?.bookableType ?? '',
           ),
           resolvedBookingCode: resolvedBookingCode,

@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/utils/guest_pricing_utils.dart' as guest_pricing;
+
 class OfferEntity extends Equatable {
   const OfferEntity({
     required this.id,
@@ -22,6 +24,7 @@ class OfferEntity extends Equatable {
     required this.updatedAt,
     this.bookingCategory = '',
     this.bookableType = 'restaurant',
+    this.guestPricingMode = '',
     this.mealType = '',
     this.packageName = '',
     this.packageDescription = '',
@@ -55,6 +58,7 @@ class OfferEntity extends Equatable {
   final DateTime updatedAt;
   final String bookingCategory;
   final String bookableType;
+  final String guestPricingMode;
   final String mealType;
   final String packageName;
   final String packageDescription;
@@ -69,6 +73,17 @@ class OfferEntity extends Equatable {
 
   int get remainingAdult => capacityAdult - bookedAdult;
   int get remainingChild => capacityChild - bookedChild;
+  String get resolvedGuestPricingMode =>
+      guest_pricing.normalizeGuestPricingMode(
+        guestPricingMode,
+        bookingCategory: bookingCategory,
+        bookableType: bookableType,
+      );
+  bool get usesUnifiedGuestCount => guest_pricing.usesUnifiedGuestCount(
+    guestPricingMode: guestPricingMode,
+    bookingCategory: bookingCategory,
+    bookableType: bookableType,
+  );
 
   @override
   List<Object?> get props => [
@@ -92,6 +107,7 @@ class OfferEntity extends Equatable {
     updatedAt,
     bookingCategory,
     bookableType,
+    guestPricingMode,
     mealType,
     packageName,
     packageDescription,

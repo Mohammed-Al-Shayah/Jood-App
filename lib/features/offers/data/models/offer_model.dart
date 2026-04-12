@@ -27,6 +27,7 @@ class OfferModel extends OfferEntity {
     required super.updatedAt,
     super.bookingCategory,
     super.bookableType,
+    super.guestPricingMode,
     super.mealType,
     super.packageName,
     super.packageDescription,
@@ -77,6 +78,7 @@ class OfferModel extends OfferEntity {
       updatedAt: _toDateTime(data['updatedAt']),
       bookingCategory: data['bookingCategory'] as String? ?? '',
       bookableType: data['bookableType'] as String? ?? 'restaurant',
+      guestPricingMode: data['guestPricingMode'] as String? ?? '',
       mealType: data['mealType'] as String? ?? '',
       packageName: resolveLocalizedText(
         english: packageNameEn,
@@ -118,6 +120,7 @@ class OfferModel extends OfferEntity {
       'entryConditionsAr': _cleanList(entryConditionsAr),
       'bookingCategory': bookingCategory,
       'bookableType': bookableType,
+      'guestPricingMode': resolvedGuestPricingMode,
       'mealType': mealType,
       'packageName': _baseText(packageNameEn, packageName),
       'packageNameAr': packageNameAr.trim(),

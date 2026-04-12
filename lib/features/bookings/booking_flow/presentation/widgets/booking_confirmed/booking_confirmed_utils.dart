@@ -1,19 +1,17 @@
-import 'package:jood/core/utils/app_strings.dart';
-
-bool usesUnifiedGuestCount(String bookableType) {
-  return bookableType.trim().toLowerCase() == 'attraction';
-}
+import 'package:jood/core/utils/guest_pricing_utils.dart' as guest_pricing;
 
 String buildGuestsLabel(
   int adultsCount,
   int childrenCount, {
+  String guestPricingMode = '',
+  String bookingCategory = '',
   String bookableType = '',
 }) {
-  if (usesUnifiedGuestCount(bookableType)) {
-    return AppStrings.guestsCountLabel(adultsCount + childrenCount);
-  }
-  if (childrenCount > 0) {
-    return '${AppStrings.adultsCountLabel(adultsCount)} | ${AppStrings.childrenCountLabel(childrenCount)}';
-  }
-  return AppStrings.adultsCountLabel(adultsCount);
+  return guest_pricing.buildGuestsLabel(
+    adultsCount,
+    childrenCount,
+    guestPricingMode: guestPricingMode,
+    bookingCategory: bookingCategory,
+    bookableType: bookableType,
+  );
 }

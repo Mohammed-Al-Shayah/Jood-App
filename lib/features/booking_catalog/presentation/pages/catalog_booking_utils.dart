@@ -1,4 +1,4 @@
-﻿import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
 
 import '../../../offers/domain/entities/offer_entity.dart';
@@ -258,7 +258,7 @@ String headerTitle(CatalogCategoryType category) {
 }
 
 String _secondaryPriceLabel(OfferEntity offer) {
-  if (offer.bookableType.trim().toLowerCase() == 'attraction') {
+  if (offer.usesUnifiedGuestCount) {
     return '';
   }
   return AppStrings.childPrice(
@@ -392,4 +392,3 @@ T? firstWhereOrNull<T>(Iterable<T> values, bool Function(T item) test) {
   }
   return null;
 }
-

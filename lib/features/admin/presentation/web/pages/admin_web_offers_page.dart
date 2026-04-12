@@ -815,7 +815,7 @@ class _OffersTable extends StatelessWidget {
 
   String _priceLabel(OfferEntity offer) {
     final amount = '${offer.currency} ${offer.priceAdult.toStringAsFixed(1)}';
-    if (offer.bookableType.trim().toLowerCase() == 'attraction') {
+    if (offer.usesUnifiedGuestCount) {
       return '$amount / person';
     }
     return '$amount / ${offer.priceChild.toStringAsFixed(1)}';
@@ -830,7 +830,7 @@ class _OffersTable extends StatelessWidget {
   }
 
   String _remainingLabel(OfferEntity offer) {
-    if (offer.bookableType.trim().toLowerCase() == 'attraction') {
+    if (offer.usesUnifiedGuestCount) {
       final remaining = offer.remainingAdult + offer.remainingChild;
       return '$remaining persons';
     }

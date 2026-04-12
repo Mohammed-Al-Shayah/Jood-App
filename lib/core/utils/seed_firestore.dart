@@ -1,11 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'date_utils.dart';
+import 'guest_pricing_utils.dart';
 
 class SeedFirestore {
   const SeedFirestore._();
 
-  static const String _seedDocId = 'demo_v7_catalog';
+  static const String _seedDocId = 'demo_v8_catalog';
 
   static Future<void> ensureSeeded() async {
     if (!kDebugMode) return;
@@ -250,6 +251,7 @@ class SeedFirestore {
           ],
           'notes': [
             'Children under 2 are not permitted on dune bashing.',
+            'More than one package can be available for the same time slot.',
             'Packages can vary by selected time slot.',
           ],
         },
@@ -292,6 +294,7 @@ class SeedFirestore {
             'Premium Upper Deck: best view with upgraded service.',
           ],
           'notes': [
+            'Each sailing can include multiple package options.',
             'Some premium packages are available only on selected sailings.',
           ],
         },
@@ -385,6 +388,7 @@ class SeedFirestore {
             'title': time['title'],
             'bookableType': 'restaurant',
             'bookingCategory': 'buffet',
+            'guestPricingMode': guestPricingModeAdultsChildren,
             'mealType': _mealTypeForBaseOfferIndex(tIndex),
             'packageName': '',
             'packageDescription': '',
@@ -433,6 +437,7 @@ class SeedFirestore {
           'title': 'Brunch',
           'bookableType': 'restaurant',
           'bookingCategory': 'buffet',
+          'guestPricingMode': guestPricingModeAdultsChildren,
           'mealType': 'brunch',
           'packageName': '',
           'packageDescription': '',
@@ -500,7 +505,6 @@ class SeedFirestore {
           }
           final option = setMenuOptions[optionIndex];
           final adultPrice = basePrice + (option['delta'] as double) + dayIndex;
-          final childPrice = adultPrice * 0.55;
           final soldOut =
               restaurantId == 'demo_restaurant_3' &&
               dayIndex == 5 &&
@@ -510,6 +514,16 @@ class SeedFirestore {
               restaurantId == 'demo_restaurant_2' &&
               dayIndex == 2 &&
               option['mealType'] == 'lunch';
+          final bookedAdultsBase = soldOut
+              ? 16
+              : low
+              ? 14
+              : 4 + optionIndex;
+          final bookedChildrenBase = soldOut
+              ? 8
+              : low
+              ? 7
+              : 2 + (dayIndex % 2);
           final offerRef = firestore
               .collection('offers')
               .doc(
@@ -528,7 +542,7 @@ class SeedFirestore {
             'currency': 'OMR',
             'priceAdult': adultPrice,
             'priceAdultOriginal': adultPrice + 16,
-            'priceChild': childPrice,
+            'priceChild': 0.0,
             'time': option['start'],
             'price': 'OMR ${adultPrice.toStringAsFixed(1)}',
             'status': soldOut
@@ -536,21 +550,14 @@ class SeedFirestore {
                 : low
                 ? 'low'
                 : 'active',
-            'capacityAdult': 16,
-            'capacityChild': 8,
-            'bookedAdult': soldOut
-                ? 16
-                : low
-                ? 14
-                : 4 + optionIndex,
-            'bookedChild': soldOut
-                ? 8
-                : low
-                ? 7
-                : 2 + (dayIndex % 2),
+            'capacityAdult': 24,
+            'capacityChild': 0,
+            'bookedAdult': bookedAdultsBase + bookedChildrenBase,
+            'bookedChild': 0,
             'title': '${_titleize(option['mealType'] as String)} Set Menu',
             'bookableType': 'restaurant',
             'bookingCategory': 'set_menu',
+            'guestPricingMode': guestPricingModePerson,
             'mealType': option['mealType'],
             'packageName': '',
             'packageDescription': '',
@@ -588,6 +595,15 @@ class SeedFirestore {
               'capacityAdult': 10,
               'capacityChild': 6,
             },
+            {
+              'name': 'Adventure Plus',
+              'description':
+                  'Premium desert activities with upgraded dinner setup.',
+              'adultBase': 49.0,
+              'childBase': 28.0,
+              'capacityAdult': 12,
+              'capacityChild': 8,
+            },
           ],
         },
         {
@@ -610,6 +626,15 @@ class SeedFirestore {
               'childBase': 27.0,
               'capacityAdult': 10,
               'capacityChild': 6,
+            },
+            {
+              'name': 'Standard Camp',
+              'description':
+                  'Shared camp seating with dinner and core activities.',
+              'adultBase': 36.0,
+              'childBase': 20.0,
+              'capacityAdult': 18,
+              'capacityChild': 10,
             },
           ],
         },
@@ -635,6 +660,15 @@ class SeedFirestore {
               'capacityAdult': 14,
               'capacityChild': 8,
             },
+            {
+              'name': 'Premium Upper Deck',
+              'description':
+                  'Upper-deck lounge seating with best skyline views.',
+              'adultBase': 33.0,
+              'childBase': 19.0,
+              'capacityAdult': 10,
+              'capacityChild': 6,
+            },
           ],
         },
         {
@@ -657,6 +691,14 @@ class SeedFirestore {
               'childBase': 20.0,
               'capacityAdult': 8,
               'capacityChild': 4,
+            },
+            {
+              'name': 'Window Dining',
+              'description': 'Cruise with dinner seating by the glass windows.',
+              'adultBase': 31.0,
+              'childBase': 18.0,
+              'capacityAdult': 12,
+              'capacityChild': 8,
             },
           ],
         },
@@ -688,10 +730,36 @@ class SeedFirestore {
                 dayIndex == 2 &&
                 slotIndex == 0 &&
                 packageIndex == 1;
+            final guestPricingMode = attractionId == 'demo_attraction_1'
+                ? guestPricingModePerson
+                : guestPricingModeAdultsChildren;
+            final usesPersonPricing =
+                guestPricingMode == guestPricingModePerson;
             final adultPrice =
                 (package['adultBase'] as double) + dayIndex + (slotIndex * 2);
-            final childPrice =
-                (package['childBase'] as double) + (dayIndex * 0.5);
+            final childPrice = usesPersonPricing
+                ? 0.0
+                : (package['childBase'] as double) + (dayIndex * 0.5);
+            final rawCapacityAdult = package['capacityAdult'] as int;
+            final rawCapacityChild = package['capacityChild'] as int;
+            final bookedAdultBase = soldOut
+                ? rawCapacityAdult
+                : low
+                ? rawCapacityAdult - 2
+                : 3 + dayIndex;
+            final bookedChildBase = soldOut
+                ? rawCapacityChild
+                : low
+                ? rawCapacityChild - 1
+                : 1 + packageIndex;
+            final capacityAdult = usesPersonPricing
+                ? rawCapacityAdult + rawCapacityChild
+                : rawCapacityAdult;
+            final capacityChild = usesPersonPricing ? 0 : rawCapacityChild;
+            final bookedAdult = usesPersonPricing
+                ? bookedAdultBase + bookedChildBase
+                : bookedAdultBase;
+            final bookedChild = usesPersonPricing ? 0 : bookedChildBase;
             final offerRef = firestore
                 .collection('offers')
                 .doc(
@@ -718,21 +786,14 @@ class SeedFirestore {
                   : low
                   ? 'low'
                   : 'active',
-              'capacityAdult': package['capacityAdult'],
-              'capacityChild': package['capacityChild'],
-              'bookedAdult': soldOut
-                  ? package['capacityAdult']
-                  : low
-                  ? (package['capacityAdult'] as int) - 2
-                  : 3 + dayIndex,
-              'bookedChild': soldOut
-                  ? package['capacityChild']
-                  : low
-                  ? (package['capacityChild'] as int) - 1
-                  : 1 + packageIndex,
+              'capacityAdult': capacityAdult,
+              'capacityChild': capacityChild,
+              'bookedAdult': bookedAdult,
+              'bookedChild': bookedChild,
               'title': package['name'],
               'bookableType': 'attraction',
               'bookingCategory': 'attraction',
+              'guestPricingMode': guestPricingMode,
               'mealType': '',
               'packageName': package['name'],
               'packageDescription': package['description'],
@@ -794,6 +855,7 @@ class SeedFirestore {
         'children': 1,
         'code': 'BKG1769509734255',
         'bookableType': 'restaurant',
+        'guestPricingMode': guestPricingModeAdultsChildren,
         'offerTitleSnapshot': 'Lunch Entry',
       },
       {
@@ -806,6 +868,7 @@ class SeedFirestore {
         'children': 0,
         'code': 'BKG1769509735001',
         'bookableType': 'restaurant',
+        'guestPricingMode': guestPricingModeAdultsChildren,
         'offerTitleSnapshot': 'Dinner Entry',
       },
       {
@@ -818,6 +881,7 @@ class SeedFirestore {
         'children': 2,
         'code': 'BKG1769509737001',
         'bookableType': 'restaurant',
+        'guestPricingMode': guestPricingModeAdultsChildren,
         'offerTitleSnapshot': 'Breakfast Entry',
       },
       {
@@ -833,12 +897,13 @@ class SeedFirestore {
         ),
         'startTime': '15:00',
         'endTime': '21:00',
-        'adults': 2,
-        'children': 1,
+        'adults': 3,
+        'children': 0,
         'unitPriceAdult': 45.0,
-        'unitPriceChild': 26.0,
+        'unitPriceChild': 0.0,
         'code': 'BKG1769509738999',
         'bookableType': 'attraction',
+        'guestPricingMode': guestPricingModePerson,
         'restaurantNameSnapshot': 'Desert Safari Escape',
         'coverImageUrlSnapshot':
             'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
@@ -895,6 +960,7 @@ class SeedFirestore {
         'offerTitleSnapshot':
             booking['offerTitleSnapshot'] ?? time?['title'] ?? '',
         'bookableType': booking['bookableType'] ?? 'restaurant',
+        'guestPricingMode': booking['guestPricingMode'],
         'coverImageUrlSnapshot':
             booking['coverImageUrlSnapshot'] ??
             _coverForVenueId(restaurantId, restaurants, attractions),
@@ -955,10 +1021,10 @@ class SeedFirestore {
             },
             'setMenu': {
               'description':
-                  'A curated set menu with separate adult and child pricing by meal period.',
+                  'A curated set menu with one price per guest by meal period.',
               'included': [
                 'Starter, main, and dessert',
-                'Set menu pricing only',
+                'Set menu pricing per person',
               ],
               'notes': [
                 'Guests will choose the actual dishes after this booking step.',
@@ -1000,8 +1066,8 @@ class SeedFirestore {
             },
             'setMenu': {
               'description':
-                  'Grill-driven set menu with different pricing across breakfast, lunch, and dinner.',
-              'included': ['Fixed grill menu', 'Separate child pricing'],
+                  'Grill-driven set menu with a per-person rate that changes across breakfast, lunch, and dinner.',
+              'included': ['Fixed grill menu', 'One per-person set menu rate'],
               'notes': [
                 'Some breakfast set menu dates are intentionally unavailable for testing.',
               ],

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/utils/app_strings.dart';
+import '../../../../core/utils/guest_pricing_utils.dart';
 import '../../domain/services/booking_order_policy.dart';
 import '../../domain/services/booking_redemption_policy.dart';
 import '../models/booking_model.dart';
@@ -44,6 +45,11 @@ class BookingRemoteDataSource {
       final bookableType = (data['bookableType'] as String? ?? 'restaurant')
           .trim()
           .toLowerCase();
+      final guestPricingMode = normalizeGuestPricingMode(
+        data['guestPricingMode'] as String?,
+        bookingCategory: data['bookingCategory'] as String? ?? '',
+        bookableType: bookableType,
+      );
 
       final capacityAdult = (data['capacityAdult'] as num?)?.toInt() ?? 0;
       final capacityChild = (data['capacityChild'] as num?)?.toInt() ?? 0;
@@ -117,6 +123,7 @@ class BookingRemoteDataSource {
         'restaurantNameSnapshot': restaurantNameSnapshot,
         'offerTitleSnapshot': offerTitle,
         'bookableType': bookableType,
+        'guestPricingMode': guestPricingMode,
         'coverImageUrlSnapshot': coverImageUrlSnapshot,
         'createdAt': FieldValue.serverTimestamp(),
         'paidAt': FieldValue.serverTimestamp(),
@@ -149,6 +156,7 @@ class BookingRemoteDataSource {
         restaurantNameSnapshot: restaurantNameSnapshot,
         offerTitleSnapshot: offerTitle,
         bookableType: bookableType,
+        guestPricingMode: guestPricingMode,
         coverImageUrlSnapshot: coverImageUrlSnapshot,
       );
     });

@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
+import '../../../../core/utils/guest_pricing_utils.dart';
 import '../../../../core/utils/payment_amount_utils.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/bottom_cta_bar.dart';
@@ -35,10 +36,13 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
   static const int _absoluteGuestCap = 99;
 
   bool _usesUnifiedGuestCount(OfferEntity? offer) {
-    if (widget.item.category == CatalogCategoryType.attraction) {
-      return true;
-    }
-    return offer?.bookableType.trim().toLowerCase() == 'attraction';
+    if (offer != null) return offer.usesUnifiedGuestCount;
+    return usesUnifiedGuestCount(
+      bookingCategory: widget.item.category.routeKey,
+      bookableType: widget.item.category == CatalogCategoryType.attraction
+          ? 'attraction'
+          : 'restaurant',
+    );
   }
 
   @override

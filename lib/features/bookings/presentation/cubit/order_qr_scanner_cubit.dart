@@ -175,6 +175,8 @@ class OrderQrScannerCubit extends Cubit<OrderQrScannerState> {
       adults: booking.adults,
       children: booking.children,
       status: booking.status,
+      bookableType: booking.bookableType ?? '',
+      guestPricingMode: booking.guestPricingMode ?? '',
       subtotal: booking.subtotal,
       tax: booking.tax,
       total: booking.total,

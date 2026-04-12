@@ -573,16 +573,24 @@ class _OrderCard extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 10.h),
-              _DetailRow(
-                label: AppStrings.adults,
-                value:
-                    '${order.adults} x ${formatCurrency(order.currency, order.unitPriceAdult)}',
-              ),
-              _DetailRow(
-                label: AppStrings.children,
-                value:
-                    '${order.children} x ${formatCurrency(order.currency, order.unitPriceChild)}',
-              ),
+              if (order.usesUnifiedGuestCount)
+                _DetailRow(
+                  label: AppStrings.guests,
+                  value:
+                      '${order.adults + order.children} x ${formatCurrency(order.currency, order.unitPriceAdult)}',
+                )
+              else ...[
+                _DetailRow(
+                  label: AppStrings.adults,
+                  value:
+                      '${order.adults} x ${formatCurrency(order.currency, order.unitPriceAdult)}',
+                ),
+                _DetailRow(
+                  label: AppStrings.children,
+                  value:
+                      '${order.children} x ${formatCurrency(order.currency, order.unitPriceChild)}',
+                ),
+              ],
               _DetailRow(
                 label: AppStrings.subtotal,
                 value: formatCurrency(order.currency, order.subtotal),

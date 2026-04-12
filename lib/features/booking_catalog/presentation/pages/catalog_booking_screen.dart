@@ -88,21 +88,24 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
                   SizedBox(height: 12.h),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(16.w, 8.h, 16.w, 24.h),
+                      padding: EdgeInsets.fromLTRB(0, 8.h, 0, 24.h),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(
-                            height: 86.h,
-                            child: DateStrip(
-                              dates: state.dates,
-                              selectedIndex: state.selectedDateIndex,
-                              onDateTap: (index) => context
-                                  .read<BookingFlowCubit>()
-                                  .selectDate(index),
-                              onMoreTap: () => _openDatePicker(context),
-                              datePrices: state.datePrices,
-                              currency: state.currency,
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16.w),
+                            child: SizedBox(
+                              height: 86.h,
+                              child: DateStrip(
+                                dates: state.dates,
+                                selectedIndex: state.selectedDateIndex,
+                                onDateTap: (index) => context
+                                    .read<BookingFlowCubit>()
+                                    .selectDate(index),
+                                onMoreTap: () => _openDatePicker(context),
+                                datePrices: state.datePrices,
+                                currency: state.currency,
+                              ),
                             ),
                           ),
                           SizedBox(height: 20.h),
@@ -112,7 +115,12 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
                             ),
                           if (state.status == BookingFlowStatus.failure)
                             Padding(
-                              padding: EdgeInsets.only(top: 16.h),
+                              padding: EdgeInsets.fromLTRB(
+                                16.w,
+                                16.h,
+                                16.w,
+                                0,
+                              ),
                               child: Text(
                                 state.errorMessage ??
                                     AppStrings.failedToLoadBookingOptions,
@@ -404,6 +412,7 @@ class _OptionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -443,20 +452,14 @@ class _OptionsSection extends StatelessWidget {
             compactCards
                 ? LayoutBuilder(
                     builder: (context, constraints) {
+                      const visibleCards = 2.5;
                       final cardSpacing = 10.w;
-                      final visibleColumns = options.length < 3
-                          ? options.length
-                          : 3;
-                      final spacingCount = visibleColumns - 1;
                       final cardWidth =
-                          (constraints.maxWidth -
-                              (cardSpacing * spacingCount)) /
-                          visibleColumns;
+                          (constraints.maxWidth - (cardSpacing * 2)) /
+                          visibleCards;
                       return SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        physics: const BouncingScrollPhysics(),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: List.generate(options.length, (index) {
                             final option = options[index];
                             final isSelected = selectedIndex != null

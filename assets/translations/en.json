@@ -305,7 +305,7 @@
   "no_meals_available_for_date": "No meals are available for this date.",
   "choose_set_menu": "Choose Set Menu",
   "choose_meal_type": "Choose Meal Type",
-  "set_menu_option_pricing_subtitle": "Each set menu option can carry its own adult and child pricing.",
+  "set_menu_option_pricing_subtitle": "Each set menu option uses per-person pricing.",
   "meal_type_booking_subtitle": "Select the meal that should be booked for the chosen date.",
   "no_time_slots_available_for_date": "No time slots are available for this date.",
   "select_time": "Select Time",
