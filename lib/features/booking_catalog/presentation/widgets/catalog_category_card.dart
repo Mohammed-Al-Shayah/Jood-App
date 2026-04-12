@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/localization/app_localization_controller.dart';
@@ -12,10 +12,12 @@ class CatalogCategoryCard extends StatelessWidget {
     super.key,
     required this.category,
     required this.onTap,
+    this.width,
   });
 
   final CatalogCategoryType category;
   final VoidCallback onTap;
+  final double? width;
 
   @override
   Widget build(BuildContext context) {
@@ -25,22 +27,23 @@ class CatalogCategoryCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18.r),
+        borderRadius: BorderRadius.circular(16.r),
         child: Ink(
-          width: 220.w,
-          padding: EdgeInsets.all(16.r),
+          width: width ?? 220.w,
+          height: double.infinity,
+          padding: EdgeInsets.all(14.r),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: config.gradient,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(18.r),
+            borderRadius: BorderRadius.circular(16.r),
             boxShadow: [
               BoxShadow(
                 color: AppColors.shadowColor,
-                blurRadius: 16.r,
-                offset: Offset(0, 6.h),
+                blurRadius: 12.r,
+                offset: Offset(0, 4.h),
               ),
             ],
           ),
@@ -48,47 +51,32 @@ class CatalogCategoryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40.r,
-                height: 40.r,
+                width: 36.r,
+                height: 36.r,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(14.r),
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
-                child: Icon(config.icon, color: Colors.white, size: 20.sp),
+                child: Icon(config.icon, color: Colors.white, size: 18.sp),
               ),
-              SizedBox(height: 10.h),
+              SizedBox(height: 12.h),
               Text(
                 _categoryText(category, 'title'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.cardTitle.copyWith(
                   color: Colors.white,
-                  fontSize: 17.sp,
+                  fontSize: 16.sp,
                 ),
               ),
-              SizedBox(height: 4.h),
-              Expanded(
-                child: Align(
-                  alignment: AlignmentDirectional.topStart,
-                  child: Text(
-                    _categoryText(category, 'card_subtitle'),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.cardMeta.copyWith(
-                      color: Colors.white.withValues(alpha: 0.92),
-                      fontSize: 12.sp,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 6.h),
+              const Spacer(),
               Row(
                 children: [
                   Text(
                     AppStrings.explore,
                     style: AppTextStyles.cardPrice.copyWith(
                       color: Colors.white,
-                      fontSize: 13.sp,
+                      fontSize: 12.sp,
                     ),
                   ),
                   SizedBox(width: 6.w),

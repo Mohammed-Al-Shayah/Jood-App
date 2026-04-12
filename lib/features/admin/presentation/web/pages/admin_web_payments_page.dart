@@ -520,7 +520,7 @@ class _PaymentsTable extends StatelessWidget {
                   ),
                   DataCell(
                     Text(
-                      '${booking.currency} ${booking.total.toStringAsFixed(2)}',
+                      '${booking.currency} ${booking.total.toStringAsFixed(1)}',
                     ),
                   ),
                   DataCell(
@@ -565,7 +565,7 @@ Color _paymentColor(String state) {
   }
 }
 
-String _formatMoney(double amount) => 'OMR ${amount.toStringAsFixed(2)}';
+String _formatMoney(double amount) => 'OMR ${amount.toStringAsFixed(1)}';
 
 class _SearchField extends StatelessWidget {
   const _SearchField({required this.controller, required this.hintText});

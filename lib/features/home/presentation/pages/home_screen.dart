@@ -14,7 +14,6 @@ import '../../../../core/utils/extensions.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
 import '../widgets/home_search_bar.dart';
-import '../widgets/restaurant_card.dart';
 import '../../../booking_catalog/domain/entities/catalog_item_entity.dart';
 import '../../../booking_catalog/domain/entities/catalog_category_type.dart';
 import '../../../booking_catalog/presentation/widgets/catalog_category_card.dart';
@@ -103,10 +102,6 @@ class _HomeTabState extends State<HomeTab> {
 
             final isLoading = state.status == HomeStatus.loading;
             final items = isLoading ? _skeletonItems() : state.filteredItems;
-            final showEmptyFilter =
-                !isLoading && state.items.isNotEmpty && items.isEmpty;
-            final showEmptyState =
-                !isLoading && state.status == HomeStatus.empty;
             final locationText = _locationLabel(
               state.userCity,
               state.userCountry,
@@ -121,10 +116,18 @@ class _HomeTabState extends State<HomeTab> {
                     userCity: state.userCity,
                     userCountry: state.userCountry,
                   );
+            final categorySpacing = 12.w;
+            final categoryCardWidth =
+                ((MediaQuery.sizeOf(context).width -
+                            (16.w * 2) -
+                            (categorySpacing * 2)) /
+                        3)
+                    .clamp(96.w, 132.w)
+                    .toDouble();
 
             return Skeletonizer(
               enabled: isLoading,
-              child: Stack(
+              child: Stack( 
                 children: [
                   Column(
                     children: [
@@ -155,79 +158,46 @@ class _HomeTabState extends State<HomeTab> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _HomeHeroBanner(
-                                      locationText: locationText,
-                                      onSearchChanged: (value) => context
+                                    HomeSearchBar(
+                                      onChanged: (value) => context
                                           .read<HomeCubit>()
                                           .updateQuery(value),
                                     ),
                                     SizedBox(height: 24.h),
                                     _HomeSectionHeader(
                                       title: AppStrings.bookByCategory,
-                                      subtitle:
-                                          AppStrings.bookByCategorySubtitle,
                                     ),
-                                    SizedBox(height: 14.h),
+                                    SizedBox(height: 12.h),
                                     SizedBox(
-                                      height: 176.h,
-                                      child: ListView(
+                                      height: 148.h,
+                                      child: ListView.separated(
                                         scrollDirection: Axis.horizontal,
-                                        children: [
-                                          CatalogCategoryCard(
-                                            category:
-                                                CatalogCategoryType.buffet,
+                                        itemCount:
+                                            CatalogCategoryType.values.length,
+                                        separatorBuilder: (_, _) =>
+                                            SizedBox(width: categorySpacing),
+                                        itemBuilder: (context, index) {
+                                          final category =
+                                              CatalogCategoryType.values[index];
+                                          return CatalogCategoryCard(
+                                            category: category,
+                                            width: categoryCardWidth,
                                             onTap: () {
                                               context.pushNamed(
                                                 Routes.catalogListScreen,
-                                                arguments:
-                                                    const CatalogListArgs(
-                                                      category:
-                                                          CatalogCategoryType
-                                                              .buffet,
-                                                    ),
+                                                arguments: CatalogListArgs(
+                                                  category: category,
+                                                ),
                                               );
                                             },
-                                          ),
-                                          SizedBox(width: 12.w),
-                                          CatalogCategoryCard(
-                                            category:
-                                                CatalogCategoryType.setMenu,
-                                            onTap: () {
-                                              context.pushNamed(
-                                                Routes.catalogListScreen,
-                                                arguments:
-                                                    const CatalogListArgs(
-                                                      category:
-                                                          CatalogCategoryType
-                                                              .setMenu,
-                                                    ),
-                                              );
-                                            },
-                                          ),
-                                          SizedBox(width: 12.w),
-                                          CatalogCategoryCard(
-                                            category:
-                                                CatalogCategoryType.attraction,
-                                            onTap: () {
-                                              context.pushNamed(
-                                                Routes.catalogListScreen,
-                                                arguments:
-                                                    const CatalogListArgs(
-                                                      category:
-                                                          CatalogCategoryType
-                                                              .attraction,
-                                                    ),
-                                              );
-                                            },
-                                          ),
-                                        ],
+                                          );
+                                        },
                                       ),
                                     ),
                                     if (hotDeals.isNotEmpty) ...[
                                       SizedBox(height: 26.h),
                                       _HomeSectionHeader(
                                         title: AppStrings.hotDeals,
-                                        subtitle: AppStrings.hotDealsSubtitle,
                                         trailing: AppStrings.itemsFound(
                                           hotDeals.length,
                                         ),
@@ -261,9 +231,6 @@ class _HomeTabState extends State<HomeTab> {
                                       SizedBox(height: 26.h),
                                       _HomeSectionHeader(
                                         title: AppStrings.nearToMe,
-                                        subtitle: AppStrings.nearToMeSubtitle(
-                                          locationText,
-                                        ),
                                         trailing: AppStrings.itemsFound(
                                           nearbyItems.length,
                                         ),
@@ -293,64 +260,9 @@ class _HomeTabState extends State<HomeTab> {
                                         ),
                                       ),
                                     ],
-                                    SizedBox(height: 26.h),
-                                    _HomeSectionHeader(
-                                      title: AppStrings.discoverForYou,
-                                      trailing: AppStrings.itemsFound(
-                                        items.length,
-                                      ),
-                                    ),
-                                    SizedBox(height: 12.h),
-                                    if (showEmptyFilter)
-                                      Padding(
-                                        padding: EdgeInsets.only(top: 12.h),
-                                        child: Text(
-                                          AppStrings.noItemsMatchSearch,
-                                          style: AppTextStyles.cardMeta,
-                                        ),
-                                      ),
-                                    if (showEmptyState)
-                                      Padding(
-                                        padding: EdgeInsets.only(top: 12.h),
-                                        child: Center(
-                                          child: Text(
-                                            AppStrings.noItemsAvailableRightNow,
-                                            style: AppTextStyles.cardMeta,
-                                          ),
-                                        ),
-                                      ),
+                                    SizedBox(height: 20.h),
                                   ],
                                 ),
-                              ),
-                            ),
-                            SliverPadding(
-                              padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 20.h),
-                              sliver: SliverList.builder(
-                                itemCount: items.length,
-                                itemBuilder: (context, index) {
-                                  final item = items[index];
-                                  return Padding(
-                                    padding: EdgeInsets.only(bottom: 14.h),
-                                    child: RestaurantCard(
-                                      name: item.name,
-                                      badge: item.badge,
-                                      price: item.priceFrom,
-                                      discount: item.discount,
-                                      meta: _discoveryMetaLabel(item),
-                                      slots: item.slotsLeft,
-                                      rating: item.ratingLabel,
-                                      image: _RestaurantImage(
-                                        url: item.coverImageUrl,
-                                        name: item.name,
-                                        showLabel: false,
-                                      ),
-                                      onTap: isLoading
-                                          ? null
-                                          : () =>
-                                                _openItemDetails(context, item),
-                                    ),
-                                  );
-                                },
                               ),
                             ),
                           ],
@@ -434,99 +346,10 @@ class _ScrollToTopButton extends StatelessWidget {
   }
 }
 
-class _HomeHeroBanner extends StatelessWidget {
-  const _HomeHeroBanner({
-    required this.locationText,
-    required this.onSearchChanged,
-  });
-
-  final String locationText;
-  final ValueChanged<String> onSearchChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      padding: EdgeInsets.all(20.r),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28.r),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0D857D), Color(0xFF1EC5B6), Color(0xFF74DED3)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.24),
-            blurRadius: 22.r,
-            offset: Offset(0, 12.h),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            top: -18.h,
-            right: -10.w,
-            child: _HeroOrb(size: 108.r, opacity: 0.18),
-          ),
-          Positioned(
-            bottom: -24.h,
-            left: -16.w,
-            child: _HeroOrb(size: 132.r, opacity: 0.14),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppStrings.homeHeroTitle,
-                style: AppTextStyles.headingLarge.copyWith(
-                  color: Colors.white,
-                  height: 1.15,
-                ),
-              ),
-              SizedBox(height: 8.h),
-              Text(
-                AppStrings.homeHeroSubtitle(locationText),
-                style: AppTextStyles.body.copyWith(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  height: 1.45,
-                ),
-              ),
-              SizedBox(height: 18.h),
-              HomeSearchBar(onChanged: onSearchChanged),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroOrb extends StatelessWidget {
-  const _HeroOrb({required this.size, required this.opacity});
-
-  final double size;
-  final double opacity;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: opacity),
-      ),
-    );
-  }
-}
-
 class _HomeSectionHeader extends StatelessWidget {
-  const _HomeSectionHeader({required this.title, this.subtitle, this.trailing});
+  const _HomeSectionHeader({required this.title, this.trailing});
 
   final String title;
-  final String? subtitle;
   final String? trailing;
 
   @override
@@ -535,22 +358,7 @@ class _HomeSectionHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: AppTextStyles.sectionTitle),
-              if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-                SizedBox(height: 6.h),
-                Text(
-                  subtitle!,
-                  style: AppTextStyles.cardMeta.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ],
-          ),
+          child: Text(title, style: AppTextStyles.sectionTitle),
         ),
         if (trailing != null && trailing!.trim().isNotEmpty) ...[
           SizedBox(width: 12.w),
@@ -678,10 +486,11 @@ class _ShowcaseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final price = item.priceFrom.trim();
     final discount = item.discount.trim();
-    final priceValue = _stripFromPrice(price);
-    final hasFromPrefix = priceValue != price;
+    final originalPriceValue = _normalizeDisplayedPrice(_stripFromPrice(price));
+    final currentPriceValue = _normalizeDisplayedPrice(discount);
     final hasDualPrice = price.isNotEmpty && discount.isNotEmpty;
     final hasBadge = item.badge.trim().isNotEmpty;
+    final topEndLabel = hasBadge ? item.badge : item.ratingLabel;
 
     return Material(
       color: Colors.transparent,
@@ -739,33 +548,6 @@ class _ShowcaseCard extends StatelessWidget {
                     ),
                     PositionedDirectional(
                       top: 12.h,
-                      start: 12.w,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10.w,
-                          vertical: 7.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: hasBadge
-                              ? const Color(0xFF0C1022).withValues(alpha: 0.78)
-                              : Colors.white.withValues(alpha: 0.88),
-                          borderRadius: BorderRadius.circular(999.r),
-                        ),
-                        child: Text(
-                          hasBadge
-                              ? item.badge
-                              : _localizedCategoryTitle(item.category),
-                          style: AppTextStyles.cardMeta.copyWith(
-                            color: hasBadge
-                                ? Colors.white
-                                : AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                    PositionedDirectional(
-                      top: 12.h,
                       end: 12.w,
                       child: Container(
                         padding: EdgeInsets.symmetric(
@@ -773,22 +555,28 @@ class _ShowcaseCard extends StatelessWidget {
                           vertical: 7.h,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: hasBadge
+                              ? const Color(0xFF7C3AED).withValues(alpha: 0.92)
+                              : Colors.white.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(999.r),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.star_rounded,
-                              color: AppColors.ratingStar,
-                              size: 14.sp,
-                            ),
-                            SizedBox(width: 4.w),
+                            if (!hasBadge) ...[
+                              Icon(
+                                Icons.star_rounded,
+                                color: AppColors.ratingStar,
+                                size: 14.sp,
+                              ),
+                              SizedBox(width: 4.w),
+                            ],
                             Text(
-                              item.ratingLabel,
+                              topEndLabel,
                               style: AppTextStyles.cardMeta.copyWith(
-                                color: AppColors.textPrimary,
+                                color: hasBadge
+                                    ? Colors.white
+                                    : AppColors.textPrimary,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -826,26 +614,19 @@ class _ShowcaseCard extends StatelessWidget {
                         runSpacing: 4.h,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          if (hasFromPrefix)
-                            Text(
-                              AppStrings.from,
-                              style: AppTextStyles.cardMeta.copyWith(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                           Text(
-                            discount,
-                            style: (highlightDeal
-                                    ? AppTextStyles.cardDiscount
-                                    : AppTextStyles.cardPrice)
-                                .copyWith(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            currentPriceValue,
+                            style:
+                                (highlightDeal
+                                        ? AppTextStyles.cardDiscount
+                                        : AppTextStyles.cardPrice)
+                                    .copyWith(
+                                      fontSize: 16.sp,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                           ),
                           Text(
-                            priceValue,
+                            originalPriceValue,
                             style: AppTextStyles.cardMeta.copyWith(
                               color: const Color(0xFF5D6875),
                               fontSize: 13.sp,
@@ -859,7 +640,7 @@ class _ShowcaseCard extends StatelessWidget {
                       ),
                     ] else if (price.isNotEmpty) ...[
                       Text(
-                        price,
+                        originalPriceValue,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.cardPrice.copyWith(
@@ -967,6 +748,23 @@ String _stripFromPrice(String value) {
   }
 
   return trimmed;
+}
+
+String _normalizeDisplayedPrice(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return trimmed;
+
+  final match = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(trimmed);
+  if (match == null) return trimmed;
+
+  final parsed = double.tryParse(match.group(1)?.replaceAll(',', '') ?? '');
+  if (parsed == null) return trimmed;
+
+  return trimmed.replaceRange(
+    match.start,
+    match.end,
+    parsed.toStringAsFixed(1),
+  );
 }
 
 List<CatalogItemEntity> _hotDeals(List<CatalogItemEntity> items) {

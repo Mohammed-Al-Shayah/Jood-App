@@ -239,7 +239,7 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
                       width: cardWidth,
                       child: AdminWebMetricCard(
                         title: 'Gross revenue',
-                        value: 'OMR ${revenue.toStringAsFixed(2)}',
+                        value: 'OMR ${revenue.toStringAsFixed(1)}',
                         icon: Icons.payments_outlined,
                         iconColor: const Color(0xFF2563EB),
                         caption: 'Excludes cancelled and failed bookings',
@@ -415,7 +415,7 @@ class _BookingsTable extends StatelessWidget {
                   DataCell(Text('${booking.date}  ${booking.startTime}')),
                   DataCell(
                     Text(
-                      '${booking.currency} ${booking.total.toStringAsFixed(2)}',
+                      '${booking.currency} ${booking.total.toStringAsFixed(1)}',
                     ),
                   ),
                   DataCell(

@@ -914,7 +914,7 @@ class _RecentBookingsPanel extends StatelessWidget {
                           ),
                           DataCell(
                             Text(
-                              '${booking.currency} ${booking.total.toStringAsFixed(2)}',
+                              '${booking.currency} ${booking.total.toStringAsFixed(1)}',
                             ),
                           ),
                           DataCell(_StatusBadge(status: booking.status)),
@@ -973,7 +973,7 @@ class _StatusBadge extends StatelessWidget {
 }
 
 String _formatMoney(double amount) {
-  return 'OMR ${amount.toStringAsFixed(2)}';
+  return 'OMR ${amount.toStringAsFixed(1)}';
 }
 
 String _titleCase(String value) {

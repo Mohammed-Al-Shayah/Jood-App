@@ -612,6 +612,10 @@ class AppStrings {
     return _tr('from_price', params: {'value': value});
   }
 
+  static String startFromPrice(String value) {
+    return _tr('start_from_price', params: {'value': value});
+  }
+
   static String packagesCount(int count) {
     return _tr('packages_count', params: {'count': count});
   }

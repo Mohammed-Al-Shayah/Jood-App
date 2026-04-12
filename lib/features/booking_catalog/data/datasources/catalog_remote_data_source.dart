@@ -259,10 +259,10 @@ class CatalogRemoteDataSource {
         ? ''
         : '$currencyLabel ';
     final priceFrom = resolvedOriginal > 0
-        ? AppStrings.fromPrice('$prefix${resolvedOriginal.toStringAsFixed(2)}')
+        ? AppStrings.fromPrice('$prefix${resolvedOriginal.toStringAsFixed(1)}')
         : _stringValue(data['priceFrom']).trim();
     final discount = resolvedCurrent > 0 && resolvedCurrent < resolvedOriginal
-        ? '$prefix${resolvedCurrent.toStringAsFixed(2)}'
+        ? '$prefix${resolvedCurrent.toStringAsFixed(1)}'
         : _stringValue(data['discount']).trim();
     final badge = _resolveBadge(
       data: data,

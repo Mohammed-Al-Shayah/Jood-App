@@ -407,7 +407,7 @@ class _RestaurantsTable extends StatelessWidget {
                     Text(
                       restaurant.priceFrom.trim().isNotEmpty
                           ? restaurant.priceFrom
-                          : 'OMR ${restaurant.priceFromValue.toStringAsFixed(2)}',
+                          : 'OMR ${restaurant.priceFromValue.toStringAsFixed(1)}',
                     ),
                   ),
                   DataCell(

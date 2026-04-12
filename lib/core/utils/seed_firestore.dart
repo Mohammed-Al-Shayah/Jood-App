@@ -376,7 +376,7 @@ class SeedFirestore {
             'priceAdultOriginal': baseAdult + 25,
             'priceChild': baseChild,
             'time': time['start'],
-            'price': 'OMR ${baseAdult.toStringAsFixed(2)}',
+            'price': 'OMR ${baseAdult.toStringAsFixed(1)}',
             'status': status,
             'capacityAdult': capacityAdult,
             'capacityChild': capacityChild,
@@ -424,7 +424,7 @@ class SeedFirestore {
           'priceAdultOriginal': adultPrice + 18 + (dayIndex * 2),
           'priceChild': childPrice + dayIndex,
           'time': '11:30',
-          'price': 'OMR ${(adultPrice + (dayIndex * 2)).toStringAsFixed(2)}',
+          'price': 'OMR ${(adultPrice + (dayIndex * 2)).toStringAsFixed(1)}',
           'status': dayIndex == 4 ? 'low' : 'active',
           'capacityAdult': 18,
           'capacityChild': 10,
@@ -530,7 +530,7 @@ class SeedFirestore {
             'priceAdultOriginal': adultPrice + 16,
             'priceChild': childPrice,
             'time': option['start'],
-            'price': 'OMR ${adultPrice.toStringAsFixed(2)}',
+            'price': 'OMR ${adultPrice.toStringAsFixed(1)}',
             'status': soldOut
                 ? 'sold_out'
                 : low
@@ -712,7 +712,7 @@ class SeedFirestore {
               'priceAdultOriginal': adultPrice + 7,
               'priceChild': childPrice,
               'time': slot['start'],
-              'price': 'OMR ${adultPrice.toStringAsFixed(2)}',
+              'price': 'OMR ${adultPrice.toStringAsFixed(1)}',
               'status': soldOut
                   ? 'sold_out'
                   : low

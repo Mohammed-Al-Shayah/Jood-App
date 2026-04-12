@@ -14,16 +14,16 @@ double parsePrice(String price) {
 }
 
 String formatMoney(double value) {
-  return '\$${value.toStringAsFixed(2)}';
+  return '\$${value.toStringAsFixed(1)}';
 }
 
 String formatCurrency(String currency, num value) {
-  final amount = value.toDouble().toStringAsFixed(2);
+  final amount = value.toDouble().toStringAsFixed(1);
   final trimmed = currency.trim();
   if (trimmed.isEmpty) {
     return '\$$amount';
   }
   final isSymbol =
-      trimmed.length == 1 || RegExp(r'[$â‚¬Â£Â¥]').hasMatch(trimmed);
+      trimmed.length == 1 || RegExp(r'[$Ã¢â€šÂ¬Ã‚Â£Ã‚Â¥]').hasMatch(trimmed);
   return isSymbol ? '$trimmed$amount' : '$trimmed $amount';
 }

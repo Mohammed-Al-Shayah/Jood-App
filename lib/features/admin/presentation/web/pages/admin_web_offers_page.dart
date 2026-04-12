@@ -814,11 +814,11 @@ class _OffersTable extends StatelessWidget {
   }
 
   String _priceLabel(OfferEntity offer) {
-    final amount = '${offer.currency} ${offer.priceAdult.toStringAsFixed(2)}';
+    final amount = '${offer.currency} ${offer.priceAdult.toStringAsFixed(1)}';
     if (offer.bookableType.trim().toLowerCase() == 'attraction') {
       return '$amount / person';
     }
-    return '$amount / ${offer.priceChild.toStringAsFixed(2)}';
+    return '$amount / ${offer.priceChild.toStringAsFixed(1)}';
   }
 
   String _originalPriceLabel(OfferEntity offer) {
@@ -826,7 +826,7 @@ class _OffersTable extends StatelessWidget {
         offer.priceAdultOriginal <= offer.priceAdult) {
       return '';
     }
-    return '${offer.currency} ${offer.priceAdultOriginal.toStringAsFixed(2)}';
+    return '${offer.currency} ${offer.priceAdultOriginal.toStringAsFixed(1)}';
   }
 
   String _remainingLabel(OfferEntity offer) {

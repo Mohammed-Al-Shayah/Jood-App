@@ -1,4 +1,4 @@
-import 'package:jood/core/utils/app_strings.dart';
+﻿import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
 
 import '../../../offers/domain/entities/offer_entity.dart';
@@ -84,15 +84,15 @@ List<CatalogBookingOption> buildTimeSlotOptions(List<OfferEntity> offers) {
       label: timeSlotLabel(reference),
       subtitle: availableOffers.isEmpty
           ? AppStrings.allPackagesCurrentlyUnavailable
-          : AppStrings.fromPrice(formatCurrency(reference.currency, minAdult)),
-      primaryPriceLabel: availableOffers.isEmpty
-          ? AppStrings.unavailable
-          : AppStrings.packagesCount(availableOffers.length),
+          : AppStrings.startFromPrice(
+              formatCurrency(reference.currency, minAdult),
+            ),
+      primaryPriceLabel: '',
       originalPriceLabel: '',
       secondaryPriceLabel: '',
       statusLabel: availableOffers.isEmpty
           ? AppStrings.soldOut
-          : AppStrings.availableCount(availableOffers.length),
+          : AppStrings.packagesCount(availableOffers.length),
       offerIndex: availableOffers.isEmpty
           ? entry.value.first.key
           : availableOffers.first.key,
@@ -132,7 +132,7 @@ List<CatalogBookingOption> buildPackageOptions(
     return CatalogBookingOption(
       key: entry.key,
       label: entry.key,
-      subtitle: offer.packageDescription,
+      subtitle: '',
       primaryPriceLabel: formatCurrency(offer.currency, offer.priceAdult),
       originalPriceLabel: _originalPriceLabel(offer),
       secondaryPriceLabel: _secondaryPriceLabel(offer),
@@ -392,3 +392,4 @@ T? firstWhereOrNull<T>(Iterable<T> values, bool Function(T item) test) {
   }
   return null;
 }
+

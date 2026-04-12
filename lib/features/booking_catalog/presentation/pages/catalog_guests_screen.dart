@@ -137,10 +137,8 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
                         SizedBox(height: 16.h),
                         _SummarySection(
                           item: widget.item,
-                          state: state,
                           selectedOffer: selectedOffer,
                           amounts: amounts,
-                          usesUnifiedGuestCount: usesUnifiedGuestCount,
                         ),
                       ],
                     ),
@@ -437,68 +435,23 @@ class _GuestsSection extends StatelessWidget {
 class _SummarySection extends StatelessWidget {
   const _SummarySection({
     required this.item,
-    required this.state,
     required this.selectedOffer,
     required this.amounts,
-    required this.usesUnifiedGuestCount,
   });
 
   final CatalogItemEntity item;
-  final BookingFlowState state;
   final OfferEntity? selectedOffer;
   final BookingAmountsViewModel amounts;
-  final bool usesUnifiedGuestCount;
 
   @override
   Widget build(BuildContext context) {
     final currency = selectedOffer?.currency ?? r'$';
-    final selectedLabel = selectionLabel(
-      item: item,
-      selectedOffer: selectedOffer,
-      selectedTimeSlotKey: null,
-      selectedPackageKey: null,
-    );
-    final unifiedCount = state.adultCount + state.childCount;
 
     return SectionCard(
       title: AppStrings.bookingSummary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            item.name,
-            style: AppTextStyles.sectionTitle.copyWith(fontSize: 15.sp),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            '${formatOfferDate(state.selectedDate)}${selectedLabel.isEmpty ? '' : ' | $selectedLabel'}',
-            style: AppTextStyles.cardMeta.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 12.5.sp,
-            ),
-          ),
-          SizedBox(height: 12.h),
-          if (usesUnifiedGuestCount) ...[
-            SummaryRow(
-              label: AppStrings.guestsCountLabel(unifiedCount),
-              value: formatCurrency(currency, amounts.subtotal),
-            ),
-          ] else ...[
-            SummaryRow(
-              label: AppStrings.adultsCountLabel(state.adultCount),
-              value: formatCurrency(currency, amounts.adultTotal),
-            ),
-            if (state.childCount > 0) ...[
-              SizedBox(height: 6.h),
-              SummaryRow(
-                label: AppStrings.childrenCountLabel(state.childCount),
-                value: formatCurrency(currency, amounts.childTotal),
-              ),
-            ],
-          ],
-          SizedBox(height: 10.h),
-          Divider(color: AppColors.shadowColor),
-          SizedBox(height: 10.h),
           SummaryRow(
             label: AppStrings.beforeDiscount,
             value: formatCurrency(currency, amounts.originalSubtotal),

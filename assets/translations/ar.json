@@ -6,7 +6,7 @@
   "profile": "الملف الشخصي",
   "current_location": "الموقع الحالي",
   "city_name": "الموقع غير متاح",
-  "search_hint": "بحث..........",
+  "search_hint": "ما الذي تبحث عنه؟",
   "section_title": "مطاعم بالقرب منك",
   "section_count": "4 نتائج",
   "view_details": "عرض التفاصيل",
@@ -336,6 +336,7 @@
   "missing_restaurant_id": "معرف المطعم غير موجود.",
   "child_price": "سعر الطفل {value}",
   "from_price": "ابتداءً من {value}",
+  "start_from_price": "يبدأ من {value}",
   "packages_count": "{count} باقات",
   "available_count": "{count} متاح",
   "available_status": "{count} متاح",
@@ -475,5 +476,4 @@
     "يمنع إدخال الطعام من الخارج"
   ]
 }
-
 

@@ -354,21 +354,23 @@ class _AttractionSection extends StatelessWidget {
         else ...[
           _OptionsSection(
             title: AppStrings.selectTime,
-            subtitle: AppStrings.selectTimeSubtitle,
+            subtitle: '',
             options: timeSlots,
             selectedKey: selectedTimeSlotKey,
             onSelectedKey: onTimeSlotSelected,
             compactCards: true,
+            showDetails: false,
           ),
           SizedBox(height: 16.h),
           _OptionsSection(
             title: AppStrings.selectPackage,
-            subtitle: AppStrings.selectPackageSubtitle,
+            subtitle: '',
             options: packageOptions,
             selectedKey: selectedPackageKey,
             onSelectedKey: onPackageSelected,
             expandSubtitle: true,
             compactCards: true,
+            showDetails: true,
           ),
         ],
       ],
@@ -387,8 +389,8 @@ class _OptionsSection extends StatelessWidget {
     this.onSelectedKey,
     this.expandSubtitle = false,
     this.compactCards = false,
+    this.showDetails = true,
   });
-
   final String title;
   final String subtitle;
   final List<CatalogBookingOption> options;
@@ -398,7 +400,7 @@ class _OptionsSection extends StatelessWidget {
   final ValueChanged<String>? onSelectedKey;
   final bool expandSubtitle;
   final bool compactCards;
-
+  final bool showDetails;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -418,15 +420,18 @@ class _OptionsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: AppTextStyles.sectionTitle),
-          SizedBox(height: 8.h),
-          Text(
-            subtitle,
-            style: AppTextStyles.cardMeta.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 12.5.sp,
+          if (subtitle.trim().isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Text(
+              subtitle,
+              style: AppTextStyles.cardMeta.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 12.5.sp,
+              ),
             ),
-          ),
-          SizedBox(height: 14.h),
+            SizedBox(height: 14.h),
+          ] else
+            SizedBox(height: 14.h),
           if (options.isEmpty)
             Text(
               AppStrings.noOptionsAvailableRightNow,
@@ -479,6 +484,7 @@ class _OptionsSection extends StatelessWidget {
                                       : null,
                                   expandSubtitle: expandSubtitle,
                                   compactLayout: true,
+                                  showDetails: showDetails,
                                 ),
                               ),
                             );
@@ -512,6 +518,7 @@ class _OptionsSection extends StatelessWidget {
                                   }
                                 : null,
                             expandSubtitle: expandSubtitle,
+                            showDetails: showDetails,
                           ),
                         ),
                       );
@@ -530,21 +537,20 @@ class _OptionCard extends StatefulWidget {
     required this.onTap,
     this.expandSubtitle = false,
     this.compactLayout = false,
+    this.showDetails = true,
   });
-
   final CatalogBookingOption option;
   final bool isSelected;
   final VoidCallback? onTap;
   final bool expandSubtitle;
   final bool compactLayout;
-
+  final bool showDetails;
   @override
   State<_OptionCard> createState() => _OptionCardState();
 }
 
 class _OptionCardState extends State<_OptionCard> {
   bool _detailsVisible = false;
-
   void _toggleDetails() {
     setState(() => _detailsVisible = !_detailsVisible);
   }
@@ -581,12 +587,16 @@ class _OptionCardState extends State<_OptionCard> {
   }
 
   Widget _buildCompactBody(CatalogBookingOption option, Color accentColor) {
+    final isTimeSlotCard = !widget.showDetails;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: isTimeSlotCard
+          ? CrossAxisAlignment.stretch
+          : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           option.label,
+          textAlign: isTimeSlotCard ? TextAlign.center : TextAlign.start,
           style: AppTextStyles.sectionTitle.copyWith(
             fontSize: 12.5.sp,
             height: 1.25,
@@ -617,50 +627,97 @@ class _OptionCardState extends State<_OptionCard> {
           SizedBox(height: 8.h),
           Text(
             option.subtitle,
+            textAlign: isTimeSlotCard ? TextAlign.center : TextAlign.start,
             style: AppTextStyles.cardMeta.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 11.5.sp,
+              color: isTimeSlotCard
+                  ? (option.isEnabled
+                        ? AppColors.primaryDark
+                        : AppColors.textSecondary)
+                  : AppColors.textSecondary,
+              fontSize: isTimeSlotCard ? 12.sp : 11.5.sp,
+              fontWeight: isTimeSlotCard ? FontWeight.w700 : FontWeight.w500,
               height: 1.4,
             ),
           ),
         ],
-        SizedBox(height: 10.h),
-        if (option.originalPriceLabel.isNotEmpty) ...[
-          Text(
-            option.originalPriceLabel,
-            style: AppTextStyles.cardMeta.copyWith(
-              color: const Color(0xFFDD5A5A),
-              fontSize: 10.5.sp,
-              height: 1.2,
-              decoration: TextDecoration.lineThrough,
-              decorationColor: const Color(0xFFDD5A5A),
-              decorationThickness: 1.6,
+        if (option.primaryPriceLabel.isNotEmpty ||
+            option.originalPriceLabel.isNotEmpty ||
+            option.secondaryPriceLabel.isNotEmpty) ...[
+          SizedBox(height: 10.h),
+          if (!isTimeSlotCard &&
+              (option.originalPriceLabel.isNotEmpty ||
+                  option.primaryPriceLabel.isNotEmpty))
+            Wrap(
+              spacing: 6.w,
+              runSpacing: 4.h,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (option.originalPriceLabel.isNotEmpty)
+                  Text(
+                    option.originalPriceLabel,
+                    style: AppTextStyles.cardMeta.copyWith(
+                      color: const Color(0xFFDD5A5A),
+                      fontSize: 10.5.sp,
+                      height: 1.2,
+                      decoration: TextDecoration.lineThrough,
+                      decorationColor: const Color(0xFFDD5A5A),
+                      decorationThickness: 1.6,
+                    ),
+                  ),
+                if (option.primaryPriceLabel.isNotEmpty)
+                  Text(
+                    option.primaryPriceLabel,
+                    style: AppTextStyles.cardPrice.copyWith(
+                      fontSize: 12.sp,
+                      color: option.isEnabled
+                          ? AppColors.primary
+                          : AppColors.textMuted,
+                    ),
+                  ),
+              ],
+            )
+          else ...[
+            if (option.originalPriceLabel.isNotEmpty) ...[
+              Text(
+                option.originalPriceLabel,
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: const Color(0xFFDD5A5A),
+                  fontSize: 10.5.sp,
+                  height: 1.2,
+                  decoration: TextDecoration.lineThrough,
+                  decorationColor: const Color(0xFFDD5A5A),
+                  decorationThickness: 1.6,
+                ),
+              ),
+              SizedBox(height: 4.h),
+            ],
+            if (option.primaryPriceLabel.isNotEmpty)
+              Text(
+                option.primaryPriceLabel,
+                style: AppTextStyles.cardPrice.copyWith(
+                  fontSize: 12.sp,
+                  color: option.isEnabled
+                      ? AppColors.primary
+                      : AppColors.textMuted,
+                ),
+              ),
+          ],
+          if (option.secondaryPriceLabel.isNotEmpty) ...[
+            SizedBox(height: 4.h),
+            Text(
+              option.secondaryPriceLabel,
+              style: AppTextStyles.cardMeta.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 10.5.sp,
+                height: 1.2,
+              ),
             ),
-          ),
-          SizedBox(height: 4.h),
+          ],
         ],
-        Text(
-          option.primaryPriceLabel,
-          style: AppTextStyles.cardPrice.copyWith(
-            fontSize: 12.sp,
-            color: option.isEnabled ? AppColors.primary : AppColors.textMuted,
-          ),
-        ),
-        if (option.secondaryPriceLabel.isNotEmpty) ...[
-          SizedBox(height: 4.h),
-          Text(
-            option.secondaryPriceLabel,
-            style: AppTextStyles.cardMeta.copyWith(
-              color: AppColors.textSecondary,
-              fontSize: 10.5.sp,
-              height: 1.2,
-            ),
-          ),
-        ],
-        if (option.hasDetails) ...[
+        if (widget.showDetails && option.hasDetails) ...[
           SizedBox(height: 8.h),
           _buildDetailsToggle(compact: true),
-          _buildDetailsPanel(compact: true),
+          _buildDetailsPanel(option, compact: true),
         ],
       ],
     );
@@ -719,43 +776,48 @@ class _OptionCardState extends State<_OptionCard> {
             ),
           ),
         ],
-        SizedBox(height: 10.h),
-        if (option.originalPriceLabel.isNotEmpty) ...[
-          Text(
-            option.originalPriceLabel,
-            style: AppTextStyles.cardMeta.copyWith(
-              color: const Color(0xFFDD5A5A),
-              decoration: TextDecoration.lineThrough,
-              decorationColor: const Color(0xFFDD5A5A),
-            ),
-          ),
-          SizedBox(height: 4.h),
-        ],
-        Wrap(
-          spacing: 10.w,
-          runSpacing: 4.h,
-          children: [
+        if (option.primaryPriceLabel.isNotEmpty ||
+            option.originalPriceLabel.isNotEmpty ||
+            option.secondaryPriceLabel.isNotEmpty) ...[
+          SizedBox(height: 10.h),
+          if (option.originalPriceLabel.isNotEmpty) ...[
             Text(
-              option.primaryPriceLabel,
-              style: AppTextStyles.cardPrice.copyWith(
-                color: option.isEnabled
-                    ? AppColors.primary
-                    : AppColors.textMuted,
+              option.originalPriceLabel,
+              style: AppTextStyles.cardMeta.copyWith(
+                color: const Color(0xFFDD5A5A),
+                decoration: TextDecoration.lineThrough,
+                decorationColor: const Color(0xFFDD5A5A),
               ),
             ),
-            if (option.secondaryPriceLabel.isNotEmpty)
-              Text(
-                option.secondaryPriceLabel,
-                style: AppTextStyles.cardMeta.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
+            SizedBox(height: 4.h),
           ],
-        ),
-        if (option.hasDetails) ...[
+          Wrap(
+            spacing: 10.w,
+            runSpacing: 4.h,
+            children: [
+              if (option.primaryPriceLabel.isNotEmpty)
+                Text(
+                  option.primaryPriceLabel,
+                  style: AppTextStyles.cardPrice.copyWith(
+                    color: option.isEnabled
+                        ? AppColors.primary
+                        : AppColors.textMuted,
+                  ),
+                ),
+              if (option.secondaryPriceLabel.isNotEmpty)
+                Text(
+                  option.secondaryPriceLabel,
+                  style: AppTextStyles.cardMeta.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+            ],
+          ),
+        ],
+        if (widget.showDetails && option.hasDetails) ...[
           SizedBox(height: 8.h),
           _buildDetailsToggle(compact: false),
-          _buildDetailsPanel(compact: false),
+          _buildDetailsPanel(option, compact: false),
         ],
       ],
     );
@@ -792,7 +854,10 @@ class _OptionCardState extends State<_OptionCard> {
     );
   }
 
-  Widget _buildDetailsPanel({required bool compact}) {
+  Widget _buildDetailsPanel(
+    CatalogBookingOption option, {
+    required bool compact,
+  }) {
     return AnimatedCrossFade(
       firstChild: const SizedBox.shrink(),
       secondChild: Padding(
@@ -806,11 +871,11 @@ class _OptionCardState extends State<_OptionCard> {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: List.generate(widget.option.details.length, (index) {
-              final detail = widget.option.details[index];
+            children: List.generate(option.details.length, (index) {
+              final detail = option.details[index];
               return Padding(
                 padding: EdgeInsets.only(
-                  bottom: index == widget.option.details.length - 1 ? 0 : 6.h,
+                  bottom: index == option.details.length - 1 ? 0 : 6.h,
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

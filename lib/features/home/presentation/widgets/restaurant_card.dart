@@ -34,8 +34,11 @@ class RestaurantCard extends StatelessWidget {
     final trimmedPrice = price.trim();
     final trimmedDiscount = discount.trim();
     final trimmedSlots = slots.trim();
-    final priceValue = _stripFromPrice(trimmedPrice);
-    final hasFromLabel = priceValue != trimmedPrice;
+    final strippedPrice = _stripFromPrice(trimmedPrice);
+    final normalizedPrice = _normalizeDisplayedPrice(trimmedPrice);
+    final normalizedDiscount = _normalizeDisplayedPrice(trimmedDiscount);
+    final priceValue = _normalizeDisplayedPrice(strippedPrice);
+    final hasFromLabel = strippedPrice != trimmedPrice;
     final hasBadge = badge.trim().isNotEmpty;
     final hasDualPrice = trimmedPrice.isNotEmpty && trimmedDiscount.isNotEmpty;
     final showNoOffersMessage =
@@ -189,7 +192,7 @@ class RestaurantCard extends StatelessWidget {
                                   ),
                                 ),
                               Text(
-                                trimmedDiscount,
+                                normalizedDiscount,
                                 style: AppTextStyles.cardDiscount.copyWith(
                                   fontSize: 18.sp,
                                 ),
@@ -210,7 +213,7 @@ class RestaurantCard extends StatelessWidget {
 
                         if (!hasDualPrice && trimmedPrice.isNotEmpty)
                           Text(
-                            trimmedPrice,
+                            normalizedPrice,
                             style: AppTextStyles.cardPrice.copyWith(
                               fontSize: 18.sp,
                             ),
@@ -268,4 +271,21 @@ String _stripFromPrice(String value) {
   }
 
   return trimmed;
+}
+
+String _normalizeDisplayedPrice(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return trimmed;
+
+  final match = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(trimmed);
+  if (match == null) return trimmed;
+
+  final parsed = double.tryParse(match.group(1)?.replaceAll(',', '') ?? '');
+  if (parsed == null) return trimmed;
+
+  return trimmed.replaceRange(
+    match.start,
+    match.end,
+    parsed.toStringAsFixed(1),
+  );
 }

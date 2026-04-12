@@ -501,7 +501,7 @@ class _RefundCard extends StatelessWidget {
                     style: AppTextStyles.cardMeta,
                   ),
                   Text(
-                    'Amount: ${booking.currency} ${booking.total.toStringAsFixed(2)}',
+                    'Amount: ${booking.currency} ${booking.total.toStringAsFixed(1)}',
                     style: AppTextStyles.cardMeta.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,

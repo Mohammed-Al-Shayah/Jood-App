@@ -197,7 +197,7 @@ class _CancelledOrderCard extends StatelessWidget {
           Text('$date  $startTime', style: AppTextStyles.cardMeta),
           SizedBox(height: 6.h),
           Text(
-            'Total: $currency ${total.toStringAsFixed(2)}',
+            'Total: $currency ${total.toStringAsFixed(1)}',
             style: AppTextStyles.cardPrice,
           ),
           SizedBox(height: 8.h),
