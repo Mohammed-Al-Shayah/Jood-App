@@ -45,6 +45,11 @@ class OfferRepositoryImpl implements OfferRepository {
   }
 
   @override
+  Future<void> createOffers(List<OfferEntity> offers) {
+    return remoteDataSource.createOffers(offers.cast<OfferModel>());
+  }
+
+  @override
   Future<OfferEntity> updateOffer(OfferEntity offer) {
     return remoteDataSource.updateOffer(offer as OfferModel);
   }

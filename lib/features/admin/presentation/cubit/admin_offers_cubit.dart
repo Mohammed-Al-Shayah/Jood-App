@@ -66,10 +66,7 @@ class AdminOffersCubit extends Cubit<AdminOffersState> {
   Future<void> createMany(List<OfferEntity> offers) async {
     if (offers.isEmpty) return;
     try {
-      for (final offer in offers) {
-        await _createOffer(offer);
-        if (isClosed) return;
-      }
+      await _createOffer.many(offers);
       if (isClosed) return;
       await load();
     } catch (e) {

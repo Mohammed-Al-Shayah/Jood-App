@@ -72,6 +72,11 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
       builder: (context, state) {
         final selectedOffer = state.selectedOffer();
         final usesUnifiedGuestCount = _usesUnifiedGuestCount(selectedOffer);
+        final isCouponPricing = isCouponGuestPricingMode(
+          guestPricingMode: selectedOffer?.guestPricingMode ?? '',
+          bookingCategory: selectedOffer?.bookingCategory ?? '',
+          bookableType: selectedOffer?.bookableType ?? '',
+        );
         final normalizedAdultCount = usesUnifiedGuestCount
             ? state.adultCount + state.childCount
             : state.adultCount;
@@ -114,7 +119,9 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
             child: Column(
               children: [
                 SelectDateHeader(
-                  title: widget.item.category == CatalogCategoryType.combo
+                  title:
+                      widget.item.category == CatalogCategoryType.combo ||
+                          isCouponPricing
                       ? AppStrings.selectQuantityTitle
                       : AppStrings.selectGuestsTitle,
                   subtitle: widget.item.name,
@@ -268,6 +275,11 @@ class _SelectedOptionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCouponPricing = isCouponGuestPricingMode(
+      guestPricingMode: selectedOffer?.guestPricingMode ?? '',
+      bookingCategory: selectedOffer?.bookingCategory ?? '',
+      bookableType: selectedOffer?.bookableType ?? '',
+    );
     final selectedLabel = selectionLabel(
       item: item,
       selectedOffer: selectedOffer,
@@ -316,6 +328,8 @@ class _SelectedOptionSection extends StatelessWidget {
                       Text(
                         item.category == CatalogCategoryType.combo
                             ? AppStrings.perCombo
+                            : isCouponPricing
+                            ? AppStrings.perCoupon
                             : AppStrings.perPerson,
                         style: AppTextStyles.cardMeta.copyWith(
                           color: AppColors.textSecondary,
@@ -376,6 +390,11 @@ class _GuestsSection extends StatelessWidget {
     final childPrice = selectedOffer?.priceChild ?? 0;
     final cubit = context.read<BookingFlowCubit>();
     final isCombo = item.category == CatalogCategoryType.combo;
+    final isCouponPricing = isCouponGuestPricingMode(
+      guestPricingMode: selectedOffer?.guestPricingMode ?? '',
+      bookingCategory: selectedOffer?.bookingCategory ?? '',
+      bookableType: selectedOffer?.bookableType ?? '',
+    );
 
     return SectionCard(
       title: selectionCountTitle(
@@ -387,12 +406,22 @@ class _GuestsSection extends StatelessWidget {
         children: [
           if (usesUnifiedGuestCount) ...[
             TicketRow(
-              label: isCombo ? AppStrings.combos : AppStrings.guests,
+              label: isCombo
+                  ? AppStrings.combos
+                  : isCouponPricing
+                  ? AppStrings.coupons
+                  : AppStrings.guests,
               ageLabel: isCombo
                   ? AppStrings.samePriceForAllCombos
+                  : isCouponPricing
+                  ? AppStrings.samePriceForAllCoupons
                   : AppStrings.samePriceForAllGuests,
               priceLabel:
-                  '${formatCurrency(currency, adultPrice)} ${isCombo ? AppStrings.perCombo : AppStrings.perPerson}',
+                  '${formatCurrency(currency, adultPrice)} ${isCombo
+                      ? AppStrings.perCombo
+                      : isCouponPricing
+                      ? AppStrings.perCoupon
+                      : AppStrings.perPerson}',
               count: unifiedCount,
               onAdd: canAddMore
                   ? () => cubit.setGuestCounts(
@@ -441,6 +470,8 @@ class _GuestsSection extends StatelessWidget {
               child: Text(
                 isCombo
                     ? AppStrings.combosAvailableForSelection(remaining)
+                    : isCouponPricing
+                    ? AppStrings.couponsAvailableForSelection(remaining)
                     : AppStrings.spotsAvailableForSelection(remaining),
                 style: AppTextStyles.cardMeta.copyWith(
                   color: AppColors.textSecondary,

@@ -6,6 +6,7 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_offers_cubit.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_offers_state.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
@@ -47,6 +48,37 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
     }
   }
 
+  Future<void> _submitFormResult(BuildContext context, Object result) async {
+    final cubit = context.read<AdminOffersCubit>();
+    if (result is OfferEntity) {
+      if (result.id.trim().isEmpty) {
+        await cubit.create(result);
+      } else {
+        await cubit.update(result);
+      }
+    } else if (result is List<OfferEntity>) {
+      await cubit.createMany(result);
+    } else {
+      throw Exception('Unsupported offer payload.');
+    }
+
+    if (!context.mounted) return;
+    if (cubit.state.status == AdminOffersStatus.failure) {
+      throw Exception(cubit.state.errorMessage ?? 'Failed to save offer.');
+    }
+  }
+
+  String _saveSuccessMessage(Object result) {
+    return switch (result) {
+      OfferEntity() =>
+        result.id.trim().isEmpty
+            ? 'Offer created successfully.'
+            : 'Offer updated successfully.',
+      List<OfferEntity>() => '${result.length} offers created successfully.',
+      _ => 'Offer saved successfully.',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -75,13 +107,18 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
                     onPressed: () async {
                       final result = await Navigator.of(context).pushNamed(
                         Routes.adminOfferFormScreen,
-                        arguments: const AdminOfferFormArgs(),
+                        arguments: AdminOfferFormArgs(
+                          onSubmit: (payload) =>
+                              _submitFormResult(context, payload),
+                        ),
                       );
                       if (!context.mounted) return;
-                      if (result is OfferEntity) {
-                        context.read<AdminOffersCubit>().create(result);
-                      } else if (result is List<OfferEntity>) {
-                        context.read<AdminOffersCubit>().createMany(result);
+                      if (result != null) {
+                        showAppSnackBar(
+                          context,
+                          _saveSuccessMessage(result),
+                          type: SnackBarType.success,
+                        );
                       }
                     },
                     backgroundColor: AppColors.primary,
@@ -184,13 +221,20 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
                                                 Routes.adminOfferFormScreen,
                                                 arguments: AdminOfferFormArgs(
                                                   offer: offer,
+                                                  onSubmit: (payload) =>
+                                                      _submitFormResult(
+                                                        context,
+                                                        payload,
+                                                      ),
                                                 ),
                                               );
-                                          if (result is OfferEntity &&
+                                          if (result != null &&
                                               context.mounted) {
-                                            context
-                                                .read<AdminOffersCubit>()
-                                                .update(result);
+                                            showAppSnackBar(
+                                              context,
+                                              _saveSuccessMessage(result),
+                                              type: SnackBarType.success,
+                                            );
                                           }
                                         },
                                   onLongPress: isLoading
@@ -199,8 +243,9 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
                                   onDelete: isLoading
                                       ? null
                                       : () => _confirmDelete(context, offer),
-                                  isSelected: _selectedOfferIds
-                                      .contains(offer.id),
+                                  isSelected: _selectedOfferIds.contains(
+                                    offer.id,
+                                  ),
                                   selectionMode: _selectionMode,
                                 ),
                               ),
@@ -347,11 +392,9 @@ List<OfferEntity> _skeletonOffers() {
 }
 
 class AdminOfferFormArgs {
-  const AdminOfferFormArgs({
-    this.offer,
-    this.initialCategory,
-  });
+  const AdminOfferFormArgs({this.offer, this.initialCategory, this.onSubmit});
 
   final OfferEntity? offer;
   final String? initialCategory;
+  final Future<void> Function(Object result)? onSubmit;
 }

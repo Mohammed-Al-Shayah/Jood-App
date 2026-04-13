@@ -99,6 +99,7 @@ class AppRouter {
           builder: (_) => AdminOfferFormScreen(
             offer: args?.offer,
             initialCategory: args?.initialCategory,
+            onSubmit: args?.onSubmit,
           ),
         );
       case Routes.adminUsersScreen:

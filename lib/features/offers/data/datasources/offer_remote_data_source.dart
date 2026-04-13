@@ -55,9 +55,11 @@ class OfferRemoteDataSource {
           .get();
       final results = fallbackSnapshot.docs
           .map(OfferModel.fromDoc)
-          .where((offer) =>
-              offer.date.compareTo(startDate) >= 0 &&
-              offer.date.compareTo(endDate) <= 0)
+          .where(
+            (offer) =>
+                offer.date.compareTo(startDate) >= 0 &&
+                offer.date.compareTo(endDate) <= 0,
+          )
           .toList();
       results.sort((a, b) {
         final dateSort = a.date.compareTo(b.date);
@@ -89,6 +91,25 @@ class OfferRemoteDataSource {
     });
     final created = await docRef.get();
     return OfferModel.fromDoc(created);
+  }
+
+  Future<void> createOffers(List<OfferModel> offers) async {
+    if (offers.isEmpty) return;
+    for (var index = 0; index < offers.length; index += 500) {
+      final chunk = offers.skip(index).take(500);
+      final batch = firestore.batch();
+      for (final offer in chunk) {
+        final docRef = offer.id.trim().isEmpty
+            ? firestore.collection('offers').doc()
+            : firestore.collection('offers').doc(offer.id);
+        batch.set(docRef, {
+          ...offer.toMap(),
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+    }
   }
 
   Future<OfferModel> updateOffer(OfferModel offer) async {

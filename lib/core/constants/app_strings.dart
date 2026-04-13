@@ -77,12 +77,19 @@ class AppStrings {
   static String get selectNumberOfTickets => _tr('select_number_of_tickets');
   static String get adults => _tr('adults');
   static String get children => _tr('children');
+  static String get coupon => _tr('coupon', fallback: 'Coupon');
+  static String get coupons => _tr('coupons', fallback: 'Coupons');
   static String get combo => _tr('combo');
   static String get combos => _tr('combos');
   static String get quantity => _tr('quantity');
   static String get perPerson => _tr('per_person');
+  static String get perCoupon => _tr('per_coupon', fallback: 'per coupon');
   static String get perCombo => _tr('per_combo');
   static String get samePriceForAllGuests => _tr('same_price_for_all_guests');
+  static String get samePriceForAllCoupons => _tr(
+    'same_price_for_all_coupons',
+    fallback: 'Same price for every coupon',
+  );
   static String get samePriceForAllCombos => _tr('same_price_for_all_combos');
   static String get adultsAge => _tr('adults_age');
   static String get childrenAge => _tr('children_age');
@@ -671,6 +678,14 @@ class AppStrings {
     return _tr('guests_count_label', params: {'count': count});
   }
 
+  static String couponsCountLabel(int count) {
+    return _tr(
+      'coupons_count_label',
+      params: {'count': count},
+      fallback: 'Coupons x$count',
+    );
+  }
+
   static String combosCountLabel(int count) {
     return _tr('combos_count_label', params: {'count': count});
   }
@@ -689,6 +704,14 @@ class AppStrings {
 
   static String combosAvailableForSelection(int count) {
     return _tr('combos_available_for_selection', params: {'count': count});
+  }
+
+  static String couponsAvailableForSelection(int count) {
+    return _tr(
+      'coupons_available_for_selection',
+      params: {'count': count},
+      fallback: '$count coupons available for this selection.',
+    );
   }
 
   static String slotsLeftCount(int count) {

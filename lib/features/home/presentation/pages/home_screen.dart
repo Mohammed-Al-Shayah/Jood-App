@@ -117,11 +117,12 @@ class _HomeTabState extends State<HomeTab> {
                     userCountry: state.userCountry,
                   );
             final categorySpacing = 12.w;
+            const visibleCategoryCards = 3.25;
             final categoryCardWidth =
                 ((MediaQuery.sizeOf(context).width -
                             (16.w * 2) -
-                            (categorySpacing * 2)) /
-                        3)
+                            (categorySpacing * 3)) /
+                        visibleCategoryCards)
                     .clamp(96.w, 132.w)
                     .toDouble();
 

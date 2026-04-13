@@ -9,4 +9,8 @@ class CreateOfferUseCase {
   Future<OfferEntity> call(OfferEntity offer) {
     return repository.createOffer(offer);
   }
+
+  Future<void> many(List<OfferEntity> offers) {
+    return repository.createOffers(offers);
+  }
 }

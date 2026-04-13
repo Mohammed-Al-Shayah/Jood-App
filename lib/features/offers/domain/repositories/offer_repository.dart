@@ -13,6 +13,7 @@ abstract class OfferRepository {
   Future<OfferEntity> getOfferById(String id);
   Future<List<OfferEntity>> getOffers();
   Future<OfferEntity> createOffer(OfferEntity offer);
+  Future<void> createOffers(List<OfferEntity> offers);
   Future<OfferEntity> updateOffer(OfferEntity offer);
   Future<void> deleteOffer(String id);
 }

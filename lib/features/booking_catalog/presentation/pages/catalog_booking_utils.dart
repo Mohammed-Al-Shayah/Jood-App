@@ -139,10 +139,8 @@ List<CatalogBookingOption> buildPackageOptions(
       statusLabel: offerStatusLabel(offer),
       offerIndex: selectedEntry.key,
       isEnabled: !isOfferUnavailable(offer),
-      details: buildOptionDetails(
-        offer,
-        leadingDescription: offer.packageDescription,
-      ),
+      description: offer.packageDescription.trim(),
+      details: buildOptionDetails(offer),
     );
   }).toList();
 
@@ -150,15 +148,8 @@ List<CatalogBookingOption> buildPackageOptions(
   return result;
 }
 
-List<String> buildOptionDetails(
-  OfferEntity offer, {
-  String? leadingDescription,
-}) {
+List<String> buildOptionDetails(OfferEntity offer) {
   final details = <String>[];
-  final description = leadingDescription?.trim() ?? '';
-  if (description.isNotEmpty) {
-    details.add(description);
-  }
   for (final condition in offer.entryConditions) {
     final value = condition.trim();
     if (value.isEmpty || details.contains(value)) continue;

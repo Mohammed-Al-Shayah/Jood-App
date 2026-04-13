@@ -6,10 +6,16 @@ import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 
 class AdminOfferFormScreen extends StatelessWidget {
-  const AdminOfferFormScreen({super.key, this.offer, this.initialCategory});
+  const AdminOfferFormScreen({
+    super.key,
+    this.offer,
+    this.initialCategory,
+    this.onSubmit,
+  });
 
   final OfferEntity? offer;
   final String? initialCategory;
+  final Future<void> Function(Object result)? onSubmit;
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +24,10 @@ class AdminOfferFormScreen extends StatelessWidget {
       initialCategory: initialCategory,
       padding: EdgeInsets.fromLTRB(0, 6.h, 0, 24.h),
       onSubmit: (result) async {
+        final submit = onSubmit;
+        if (submit != null) {
+          await submit(result);
+        }
         if (!context.mounted) return;
         Navigator.of(context).pop(result);
       },

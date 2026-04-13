@@ -115,12 +115,7 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
                             ),
                           if (state.status == BookingFlowStatus.failure)
                             Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                16.w,
-                                16.h,
-                                16.w,
-                                0,
-                              ),
+                              padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 0),
                               child: Text(
                                 state.errorMessage ??
                                     AppStrings.failedToLoadBookingOptions,
@@ -649,6 +644,22 @@ class _OptionCardState extends State<_OptionCard> {
             ),
           ),
         ],
+        if (option.hasDescription) ...[
+          SizedBox(height: 8.h),
+          Text(
+            option.description.trim(),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            textAlign: isTimeSlotCard ? TextAlign.center : TextAlign.start,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: option.isEnabled
+                  ? AppColors.textSecondary
+                  : AppColors.textMuted,
+              fontSize: 10.5.sp,
+              height: 1.35,
+            ),
+          ),
+        ],
         if (option.primaryPriceLabel.isNotEmpty ||
             option.originalPriceLabel.isNotEmpty ||
             option.secondaryPriceLabel.isNotEmpty) ...[
@@ -782,6 +793,21 @@ class _OptionCardState extends State<_OptionCard> {
               color: AppColors.textSecondary,
               fontSize: 12.5.sp,
               height: widget.expandSubtitle ? 1.45 : null,
+            ),
+          ),
+        ],
+        if (option.hasDescription) ...[
+          SizedBox(height: 8.h),
+          Text(
+            option.description.trim(),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.cardMeta.copyWith(
+              color: option.isEnabled
+                  ? AppColors.textSecondary
+                  : AppColors.textMuted,
+              fontSize: 12.sp,
+              height: 1.45,
             ),
           ),
         ],

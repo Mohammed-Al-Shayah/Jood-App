@@ -90,6 +90,35 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     bookingCategory: _category,
     bookableType: _isAttraction ? 'attraction' : 'restaurant',
   );
+  bool get _isCouponPricing => isCouponGuestPricingMode(
+    guestPricingMode: _guestPricingMode,
+    bookingCategory: _category,
+    bookableType: _isAttraction ? 'attraction' : 'restaurant',
+  );
+
+  String get _unifiedPriceLabel {
+    if (_isCombo) return 'Price Per Combo';
+    if (_isCouponPricing) return 'Price Per Coupon';
+    return 'Price Per Person';
+  }
+
+  String get _unifiedOriginalPriceLabel {
+    if (_isCombo) return 'Original Price Per Combo';
+    if (_isCouponPricing) return 'Original Price Per Coupon';
+    return 'Original Price Per Person';
+  }
+
+  String get _unifiedCapacityLabel {
+    if (_isCombo) return 'Available Quantity';
+    if (_isCouponPricing) return 'Available Coupons';
+    return 'Capacity Persons';
+  }
+
+  String get _unifiedBookedLabel {
+    if (_isCombo) return 'Booked Quantity';
+    if (_isCouponPricing) return 'Booked Coupons';
+    return 'Booked Persons';
+  }
 
   List<_VenueOption> get _currentVenues =>
       _isAttraction ? _attractionVenues : _restaurantVenues;
@@ -296,15 +325,10 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
               child: Column(
                 children: [
                   if (_usesPersonPricing) ...[
-                    _numberField(
-                      _priceAdultController,
-                      _isCombo ? 'Price Per Combo' : 'Price Per Person',
-                    ),
+                    _numberField(_priceAdultController, _unifiedPriceLabel),
                     _numberField(
                       _priceAdultOriginalController,
-                      _isCombo
-                          ? 'Original Price Per Combo'
-                          : 'Original Price Per Person',
+                      _unifiedOriginalPriceLabel,
                     ),
                   ] else ...[
                     _numberField(_priceAdultController, 'Price Adult'),
@@ -323,14 +347,8 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
               child: Column(
                 children: [
                   if (_usesPersonPricing) ...[
-                    _intField(
-                      _capacityAdultController,
-                      _isCombo ? 'Available Quantity' : 'Capacity Persons',
-                    ),
-                    _intField(
-                      _bookedAdultController,
-                      _isCombo ? 'Booked Quantity' : 'Booked Persons',
-                    ),
+                    _intField(_capacityAdultController, _unifiedCapacityLabel),
+                    _intField(_bookedAdultController, _unifiedBookedLabel),
                   ] else ...[
                     _intField(_capacityAdultController, 'Capacity Adult'),
                     _intField(_capacityChildController, 'Capacity Child'),
@@ -473,6 +491,10 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           DropdownMenuItem(
             value: guestPricingModePerson,
             child: Text('Person'),
+          ),
+          DropdownMenuItem(
+            value: guestPricingModeCoupon,
+            child: Text('Coupon'),
           ),
           DropdownMenuItem(
             value: guestPricingModeAdultsChildren,
@@ -625,13 +647,13 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
             required: false,
           ),
           if (_usesPersonPricing) ...[
-            _numberField(package.priceAdultController, 'Price Per Person'),
+            _numberField(package.priceAdultController, _unifiedPriceLabel),
             _numberField(
               package.priceAdultOriginalController,
-              'Original Price Per Person',
+              _unifiedOriginalPriceLabel,
             ),
-            _intField(package.capacityAdultController, 'Capacity Persons'),
-            _intField(package.bookedAdultController, 'Booked Persons'),
+            _intField(package.capacityAdultController, _unifiedCapacityLabel),
+            _intField(package.bookedAdultController, _unifiedBookedLabel),
           ] else ...[
             _numberField(package.priceAdultController, 'Price Adult'),
             _numberField(
@@ -1104,6 +1126,19 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     _syncChildPriceFromAdult();
   }
 
+  String _unifiedBookedCapacityErrorMessage({int? packageIndex}) {
+    final suffix = packageIndex == null
+        ? '.'
+        : ' in package ${packageIndex + 1}.';
+    if (_isCombo) {
+      return 'Booked quantity cannot exceed available quantity$suffix';
+    }
+    if (_isCouponPricing) {
+      return 'Booked coupons cannot exceed available coupons$suffix';
+    }
+    return 'Booked persons cannot exceed capacity$suffix';
+  }
+
   void _syncSelectedVenue() {
     final venues = _currentVenues;
     final exists =
@@ -1291,7 +1326,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
           adultBooked != null &&
           adultBooked > adultCapacity) {
         return _usesPersonPricing
-            ? 'Booked persons cannot exceed capacity in package ${index + 1}.'
+            ? _unifiedBookedCapacityErrorMessage(packageIndex: index)
             : 'Booked adult cannot exceed adult capacity in package ${index + 1}.';
       }
       if (_usesPersonPricing) continue;
@@ -1318,9 +1353,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   }) {
     if (bookedAdult > capacityAdult) {
       return _usesPersonPricing
-          ? _isCombo
-              ? 'Booked quantity cannot exceed available quantity.'
-              : 'Booked persons cannot exceed capacity.'
+          ? _unifiedBookedCapacityErrorMessage()
           : 'Booked adult cannot exceed adult capacity.';
     }
     if (bookedChild > capacityChild) {
@@ -1344,7 +1377,9 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     final currency = _currencyController.text.trim();
     final bookingCategory = _category;
     final bookableType = _isAttraction ? 'attraction' : 'restaurant';
-    final guestPricingMode = _usesPersonPricing
+    final guestPricingMode = _isAttraction
+        ? _guestPricingMode
+        : _usesPersonPricing
         ? guestPricingModePerson
         : guestPricingModeAdultsChildren;
 
@@ -1523,11 +1558,12 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     setState(() => _isSubmitting = true);
     try {
       await widget.onSubmit(result);
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
+      final message = error.toString().trim().replaceFirst('Exception: ', '');
       showAppSnackBar(
         context,
-        'Failed to save offer.',
+        message.isEmpty ? 'Failed to save offer.' : message,
         type: SnackBarType.error,
       );
     } finally {
