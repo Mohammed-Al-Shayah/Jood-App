@@ -42,7 +42,9 @@ class CatalogItemModel extends CatalogItemEntity {
     final bookingCatalog = _asMap(data['bookingCatalog']);
     final categoryData = category == CatalogCategoryType.buffet
         ? _asMap(bookingCatalog['buffet'])
-        : _asMap(bookingCatalog['setMenu']);
+        : category == CatalogCategoryType.setMenu
+        ? _asMap(bookingCatalog['setMenu'])
+        : _asMap(bookingCatalog['combo']);
 
     final nameEn = _stringValue(data['name']);
     final nameAr = _stringValue(data['nameAr']);
@@ -111,6 +113,8 @@ class CatalogItemModel extends CatalogItemEntity {
                 AppStrings.lunchSetMenu,
                 AppStrings.dinner,
               ]
+            : category == CatalogCategoryType.combo
+            ? _stringList(categoryData['availableCombos'])
             : [AppStrings.breakfast, AppStrings.lunch, AppStrings.dinner],
       ),
       packageOverview: const [],

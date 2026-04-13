@@ -61,6 +61,7 @@ class CatalogRemoteDataSource {
     switch (category) {
       case CatalogCategoryType.buffet:
       case CatalogCategoryType.setMenu:
+      case CatalogCategoryType.combo:
         return _getRestaurantItems(category, offersByVenue);
       case CatalogCategoryType.attraction:
         return _getAttractionItems(offersByVenue);
@@ -169,12 +170,23 @@ class CatalogRemoteDataSource {
       return supported.contains('buffet');
     }
 
-    final setMenuConfig = _asMap(bookingCatalog['setMenu']);
-    if (supported.contains('set_menu') || supported.contains('setmenu')) {
+    if (category == CatalogCategoryType.setMenu) {
+      final setMenuConfig = _asMap(bookingCatalog['setMenu']);
+      if (supported.contains('set_menu') || supported.contains('setmenu')) {
+        return true;
+      }
+      if (setMenuConfig.isNotEmpty) {
+        return setMenuConfig['enabled'] as bool? ?? true;
+      }
+      return false;
+    }
+
+    final comboConfig = _asMap(bookingCatalog['combo']);
+    if (supported.contains('combo')) {
       return true;
     }
-    if (setMenuConfig.isNotEmpty) {
-      return setMenuConfig['enabled'] as bool? ?? true;
+    if (comboConfig.isNotEmpty) {
+      return comboConfig['enabled'] as bool? ?? true;
     }
     return false;
   }
@@ -294,6 +306,9 @@ class CatalogRemoteDataSource {
     }
     if (category == CatalogCategoryType.setMenu) {
       return raw == 'set_menu' || raw == 'setmenu';
+    }
+    if (category == CatalogCategoryType.combo) {
+      return raw == 'combo';
     }
     final type = (offer['bookableType'] as String? ?? '').trim().toLowerCase();
     return raw == 'attraction' || type == 'attraction';

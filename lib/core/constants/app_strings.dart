@@ -73,11 +73,17 @@ class AppStrings {
   static String get soldOut => _tr('sold_out');
   static String get more => _tr('more');
   static String get selectGuestsTitle => _tr('select_guests_title');
+  static String get selectQuantityTitle => _tr('select_quantity_title');
   static String get selectNumberOfTickets => _tr('select_number_of_tickets');
   static String get adults => _tr('adults');
   static String get children => _tr('children');
+  static String get combo => _tr('combo');
+  static String get combos => _tr('combos');
+  static String get quantity => _tr('quantity');
   static String get perPerson => _tr('per_person');
+  static String get perCombo => _tr('per_combo');
   static String get samePriceForAllGuests => _tr('same_price_for_all_guests');
+  static String get samePriceForAllCombos => _tr('same_price_for_all_combos');
   static String get adultsAge => _tr('adults_age');
   static String get childrenAge => _tr('children_age');
   static String get bookingSummary => _tr('booking_summary');
@@ -109,11 +115,15 @@ class AppStrings {
   static String get whatsIncluded => _tr('whats_included');
   static String get packagesOverview => _tr('packages_overview');
   static String get availableOptions => _tr('available_options');
+  static String get availableCombos => _tr('available_combos');
   static String get bookingNotes => _tr('booking_notes');
   static String get setMenuConcept => _tr('set_menu_concept');
+  static String get comboConcept => _tr('combo_concept');
   static String get experienceHighlights => _tr('experience_highlights');
   static String get bookingFlowSetMenuSelectionNote =>
       _tr('booking_flow_set_menu_selection_note');
+  static String get bookingFlowComboSelectionNote =>
+      _tr('booking_flow_combo_selection_note');
   static String get highlightsWillAppearHereOnceConfigured =>
       _tr('highlights_will_appear_here_once_configured');
   static String get includedDetailsWillAppearHere =>
@@ -126,6 +136,8 @@ class AppStrings {
       _tr('buffet_fallback_description');
   static String get setMenuFallbackDescription =>
       _tr('set_menu_fallback_description');
+  static String get comboFallbackDescription =>
+      _tr('combo_fallback_description');
   static String get attractionFallbackDescription =>
       _tr('attraction_fallback_description');
   static String get important => _tr('important');
@@ -294,6 +306,7 @@ class AppStrings {
   static String get ordersEmptySubtitle => _tr('orders_empty_subtitle');
   static String get buffet => _tr('buffet');
   static String get setMenu => _tr('set_menu');
+  static String get comboCategory => _tr('combo');
   static String get attractions => _tr('attractions');
   static String get exploreExperiences => _tr('explore_experiences');
   static String get unknown => _tr('unknown');
@@ -422,12 +435,17 @@ class AppStrings {
   static String get selectOptionToContinue => _tr('select_option_to_continue');
   static String get noSetMenuOptionsForDate =>
       _tr('no_set_menu_options_for_date');
+  static String get noCombosAvailableForDate =>
+      _tr('no_combos_available_for_date');
   static String get noMealsAvailableForDate =>
       _tr('no_meals_available_for_date');
   static String get chooseSetMenu => _tr('choose_set_menu');
+  static String get chooseCombo => _tr('choose_combo');
   static String get chooseMealType => _tr('choose_meal_type');
   static String get setMenuOptionPricingSubtitle =>
       _tr('set_menu_option_pricing_subtitle');
+  static String get comboOptionPricingSubtitle =>
+      _tr('combo_option_pricing_subtitle');
   static String get mealTypeBookingSubtitle =>
       _tr('meal_type_booking_subtitle');
   static String get noTimeSlotsAvailableForDate =>
@@ -448,6 +466,7 @@ class AppStrings {
   static String get ended => _tr('ended');
   static String get bookBuffet => _tr('book_buffet');
   static String get bookSetMenu => _tr('book_set_menu');
+  static String get bookCombo => _tr('book_combo');
   static String get bookAttraction => _tr('book_attraction');
   static String get selectedOption => _tr('selected_option');
   static String get selectOptionFirst => _tr('select_option_first');
@@ -455,6 +474,8 @@ class AppStrings {
       _tr('please_choose_available_option_first');
   static String get pleaseAddAtLeastOneGuest =>
       _tr('please_add_at_least_one_guest');
+  static String get pleaseAddAtLeastOneCombo =>
+      _tr('please_add_at_least_one_combo');
   static String get selectedOptionNoLongerAvailable =>
       _tr('selected_option_no_longer_available');
   static String get selectedGuestsNoLongerAvailable =>
@@ -465,6 +486,8 @@ class AppStrings {
   static String get beforeDiscount => _tr('before_discount');
   static String get setMenuItemSelectionAfterBooking =>
       _tr('set_menu_item_selection_after_booking');
+  static String get comboSelectionAfterBooking =>
+      _tr('combo_selection_after_booking');
   static String get missingRestaurantId => _tr('missing_restaurant_id');
   static String get noOffersAvailableForDate =>
       _tr('no_offers_available_for_date');
@@ -648,12 +671,24 @@ class AppStrings {
     return _tr('guests_count_label', params: {'count': count});
   }
 
+  static String combosCountLabel(int count) {
+    return _tr('combos_count_label', params: {'count': count});
+  }
+
+  static String quantityCountLabel(int count) {
+    return _tr('quantity_count_label', params: {'count': count});
+  }
+
   static String vatWithRate(String rate) {
     return _tr('vat_with_rate', params: {'rate': rate});
   }
 
   static String spotsAvailableForSelection(int count) {
     return _tr('spots_available_for_selection', params: {'count': count});
+  }
+
+  static String combosAvailableForSelection(int count) {
+    return _tr('combos_available_for_selection', params: {'count': count});
   }
 
   static String slotsLeftCount(int count) {

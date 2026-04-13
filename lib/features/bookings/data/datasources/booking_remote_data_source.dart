@@ -45,9 +45,12 @@ class BookingRemoteDataSource {
       final bookableType = (data['bookableType'] as String? ?? 'restaurant')
           .trim()
           .toLowerCase();
+      final bookingCategory = (data['bookingCategory'] as String? ?? '')
+          .trim()
+          .toLowerCase();
       final guestPricingMode = normalizeGuestPricingMode(
         data['guestPricingMode'] as String?,
-        bookingCategory: data['bookingCategory'] as String? ?? '',
+        bookingCategory: bookingCategory,
         bookableType: bookableType,
       );
 
@@ -122,6 +125,7 @@ class BookingRemoteDataSource {
         'paymentSessionId': sessionKey.isEmpty ? null : sessionKey,
         'restaurantNameSnapshot': restaurantNameSnapshot,
         'offerTitleSnapshot': offerTitle,
+        'bookingCategory': bookingCategory,
         'bookableType': bookableType,
         'guestPricingMode': guestPricingMode,
         'coverImageUrlSnapshot': coverImageUrlSnapshot,
@@ -155,6 +159,7 @@ class BookingRemoteDataSource {
         paidAt: DateTime.now(),
         restaurantNameSnapshot: restaurantNameSnapshot,
         offerTitleSnapshot: offerTitle,
+        bookingCategory: bookingCategory,
         bookableType: bookableType,
         guestPricingMode: guestPricingMode,
         coverImageUrlSnapshot: coverImageUrlSnapshot,

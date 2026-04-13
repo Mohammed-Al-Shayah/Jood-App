@@ -240,6 +240,9 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
     if (_bookingCategory == 'set_menu') {
       return raw == 'set_menu' || raw == 'setmenu';
     }
+    if (_bookingCategory == 'combo') {
+      return raw == 'combo';
+    }
     if (_bookingCategory == 'attraction') {
       final type = offer.bookableType.trim().toLowerCase();
       return raw == 'attraction' || type == 'attraction';

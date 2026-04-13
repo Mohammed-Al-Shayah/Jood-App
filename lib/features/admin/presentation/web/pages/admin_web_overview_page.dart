@@ -197,6 +197,8 @@ class _AdminWebOverviewPageState extends State<AdminWebOverviewPage> {
                           widget.onSelectSection(AdminWebSection.buffet),
                       onOpenSetMenu: () =>
                           widget.onSelectSection(AdminWebSection.setMenu),
+                      onOpenCombo: () =>
+                          widget.onSelectSection(AdminWebSection.combo),
                       onOpenAttractions: () =>
                           widget.onSelectSection(AdminWebSection.attractions),
                       onOpenOffers: () =>
@@ -371,6 +373,7 @@ class _OverviewHeader extends StatelessWidget {
     required this.onOpenRestaurants,
     required this.onOpenBuffet,
     required this.onOpenSetMenu,
+    required this.onOpenCombo,
     required this.onOpenAttractions,
     required this.onOpenOffers,
     required this.onOpenBookings,
@@ -385,6 +388,7 @@ class _OverviewHeader extends StatelessWidget {
   final VoidCallback onOpenRestaurants;
   final VoidCallback onOpenBuffet;
   final VoidCallback onOpenSetMenu;
+  final VoidCallback onOpenCombo;
   final VoidCallback onOpenAttractions;
   final VoidCallback onOpenOffers;
   final VoidCallback onOpenBookings;
@@ -456,6 +460,11 @@ class _OverviewHeader extends StatelessWidget {
                     icon: Icons.menu_book_outlined,
                     label: 'Set Menu',
                     onTap: onOpenSetMenu,
+                  ),
+                  _HeaderActionChip(
+                    icon: Icons.fastfood_rounded,
+                    label: 'Combo',
+                    onTap: onOpenCombo,
                   ),
                   _HeaderActionChip(
                     icon: Icons.local_activity_outlined,

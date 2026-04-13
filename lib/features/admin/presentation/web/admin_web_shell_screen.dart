@@ -157,6 +157,10 @@ class _AdminWebShellScreenState extends State<AdminWebShellScreen> {
         return const AdminWebOffersPage(
           sectionMode: AdminWebOfferSectionMode.setMenu,
         );
+      case AdminWebSection.combo:
+        return const AdminWebOffersPage(
+          sectionMode: AdminWebOfferSectionMode.combo,
+        );
       case AdminWebSection.attractions:
         return const AdminWebAttractionsPage();
       case AdminWebSection.offers:

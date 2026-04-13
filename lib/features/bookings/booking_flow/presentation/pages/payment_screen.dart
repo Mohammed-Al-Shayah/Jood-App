@@ -139,7 +139,7 @@ class _PaymentScreenState extends State<PaymentScreen>
         // pKey:'HGvTMLDssJghr9tlN9gr4DVYt0qyBy',
         api: ThawaniConfig.apiKey,
         pKey: ThawaniConfig.publishableApiKey,
-        testMode: true,
+        testMode: false,
         successUrl: 'joodapp://success',
         cancelUrl: 'joodapp://cancel',
         metadata: {

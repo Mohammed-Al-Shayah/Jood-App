@@ -18,7 +18,7 @@ import 'package:jood/features/attractions/domain/usecases/get_all_attractions_us
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 import 'package:jood/features/restaurants/domain/usecases/get_all_restaurants_usecase.dart';
 
-enum AdminWebOfferSectionMode { all, buffet, setMenu, attractions }
+enum AdminWebOfferSectionMode { all, buffet, setMenu, combo, attractions }
 
 class AdminWebOffersPage extends StatefulWidget {
   const AdminWebOffersPage({
@@ -34,6 +34,7 @@ class AdminWebOffersPage extends StatefulWidget {
     AdminWebOfferSectionMode.all => null,
     AdminWebOfferSectionMode.buffet => 'buffet',
     AdminWebOfferSectionMode.setMenu => 'set_menu',
+    AdminWebOfferSectionMode.combo => 'combo',
     AdminWebOfferSectionMode.attractions => 'attraction',
   };
 
@@ -41,6 +42,7 @@ class AdminWebOffersPage extends StatefulWidget {
     AdminWebOfferSectionMode.all => 'All offers',
     AdminWebOfferSectionMode.buffet => 'Buffet offers',
     AdminWebOfferSectionMode.setMenu => 'Set menu offers',
+    AdminWebOfferSectionMode.combo => 'Combo offers',
     AdminWebOfferSectionMode.attractions => 'Attraction offers',
   };
 
@@ -49,6 +51,8 @@ class AdminWebOffersPage extends StatefulWidget {
     AdminWebOfferSectionMode.buffet => 'Meal-based buffet inventory',
     AdminWebOfferSectionMode.setMenu =>
       'Fixed menu inventory across restaurants',
+    AdminWebOfferSectionMode.combo =>
+      'Fixed-price combo inventory with quantity-based ordering',
     AdminWebOfferSectionMode.attractions => 'Time and package based inventory',
   };
 
@@ -56,6 +60,7 @@ class AdminWebOffersPage extends StatefulWidget {
     AdminWebOfferSectionMode.all => 'Attraction offers',
     AdminWebOfferSectionMode.buffet => 'Buffet venues',
     AdminWebOfferSectionMode.setMenu => 'Set menu venues',
+    AdminWebOfferSectionMode.combo => 'Combo venues',
     AdminWebOfferSectionMode.attractions => 'Attraction venues',
   };
 
@@ -63,6 +68,7 @@ class AdminWebOffersPage extends StatefulWidget {
     AdminWebOfferSectionMode.all => 'Add offer',
     AdminWebOfferSectionMode.buffet => 'Add buffet offer',
     AdminWebOfferSectionMode.setMenu => 'Add set menu offer',
+    AdminWebOfferSectionMode.combo => 'Add combo offer',
     AdminWebOfferSectionMode.attractions => 'Add attraction offer',
   };
 
@@ -275,6 +281,8 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
       case 'set_menu':
       case 'setmenu':
         return 'Set Menu';
+      case 'combo':
+        return 'Combo';
       case 'attraction':
         return 'Attraction';
       default:
@@ -450,6 +458,12 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
                                 setState(() => _categoryFilter = 'set_menu'),
                           ),
                           _FilterChip(
+                            label: 'Combo',
+                            selected: _categoryFilter == 'combo',
+                            onTap: () =>
+                                setState(() => _categoryFilter = 'combo'),
+                          ),
+                          _FilterChip(
                             label: 'Attractions',
                             selected: _categoryFilter == 'attraction',
                             onTap: () =>
@@ -506,6 +520,8 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
         return 'Create buffet offer';
       case AdminWebOfferSectionMode.setMenu:
         return 'Create set menu offer';
+      case AdminWebOfferSectionMode.combo:
+        return 'Create combo offer';
       case AdminWebOfferSectionMode.attractions:
         return 'Create attraction offer';
       case AdminWebOfferSectionMode.all:
@@ -816,7 +832,8 @@ class _OffersTable extends StatelessWidget {
   String _priceLabel(OfferEntity offer) {
     final amount = '${offer.currency} ${offer.priceAdult.toStringAsFixed(1)}';
     if (offer.usesUnifiedGuestCount) {
-      return '$amount / person';
+      final unit = _categoryKey(offer) == 'combo' ? 'combo' : 'person';
+      return '$amount / $unit';
     }
     return '$amount / ${offer.priceChild.toStringAsFixed(1)}';
   }
@@ -832,9 +849,20 @@ class _OffersTable extends StatelessWidget {
   String _remainingLabel(OfferEntity offer) {
     if (offer.usesUnifiedGuestCount) {
       final remaining = offer.remainingAdult + offer.remainingChild;
-      return '$remaining persons';
+      final unit = _categoryKey(offer) == 'combo' ? 'combos' : 'persons';
+      return '$remaining $unit';
     }
     return 'A ${offer.remainingAdult}  C ${offer.remainingChild}';
+  }
+
+  String _categoryKey(OfferEntity offer) {
+    final raw = offer.bookingCategory.trim().toLowerCase();
+    if (raw == 'set menu') return 'set_menu';
+    if (raw.isNotEmpty) return raw;
+    if (offer.bookableType.trim().toLowerCase() == 'attraction') {
+      return 'attraction';
+    }
+    return 'restaurant';
   }
 }
 

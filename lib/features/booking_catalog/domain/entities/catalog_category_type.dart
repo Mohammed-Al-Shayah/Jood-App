@@ -1,4 +1,4 @@
-enum CatalogCategoryType { buffet, setMenu, attraction }
+enum CatalogCategoryType { buffet, setMenu, combo, attraction }
 
 enum CatalogBookingMode { mealBased, timeSlotBased }
 
@@ -9,6 +9,8 @@ extension CatalogCategoryTypeX on CatalogCategoryType {
         return 'buffet';
       case CatalogCategoryType.setMenu:
         return 'set_menu';
+      case CatalogCategoryType.combo:
+        return 'combo';
       case CatalogCategoryType.attraction:
         return 'attraction';
     }
@@ -20,6 +22,8 @@ extension CatalogCategoryTypeX on CatalogCategoryType {
         return 'Buffet';
       case CatalogCategoryType.setMenu:
         return 'Set Menu';
+      case CatalogCategoryType.combo:
+        return 'Combo';
       case CatalogCategoryType.attraction:
         return 'Attractions';
     }
@@ -31,6 +35,8 @@ extension CatalogCategoryTypeX on CatalogCategoryType {
         return 'Flexible meal-based bookings with date and guest selection.';
       case CatalogCategoryType.setMenu:
         return 'Fixed set-menu experiences with later item selection support.';
+      case CatalogCategoryType.combo:
+        return 'Ready-made combo meals with fixed pricing and quantity-based ordering.';
       case CatalogCategoryType.attraction:
         return 'Time-slot packages with dynamic pricing and availability.';
     }
@@ -42,6 +48,8 @@ extension CatalogCategoryTypeX on CatalogCategoryType {
         return 'No buffet restaurants available.';
       case CatalogCategoryType.setMenu:
         return 'No set menu restaurants available.';
+      case CatalogCategoryType.combo:
+        return 'No combo restaurants available.';
       case CatalogCategoryType.attraction:
         return 'No attractions available right now.';
     }
@@ -51,6 +59,7 @@ extension CatalogCategoryTypeX on CatalogCategoryType {
     switch (this) {
       case CatalogCategoryType.buffet:
       case CatalogCategoryType.setMenu:
+      case CatalogCategoryType.combo:
         return CatalogBookingMode.mealBased;
       case CatalogCategoryType.attraction:
         return CatalogBookingMode.timeSlotBased;

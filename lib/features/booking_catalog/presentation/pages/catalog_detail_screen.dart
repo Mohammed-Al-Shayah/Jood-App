@@ -228,7 +228,9 @@ class CatalogDetailScreen extends StatelessWidget {
                     )
                   else
                     CatalogInfoSection(
-                      title: AppStrings.availableOptions,
+                      title: item.category == CatalogCategoryType.combo
+                          ? AppStrings.availableCombos
+                          : AppStrings.availableOptions,
                       items: item.availableMeals,
                       emptyLabel: AppStrings
                           .optionsWillAppearAutomaticallyWhenConfigured,
@@ -254,7 +256,9 @@ class CatalogDetailScreen extends StatelessWidget {
                           SizedBox(height: 8.h),
                           if (item.requiresMenuItemSelection)
                             Text(
-                              AppStrings.bookingFlowSetMenuSelectionNote,
+                              item.category == CatalogCategoryType.combo
+                                  ? AppStrings.bookingFlowComboSelectionNote
+                                  : AppStrings.bookingFlowSetMenuSelectionNote,
                               style: AppTextStyles.cardMeta.copyWith(
                                 color: AppColors.textSecondary,
                                 fontSize: 12.5.sp,
@@ -317,15 +321,21 @@ String _fallbackDescription(CatalogCategoryType category) {
       return AppStrings.buffetFallbackDescription;
     case CatalogCategoryType.setMenu:
       return AppStrings.setMenuFallbackDescription;
+    case CatalogCategoryType.combo:
+      return AppStrings.comboFallbackDescription;
     case CatalogCategoryType.attraction:
       return AppStrings.attractionFallbackDescription;
   }
 }
 
 String _aboutTitle(CatalogCategoryType category) {
-  return category == CatalogCategoryType.setMenu
-      ? AppStrings.setMenuConcept
-      : AppStrings.description;
+  if (category == CatalogCategoryType.setMenu) {
+    return AppStrings.setMenuConcept;
+  }
+  if (category == CatalogCategoryType.combo) {
+    return AppStrings.comboConcept;
+  }
+  return AppStrings.description;
 }
 
 String _highlightsTitle(CatalogCategoryType category) {

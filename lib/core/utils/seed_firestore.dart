@@ -6,7 +6,7 @@ import 'guest_pricing_utils.dart';
 class SeedFirestore {
   const SeedFirestore._();
 
-  static const String _seedDocId = 'demo_v8_catalog';
+  static const String _seedDocId = 'demo_v9_combo';
 
   static Future<void> ensureSeeded() async {
     if (!kDebugMode) return;
@@ -572,6 +572,152 @@ class SeedFirestore {
       }
     }
 
+    final comboRestaurants = <String, Map<String, dynamic>>{
+      'demo_restaurant_4': {
+        'start': '11:00',
+        'end': '23:00',
+        'options': [
+          {
+            'title': '10 pcs Broasted',
+            'description':
+                'Ten pieces of broasted chicken with fries, garlic sauce, and soft drinks.',
+            'adultBase': 10.0,
+            'adultOriginal': 12.0,
+            'capacityAdult': 30,
+            'bookedAdult': 6,
+          },
+          {
+            'title': '15 pcs Broasted',
+            'description':
+                'Fifteen pieces of broasted chicken prepared for sharing with fries and dips.',
+            'adultBase': 14.0,
+            'adultOriginal': 17.0,
+            'capacityAdult': 22,
+            'bookedAdult': 4,
+          },
+          {
+            'title': 'Family Combo',
+            'description':
+                'Family combo with mixed broasted pieces, fries, sauces, and drinks.',
+            'adultBase': 22.0,
+            'adultOriginal': 26.0,
+            'capacityAdult': 14,
+            'bookedAdult': 2,
+          },
+        ],
+      },
+      'demo_restaurant_6': {
+        'start': '08:00',
+        'end': '16:00',
+        'options': [
+          {
+            'title': 'Breakfast Duo',
+            'description':
+                'Two breakfast plates with tea service and fresh bakery items.',
+            'adultBase': 8.0,
+            'adultOriginal': 10.0,
+            'capacityAdult': 24,
+            'bookedAdult': 5,
+          },
+          {
+            'title': 'Heritage Breakfast Box',
+            'description':
+                'Traditional breakfast assortment packed as one ready-to-order combo.',
+            'adultBase': 11.0,
+            'adultOriginal': 13.0,
+            'capacityAdult': 18,
+            'bookedAdult': 3,
+          },
+          {
+            'title': 'Tea & Sweets Combo',
+            'description':
+                'Arabic tea service with date cake, luqaimat, and assorted sweets.',
+            'adultBase': 9.0,
+            'adultOriginal': 11.0,
+            'capacityAdult': 16,
+            'bookedAdult': 2,
+          },
+        ],
+      },
+    };
+
+    for (final entry in comboRestaurants.entries) {
+      final restaurantId = entry.key;
+      final config = entry.value;
+      final startTime = config['start'] as String;
+      final endTime = config['end'] as String;
+      final options = config['options'] as List<dynamic>;
+
+      for (var dayIndex = 0; dayIndex < dates.length; dayIndex++) {
+        final date = dates[dayIndex];
+        for (var optionIndex = 0; optionIndex < options.length; optionIndex++) {
+          final option = options[optionIndex] as Map<String, dynamic>;
+          final soldOut =
+              restaurantId == 'demo_restaurant_6' &&
+              dayIndex == 5 &&
+              optionIndex == 1;
+          final low =
+              !soldOut &&
+              restaurantId == 'demo_restaurant_4' &&
+              dayIndex == 2 &&
+              optionIndex == 0;
+          final capacityAdult = option['capacityAdult'] as int;
+          final bookedAdult = soldOut
+              ? capacityAdult
+              : low
+              ? capacityAdult - 2
+              : (option['bookedAdult'] as int) + (dayIndex % 3);
+          final priceAdult = option['adultBase'] as double;
+          final priceAdultOriginal = option['adultOriginal'] as double;
+          final offerRef = firestore
+              .collection('offers')
+              .doc(
+                _offerId(
+                  restaurantId,
+                  date,
+                  startTime,
+                  suffix: 'combo_$optionIndex',
+                ),
+              );
+
+          batch.set(offerRef, {
+            'restaurantId': restaurantId,
+            'date': AppDateUtils.formatDate(date),
+            'startTime': startTime,
+            'endTime': endTime,
+            'currency': 'OMR',
+            'priceAdult': priceAdult,
+            'priceAdultOriginal': priceAdultOriginal,
+            'priceChild': 0.0,
+            'time': startTime,
+            'price': 'OMR ${priceAdult.toStringAsFixed(1)}',
+            'status': soldOut
+                ? 'sold_out'
+                : low
+                ? 'low'
+                : 'active',
+            'capacityAdult': capacityAdult,
+            'capacityChild': 0,
+            'bookedAdult': bookedAdult,
+            'bookedChild': 0,
+            'title': option['title'],
+            'bookableType': 'restaurant',
+            'bookingCategory': 'combo',
+            'guestPricingMode': guestPricingModePerson,
+            'mealType': '',
+            'packageName': '',
+            'packageDescription': option['description'],
+            'entryConditions': [
+              'Quantity-based combo order',
+              'One unit equals one combo package',
+            ],
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+        }
+      }
+    }
+
     final attractionSchedules = <String, List<Map<String, dynamic>>>{
       'demo_attraction_1': [
         {
@@ -854,6 +1000,7 @@ class SeedFirestore {
         'adults': 2,
         'children': 1,
         'code': 'BKG1769509734255',
+        'bookingCategory': 'buffet',
         'bookableType': 'restaurant',
         'guestPricingMode': guestPricingModeAdultsChildren,
         'offerTitleSnapshot': 'Lunch Entry',
@@ -867,6 +1014,7 @@ class SeedFirestore {
         'adults': 4,
         'children': 0,
         'code': 'BKG1769509735001',
+        'bookingCategory': 'buffet',
         'bookableType': 'restaurant',
         'guestPricingMode': guestPricingModeAdultsChildren,
         'offerTitleSnapshot': 'Dinner Entry',
@@ -880,6 +1028,7 @@ class SeedFirestore {
         'adults': 1,
         'children': 2,
         'code': 'BKG1769509737001',
+        'bookingCategory': 'buffet',
         'bookableType': 'restaurant',
         'guestPricingMode': guestPricingModeAdultsChildren,
         'offerTitleSnapshot': 'Breakfast Entry',
@@ -902,12 +1051,37 @@ class SeedFirestore {
         'unitPriceAdult': 45.0,
         'unitPriceChild': 0.0,
         'code': 'BKG1769509738999',
+        'bookingCategory': 'attraction',
         'bookableType': 'attraction',
         'guestPricingMode': guestPricingModePerson,
         'restaurantNameSnapshot': 'Desert Safari Escape',
         'coverImageUrlSnapshot':
             'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
         'offerTitleSnapshot': 'VIP Majlis',
+      },
+      {
+        'id': 'demo_booking_5',
+        'userId': 'demo_user_2',
+        'restaurantId': 'demo_restaurant_4',
+        'dateIndex': 2,
+        'offerId': _offerId(
+          'demo_restaurant_4',
+          dates[2],
+          '11:00',
+          suffix: 'combo_0',
+        ),
+        'startTime': '11:00',
+        'endTime': '23:00',
+        'adults': 2,
+        'children': 0,
+        'unitPriceAdult': 10.0,
+        'unitPriceChild': 0.0,
+        'code': 'BKG1769509740123',
+        'bookingCategory': 'combo',
+        'bookableType': 'restaurant',
+        'guestPricingMode': guestPricingModePerson,
+        'restaurantNameSnapshot': 'Spice Avenue',
+        'offerTitleSnapshot': '10 pcs Broasted',
       },
     ];
 
@@ -959,6 +1133,7 @@ class SeedFirestore {
             _nameForVenueId(restaurantId, restaurants, attractions),
         'offerTitleSnapshot':
             booking['offerTitleSnapshot'] ?? time?['title'] ?? '',
+        'bookingCategory': booking['bookingCategory'] ?? '',
         'bookableType': booking['bookableType'] ?? 'restaurant',
         'guestPricingMode': booking['guestPricingMode'],
         'coverImageUrlSnapshot':
@@ -1054,6 +1229,35 @@ class SeedFirestore {
             },
           },
         };
+      case 'demo_restaurant_4':
+        return {
+          'bookingCatalog': {
+            'supportedCategories': ['buffet', 'combo'],
+            'buffet': {
+              'description':
+                  'Street-food buffet service with flexible lunch and dinner timings.',
+              'included': ['Soft drinks', 'Free Wi-Fi'],
+              'availableMeals': ['Breakfast', 'Lunch', 'Dinner'],
+            },
+            'combo': {
+              'description':
+                  'Ready-to-order restaurant combos with one fixed price per combo unit.',
+              'included': [
+                'Fast service combo packaging',
+                'Fixed pricing per combo order',
+              ],
+              'availableCombos': [
+                '10 pcs Broasted',
+                '15 pcs Broasted',
+                'Family Combo',
+              ],
+              'notes': [
+                'Increase quantity to order more than one combo.',
+                'Each combo option has its own daily availability.',
+              ],
+            },
+          },
+        };
       case 'demo_restaurant_5':
         return {
           'bookingCatalog': {
@@ -1078,13 +1282,26 @@ class SeedFirestore {
       case 'demo_restaurant_6':
         return {
           'bookingCatalog': {
-            'supportedCategories': ['buffet'],
+            'supportedCategories': ['buffet', 'combo'],
             'buffet': {
               'description':
                   'Traditional brunch-focused buffet with lighter weekday operations.',
               'included': ['Tea service', 'Traditional sweets'],
               'availableMeals': ['Breakfast', 'Lunch', 'Brunch'],
               'notes': ['Brunch is available only on selected dates.'],
+            },
+            'combo': {
+              'description':
+                  'Traditional ready-made combos sold by quantity instead of guest count.',
+              'included': ['Tea service', 'Freshly packed combo sets'],
+              'availableCombos': [
+                'Breakfast Duo',
+                'Heritage Breakfast Box',
+                'Tea & Sweets Combo',
+              ],
+              'notes': [
+                'Combos are ideal for takeaway or quick dine-in service.',
+              ],
             },
           },
         };

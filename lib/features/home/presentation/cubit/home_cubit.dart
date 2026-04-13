@@ -62,6 +62,7 @@ class HomeCubit extends Cubit<HomeState> {
       final results = await Future.wait([
         _getCatalogItems(CatalogCategoryType.buffet),
         _getCatalogItems(CatalogCategoryType.setMenu),
+        _getCatalogItems(CatalogCategoryType.combo),
         _getCatalogItems(CatalogCategoryType.attraction),
       ]);
       final items = results.expand((group) => group).toList();
@@ -268,6 +269,8 @@ class HomeCubit extends Cubit<HomeState> {
         return AppStrings.buffet;
       case CatalogCategoryType.setMenu:
         return AppStrings.setMenu;
+      case CatalogCategoryType.combo:
+        return AppStrings.comboCategory;
       case CatalogCategoryType.attraction:
         return AppStrings.attractions;
     }

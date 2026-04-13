@@ -3,6 +3,14 @@ import 'app_strings.dart';
 const String guestPricingModePerson = 'person';
 const String guestPricingModeAdultsChildren = 'adults_children';
 
+bool isComboBookingCategory(String bookingCategory) {
+  final normalizedCategory = bookingCategory
+      .trim()
+      .toLowerCase()
+      .replaceAll(' ', '_');
+  return normalizedCategory == 'combo';
+}
+
 String normalizeGuestPricingMode(
   String? rawMode, {
   String bookingCategory = '',
@@ -32,6 +40,9 @@ String normalizeGuestPricingMode(
     ' ',
     '_',
   );
+  if (normalizedCategory == 'combo') {
+    return guestPricingModePerson;
+  }
   if (normalizedCategory == 'set_menu' || normalizedCategory == 'setmenu') {
     return guestPricingModePerson;
   }
@@ -66,10 +77,29 @@ String buildGuestsLabel(
     bookingCategory: bookingCategory,
     bookableType: bookableType,
   )) {
+    if (isComboBookingCategory(bookingCategory)) {
+      return AppStrings.combosCountLabel(adultsCount + childrenCount);
+    }
     return AppStrings.guestsCountLabel(adultsCount + childrenCount);
   }
   if (childrenCount > 0) {
     return '${AppStrings.adultsCountLabel(adultsCount)} | ${AppStrings.childrenCountLabel(childrenCount)}';
   }
   return AppStrings.adultsCountLabel(adultsCount);
+}
+
+String selectionCountTitle({
+  String bookingCategory = '',
+  String guestPricingMode = '',
+  String bookableType = '',
+}) {
+  final usesUnified = usesUnifiedGuestCount(
+    guestPricingMode: guestPricingMode,
+    bookingCategory: bookingCategory,
+    bookableType: bookableType,
+  );
+  if (usesUnified && isComboBookingCategory(bookingCategory)) {
+    return AppStrings.quantity;
+  }
+  return AppStrings.guests;
 }

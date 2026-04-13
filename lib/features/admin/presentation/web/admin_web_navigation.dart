@@ -21,6 +21,12 @@ enum AdminWebSection {
     subtitle: 'Curated set menu inventory across restaurant partners',
     icon: Icons.menu_book_outlined,
   ),
+  combo(
+    label: 'Combo',
+    subtitle:
+        'Fixed-price combo inventory and quantity-based restaurant offers',
+    icon: Icons.fastfood_rounded,
+  ),
   attractions(
     label: 'Attractions',
     subtitle: 'Time-slot and package inventory for attraction experiences',

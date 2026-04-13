@@ -227,6 +227,10 @@ class RestaurantModel extends RestaurantEntity {
     Map<String, dynamic> bookingCatalog,
     String category,
   ) {
+    if (category == 'set_menu') {
+      return true;
+    }
+
     final supported = _normalizedStringList(
       bookingCatalog['supportedCategories'],
     );
@@ -234,17 +238,6 @@ class RestaurantModel extends RestaurantEntity {
     if (category == 'buffet') {
       if (supported.isEmpty) return true;
       return supported.contains('buffet');
-    }
-
-    if (category == 'set_menu') {
-      final setMenuConfig = _asMap(bookingCatalog['setMenu']);
-      if (supported.contains('set_menu') || supported.contains('setmenu')) {
-        return true;
-      }
-      if (setMenuConfig.isNotEmpty) {
-        return setMenuConfig['enabled'] as bool? ?? true;
-      }
-      return false;
     }
 
     return true;

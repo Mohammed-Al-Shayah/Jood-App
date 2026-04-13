@@ -36,6 +36,8 @@ class AdminOfferFormScreen extends StatelessWidget {
         return 'Create Buffet Offer';
       case 'set_menu':
         return 'Create Set Menu Offer';
+      case 'combo':
+        return 'Create Combo Offer';
       case 'attraction':
         return 'Create Attraction Offer';
       default:

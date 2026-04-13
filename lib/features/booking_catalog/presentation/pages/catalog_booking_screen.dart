@@ -299,6 +299,8 @@ class _MealBasedSection extends StatelessWidget {
         child: Text(
           item.category == CatalogCategoryType.setMenu
               ? AppStrings.noSetMenuOptionsForDate
+              : item.category == CatalogCategoryType.combo
+              ? AppStrings.noCombosAvailableForDate
               : AppStrings.noMealsAvailableForDate,
           style: AppTextStyles.cardMeta.copyWith(
             fontSize: 13.sp,
@@ -311,9 +313,13 @@ class _MealBasedSection extends StatelessWidget {
     return _OptionsSection(
       title: item.category == CatalogCategoryType.setMenu
           ? AppStrings.chooseSetMenu
+          : item.category == CatalogCategoryType.combo
+          ? AppStrings.chooseCombo
           : AppStrings.chooseMealType,
       subtitle: item.category == CatalogCategoryType.setMenu
           ? AppStrings.setMenuOptionPricingSubtitle
+          : item.category == CatalogCategoryType.combo
+          ? AppStrings.comboOptionPricingSubtitle
           : AppStrings.mealTypeBookingSubtitle,
       options: options,
       selectedIndex: state.selectedOfferIndex,

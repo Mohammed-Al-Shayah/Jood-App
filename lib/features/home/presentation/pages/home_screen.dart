@@ -844,6 +844,8 @@ String _localizedCategoryTitle(CatalogCategoryType category) {
       return AppStrings.buffet;
     case CatalogCategoryType.setMenu:
       return AppStrings.setMenu;
+    case CatalogCategoryType.combo:
+      return AppStrings.comboCategory;
     case CatalogCategoryType.attraction:
       return AppStrings.attractions;
   }
@@ -909,6 +911,32 @@ List<CatalogItemEntity> _skeletonItems() {
     ),
     CatalogItemEntity(
       id: 'skeleton-3',
+      category: CatalogCategoryType.combo,
+      bookingMode: CatalogCategoryType.combo.bookingMode,
+      sourceCollection: 'restaurants',
+      name: 'Combo venue',
+      cityId: 'City',
+      area: 'Area',
+      address: '',
+      rating: 4.4,
+      reviewsCount: 0,
+      coverImageUrl:
+          'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&q=80',
+      description: '',
+      highlights: [],
+      inclusions: [],
+      availableMeals: const ['10 pcs Broasted', 'Family Combo'],
+      packageOverview: const [],
+      bookingNotes: const [],
+      requiresMenuItemSelection: false,
+      badge: AppStrings.percentOff(10),
+      priceFrom: r'$10',
+      discount: r'$14',
+      slotsLeft: '12 slots',
+      isActive: true,
+    ),
+    CatalogItemEntity(
+      id: 'skeleton-4',
       category: CatalogCategoryType.attraction,
       bookingMode: CatalogCategoryType.attraction.bookingMode,
       sourceCollection: 'attractions',
@@ -1073,6 +1101,19 @@ void _showSortSheet(BuildContext context) {
                                     .read<HomeCubit>()
                                     .updateCategoryFilter(
                                       CatalogCategoryType.attraction,
+                                    ),
+                              ),
+                              _TypeChip(
+                                label: _localizedCategoryTitle(
+                                  CatalogCategoryType.combo,
+                                ),
+                                selected:
+                                    state.selectedCategory ==
+                                    CatalogCategoryType.combo,
+                                onTap: () => context
+                                    .read<HomeCubit>()
+                                    .updateCategoryFilter(
+                                      CatalogCategoryType.combo,
                                     ),
                               ),
                             ],

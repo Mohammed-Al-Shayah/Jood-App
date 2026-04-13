@@ -114,7 +114,9 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
             child: Column(
               children: [
                 SelectDateHeader(
-                  title: AppStrings.selectGuestsTitle,
+                  title: widget.item.category == CatalogCategoryType.combo
+                      ? AppStrings.selectQuantityTitle
+                      : AppStrings.selectGuestsTitle,
                   subtitle: widget.item.name,
                   onBack: () => Navigator.of(context).pop(),
                 ),
@@ -133,6 +135,7 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
                         ),
                         SizedBox(height: 16.h),
                         _GuestsSection(
+                          item: widget.item,
                           state: state,
                           selectedOffer: selectedOffer,
                           maxGuests: _absoluteGuestCap,
@@ -172,7 +175,9 @@ class _CatalogGuestsScreenState extends State<CatalogGuestsScreen> {
     if (guestCount == 0) {
       showAppSnackBar(
         context,
-        AppStrings.pleaseAddAtLeastOneGuest,
+        widget.item.category == CatalogCategoryType.combo
+            ? AppStrings.pleaseAddAtLeastOneCombo
+            : AppStrings.pleaseAddAtLeastOneGuest,
         type: SnackBarType.error,
       );
       return;
@@ -309,7 +314,9 @@ class _SelectedOptionSection extends StatelessWidget {
                     if (usesUnifiedGuestCount) ...[
                       SizedBox(width: 10.w),
                       Text(
-                        AppStrings.perPerson,
+                        item.category == CatalogCategoryType.combo
+                            ? AppStrings.perCombo
+                            : AppStrings.perPerson,
                         style: AppTextStyles.cardMeta.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -338,12 +345,14 @@ class _SelectedOptionSection extends StatelessWidget {
 
 class _GuestsSection extends StatelessWidget {
   const _GuestsSection({
+    required this.item,
     required this.state,
     required this.selectedOffer,
     required this.maxGuests,
     required this.usesUnifiedGuestCount,
   });
 
+  final CatalogItemEntity item;
   final BookingFlowState state;
   final OfferEntity? selectedOffer;
   final int maxGuests;
@@ -366,17 +375,24 @@ class _GuestsSection extends StatelessWidget {
     final adultPrice = selectedOffer?.priceAdult ?? 0;
     final childPrice = selectedOffer?.priceChild ?? 0;
     final cubit = context.read<BookingFlowCubit>();
+    final isCombo = item.category == CatalogCategoryType.combo;
 
     return SectionCard(
-      title: AppStrings.guests,
+      title: selectionCountTitle(
+        bookingCategory: item.category.routeKey,
+        guestPricingMode: selectedOffer?.guestPricingMode ?? '',
+        bookableType: selectedOffer?.bookableType ?? 'restaurant',
+      ),
       child: Column(
         children: [
           if (usesUnifiedGuestCount) ...[
             TicketRow(
-              label: AppStrings.guests,
-              ageLabel: AppStrings.samePriceForAllGuests,
+              label: isCombo ? AppStrings.combos : AppStrings.guests,
+              ageLabel: isCombo
+                  ? AppStrings.samePriceForAllCombos
+                  : AppStrings.samePriceForAllGuests,
               priceLabel:
-                  '${formatCurrency(currency, adultPrice)} ${AppStrings.perPerson}',
+                  '${formatCurrency(currency, adultPrice)} ${isCombo ? AppStrings.perCombo : AppStrings.perPerson}',
               count: unifiedCount,
               onAdd: canAddMore
                   ? () => cubit.setGuestCounts(
@@ -423,7 +439,9 @@ class _GuestsSection extends StatelessWidget {
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: Text(
-                AppStrings.spotsAvailableForSelection(remaining),
+                isCombo
+                    ? AppStrings.combosAvailableForSelection(remaining)
+                    : AppStrings.spotsAvailableForSelection(remaining),
                 style: AppTextStyles.cardMeta.copyWith(
                   color: AppColors.textSecondary,
                 ),

@@ -116,6 +116,11 @@ _CategoryVisualConfig _configFor(CatalogCategoryType category) {
         icon: Icons.dinner_dining_rounded,
         gradient: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
       );
+    case CatalogCategoryType.combo:
+      return const _CategoryVisualConfig(
+        icon: Icons.fastfood_rounded,
+        gradient: [Color(0xFFBE185D), Color(0xFFF97316)],
+      );
     case CatalogCategoryType.attraction:
       return const _CategoryVisualConfig(
         icon: Icons.park_rounded,

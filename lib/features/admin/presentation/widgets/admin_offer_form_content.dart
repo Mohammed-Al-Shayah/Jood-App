@@ -70,7 +70,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   late final TextEditingController _entryConditionsArController;
 
   final _statusOptions = const ['active', 'low', 'sold_out'];
-  final _categoryOptions = const ['buffet', 'set_menu', 'attraction'];
+  final _categoryOptions = const ['buffet', 'set_menu', 'combo', 'attraction'];
   final _buffetMeals = const ['breakfast', 'lunch', 'dinner', 'brunch'];
   final _setMenuMeals = const ['breakfast', 'lunch', 'dinner'];
 
@@ -80,6 +80,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   bool get _isEdit => widget.offer != null;
   bool get _isAttraction => _category == 'attraction';
   bool get _isSetMenu => _category == 'set_menu';
+  bool get _isCombo => _category == 'combo';
   bool get _isBuffet => _category == 'buffet';
   bool get _usesAttractionPackages => _isAttraction && !_isEdit;
   bool get _isCategoryLocked =>
@@ -295,10 +296,15 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
               child: Column(
                 children: [
                   if (_usesPersonPricing) ...[
-                    _numberField(_priceAdultController, 'Price Per Person'),
+                    _numberField(
+                      _priceAdultController,
+                      _isCombo ? 'Price Per Combo' : 'Price Per Person',
+                    ),
                     _numberField(
                       _priceAdultOriginalController,
-                      'Original Price Per Person',
+                      _isCombo
+                          ? 'Original Price Per Combo'
+                          : 'Original Price Per Person',
                     ),
                   ] else ...[
                     _numberField(_priceAdultController, 'Price Adult'),
@@ -317,8 +323,14 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
               child: Column(
                 children: [
                   if (_usesPersonPricing) ...[
-                    _intField(_capacityAdultController, 'Capacity Persons'),
-                    _intField(_bookedAdultController, 'Booked Persons'),
+                    _intField(
+                      _capacityAdultController,
+                      _isCombo ? 'Available Quantity' : 'Capacity Persons',
+                    ),
+                    _intField(
+                      _bookedAdultController,
+                      _isCombo ? 'Booked Quantity' : 'Booked Persons',
+                    ),
                   ] else ...[
                     _intField(_capacityAdultController, 'Capacity Adult'),
                     _intField(_capacityChildController, 'Capacity Child'),
@@ -1021,7 +1033,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     required String previousCategory,
     required String nextCategory,
   }) {
-    if (nextCategory == 'set_menu') {
+    if (nextCategory == 'set_menu' || nextCategory == 'combo') {
       _guestPricingMode = guestPricingModePerson;
       _syncGuestPricingModeFields();
       return;
@@ -1125,6 +1137,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         .toLowerCase();
     if (rawCategory == 'set menu') return 'set_menu';
     if (rawCategory == 'setmenu') return 'set_menu';
+    if (rawCategory == 'combos') return 'combo';
     if (rawCategory == 'attractions') return 'attraction';
     if (_categoryOptions.contains(rawCategory)) return rawCategory;
     if ((offer?.bookableType ?? '').trim().toLowerCase() == 'attraction') {
@@ -1169,6 +1182,8 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     switch (_category) {
       case 'set_menu':
         return 'Set Menu Offer';
+      case 'combo':
+        return 'Combo Offer';
       case 'attraction':
         return 'Attraction Offer';
       default:
@@ -1180,6 +1195,8 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     switch (category) {
       case 'set_menu':
         return 'Set Menu';
+      case 'combo':
+        return 'Combo';
       case 'attraction':
         return 'Attraction';
       default:
@@ -1209,6 +1226,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   String _titleLabel() {
     if (_isAttraction) return 'Offer Title';
     if (_isSetMenu) return 'Set Menu Title';
+    if (_isCombo) return 'Combo Title';
     return 'Offer Title';
   }
 
@@ -1299,7 +1317,11 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     required int bookedChild,
   }) {
     if (bookedAdult > capacityAdult) {
-      return 'Booked adult cannot exceed adult capacity.';
+      return _usesPersonPricing
+          ? _isCombo
+              ? 'Booked quantity cannot exceed available quantity.'
+              : 'Booked persons cannot exceed capacity.'
+          : 'Booked adult cannot exceed adult capacity.';
     }
     if (bookedChild > capacityChild) {
       return 'Booked child cannot exceed child capacity.';

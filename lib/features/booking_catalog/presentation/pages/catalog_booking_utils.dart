@@ -194,6 +194,8 @@ String mealOptionLabel(OfferEntity offer, CatalogCategoryType category) {
   } else {
     label = category == CatalogCategoryType.setMenu
         ? AppStrings.setMenu
+        : category == CatalogCategoryType.combo
+        ? AppStrings.comboCategory
         : AppStrings.meal;
   }
 
@@ -252,6 +254,8 @@ String headerTitle(CatalogCategoryType category) {
       return AppStrings.bookBuffet;
     case CatalogCategoryType.setMenu:
       return AppStrings.bookSetMenu;
+    case CatalogCategoryType.combo:
+      return AppStrings.bookCombo;
     case CatalogCategoryType.attraction:
       return AppStrings.bookAttraction;
   }

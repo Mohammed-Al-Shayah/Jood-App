@@ -8,6 +8,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/extensions.dart';
+import 'package:jood/core/utils/guest_pricing_utils.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -575,7 +576,11 @@ class _OrderCard extends StatelessWidget {
               SizedBox(height: 10.h),
               if (order.usesUnifiedGuestCount)
                 _DetailRow(
-                  label: AppStrings.guests,
+                  label: selectionCountTitle(
+                    bookingCategory: order.bookingCategory ?? '',
+                    guestPricingMode: order.guestPricingMode ?? '',
+                    bookableType: order.bookableType ?? '',
+                  ),
                   value:
                       '${order.adults + order.children} x ${formatCurrency(order.currency, order.unitPriceAdult)}',
                 )

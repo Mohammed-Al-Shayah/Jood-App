@@ -28,6 +28,7 @@ class BookingEntity extends Equatable {
     this.paidAt,
     this.restaurantNameSnapshot,
     this.offerTitleSnapshot,
+    this.bookingCategory,
     this.bookableType,
     this.guestPricingMode,
     this.coverImageUrlSnapshot,
@@ -61,6 +62,7 @@ class BookingEntity extends Equatable {
   final DateTime? paidAt;
   final String? restaurantNameSnapshot;
   final String? offerTitleSnapshot;
+  final String? bookingCategory;
   final String? bookableType;
   final String? guestPricingMode;
   final String? coverImageUrlSnapshot;
@@ -71,10 +73,12 @@ class BookingEntity extends Equatable {
   String get resolvedGuestPricingMode =>
       guest_pricing.normalizeGuestPricingMode(
         guestPricingMode,
+        bookingCategory: bookingCategory ?? '',
         bookableType: bookableType ?? '',
       );
   bool get usesUnifiedGuestCount => guest_pricing.usesUnifiedGuestCount(
     guestPricingMode: guestPricingMode,
+    bookingCategory: bookingCategory ?? '',
     bookableType: bookableType ?? '',
   );
 
@@ -104,6 +108,7 @@ class BookingEntity extends Equatable {
     paidAt,
     restaurantNameSnapshot,
     offerTitleSnapshot,
+    bookingCategory,
     bookableType,
     guestPricingMode,
     coverImageUrlSnapshot,

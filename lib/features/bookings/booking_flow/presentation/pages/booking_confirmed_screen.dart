@@ -193,5 +193,5 @@ String _confirmedSelectionLabel(dynamic offer) {
   } else if (title.isNotEmpty) {
     parts.add(title);
   }
-  return parts.isEmpty ? '--' : parts.join(' • ');
+  return parts.isEmpty ? '--' : parts.join(' | ');
 }

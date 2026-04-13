@@ -74,6 +74,7 @@ class _OrderQrScannerViewState extends State<_OrderQrScannerView> {
             startTime: bookingView.startTime,
             adults: bookingView.adults,
             children: bookingView.children,
+            bookingCategory: bookingView.bookingCategory,
             bookableType: bookingView.bookableType,
             guestPricingMode: bookingView.guestPricingMode,
             subtotal: bookingView.pricing.subtotal,
@@ -156,6 +157,7 @@ class _BookingReviewSheet extends StatelessWidget {
     required this.startTime,
     required this.adults,
     required this.children,
+    required this.bookingCategory,
     required this.bookableType,
     required this.guestPricingMode,
     required this.subtotal,
@@ -171,6 +173,7 @@ class _BookingReviewSheet extends StatelessWidget {
   final String startTime;
   final int adults;
   final int children;
+  final String bookingCategory;
   final String bookableType;
   final String guestPricingMode;
   final double subtotal;
@@ -200,11 +203,16 @@ class _BookingReviewSheet extends StatelessWidget {
               _line(AppStrings.date, date),
               _line(AppStrings.time, startTime),
               _line(
-                AppStrings.guests,
+                selectionCountTitle(
+                  bookingCategory: bookingCategory,
+                  guestPricingMode: guestPricingMode,
+                  bookableType: bookableType,
+                ),
                 buildGuestsLabel(
                   adults,
                   children,
                   guestPricingMode: guestPricingMode,
+                  bookingCategory: bookingCategory,
                   bookableType: bookableType,
                 ),
               ),
