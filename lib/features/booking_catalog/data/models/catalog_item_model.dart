@@ -81,6 +81,13 @@ class CatalogItemModel extends CatalogItemEntity {
     final bookingNotesEn = _stringList(categoryData['notes']);
     final bookingNotesAr = _stringList(categoryData['notesAr']);
 
+    final availableMealsEn = category == CatalogCategoryType.combo
+        ? _stringList(categoryData['availableCombos'])
+        : _stringList(categoryData['availableMeals']);
+    final availableMealsAr = category == CatalogCategoryType.combo
+        ? _stringList(categoryData['availableCombosAr'])
+        : _stringList(categoryData['availableMealsAr']);
+
     return CatalogItemModel(
       id: doc.id,
       category: category,
@@ -105,8 +112,9 @@ class CatalogItemModel extends CatalogItemEntity {
         english: inclusionsEn,
         arabic: inclusionsAr,
       ),
-      availableMeals: _stringList(
-        categoryData['availableMeals'],
+      availableMeals: resolveLocalizedList(
+        english: availableMealsEn,
+        arabic: availableMealsAr,
         fallback: category == CatalogCategoryType.setMenu
             ? [
                 AppStrings.breakfastSetMenu,

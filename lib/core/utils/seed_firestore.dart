@@ -1,863 +1,813 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+
 import 'date_utils.dart';
 import 'guest_pricing_utils.dart';
 
 class SeedFirestore {
   const SeedFirestore._();
 
-  static const String _seedDocId = 'demo_v9_combo';
+  static const String _seedMetaDocId = 'demo_dataset';
+  static const String _seedVersion = 'v10_bilingual_full';
 
   static Future<void> ensureSeeded() async {
     if (!kDebugMode) return;
-    final firestore = FirebaseFirestore.instance;
-    final metaRef = firestore.collection('seed_meta').doc(_seedDocId);
-    final metaSnap = await metaRef.get();
-    if (metaSnap.exists) return;
 
+    final firestore = FirebaseFirestore.instance;
+    final metaRef = firestore.collection('seed_meta').doc(_seedMetaDocId);
+    final metaSnap = await metaRef.get();
+    final currentVersion = (metaSnap.data()?['version'] as String? ?? '')
+        .trim();
+
+    if (currentVersion == _seedVersion) return;
+
+    await _clearDemoData(firestore);
     await _seed(firestore);
-    await metaRef.set({'seededAt': FieldValue.serverTimestamp()});
+    await metaRef.set({
+      'version': _seedVersion,
+      'seededAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  static Future<void> _clearDemoData(FirebaseFirestore firestore) async {
+    await _deleteByPrefix(
+      firestore: firestore,
+      collection: firestore.collection('seed_meta'),
+      prefix: 'demo_',
+    );
+    await _deleteByPrefix(
+      firestore: firestore,
+      collection: firestore.collection('restaurants'),
+      prefix: 'demo_restaurant_',
+    );
+    await _deleteByPrefix(
+      firestore: firestore,
+      collection: firestore.collection('attractions'),
+      prefix: 'demo_attraction_',
+    );
+    await _deleteByPrefix(
+      firestore: firestore,
+      collection: firestore.collection('offers'),
+      prefix: 'offer_demo_',
+    );
+    await _deleteByPrefix(
+      firestore: firestore,
+      collection: firestore.collection('users'),
+      prefix: 'demo_user_',
+    );
+    await _deleteByPrefix(
+      firestore: firestore,
+      collection: firestore.collection('bookings'),
+      prefix: 'demo_booking_',
+    );
+    await _deleteByPrefix(
+      firestore: firestore,
+      collection: firestore.collection('payments'),
+      prefix: 'pay_demo_booking_',
+    );
+  }
+
+  static Future<void> _deleteByPrefix({
+    required FirebaseFirestore firestore,
+    required CollectionReference<Map<String, dynamic>> collection,
+    required String prefix,
+  }) async {
+    while (true) {
+      final snapshot = await collection
+          .where(FieldPath.documentId, isGreaterThanOrEqualTo: prefix)
+          .where(FieldPath.documentId, isLessThan: '$prefix\uf8ff')
+          .limit(450)
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      if (snapshot.docs.length < 450) return;
+    }
   }
 
   static Future<void> _seed(FirebaseFirestore firestore) async {
     final batch = firestore.batch();
-
-    final restaurants = [
-      {
-        'id': 'demo_restaurant_1',
-        'name': 'Harbor Feast',
-        'cityId': 'Dubai',
-        'area': 'Jumeirah',
-        'rating': 4.6,
-        'reviewsCount': 128,
-        'coverImageUrl':
-            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
-        'about':
-            'Seafood-forward buffet with live stations, sunset views, and a relaxed coastal vibe.',
-        'phone': '+971 55 123 4567',
-        'address': 'Jumeirah Beach Rd, Dubai',
-        'geo': {'lat': 25.2048, 'lng': 55.2708},
-        'openHours': {'from': '10:00', 'to': '23:00'},
-        'highlights': ['Seafood buffet', 'Live stations', 'Outdoor seating'],
-        'inclusions': ['Welcome drink', 'Dessert bar'],
-        'exclusions': ['Alcoholic beverages'],
-        'cancellationPolicy': [
-          'Free cancellation up to 4 hours before booking',
-          'No refund within 4 hours',
-        ],
-        'knowBeforeYouGo': ['Bring ID', 'Smart casual dress code'],
-        'badge': '20% off',
-        'priceFrom': 'From OMR 150',
-        'discount': 'OMR 120',
-        'discountPercent': 20,
-        'slotsLeft': '6 slots left',
-        'isActive': true,
-      },
-      {
-        'id': 'demo_restaurant_2',
-        'name': 'City Garden',
-        'cityId': 'Dubai',
-        'area': 'Downtown',
-        'rating': 4.3,
-        'reviewsCount': 92,
-        'coverImageUrl':
-            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
-        'about':
-            'Downtown dining with seasonal menus, family-friendly seating, and a skyline backdrop.',
-        'phone': '+971 50 987 6543',
-        'address': 'Downtown Boulevard, Dubai',
-        'geo': {'lat': 25.2048, 'lng': 55.2708},
-        'openHours': {'from': '09:00', 'to': '22:00'},
-        'highlights': ['Organic menu', 'Kids friendly', 'City view'],
-        'inclusions': ['Soft drinks'],
-        'exclusions': ['Valet parking'],
-        'cancellationPolicy': ['No cancellation within 2 hours'],
-        'knowBeforeYouGo': ['Arrive 10 mins early'],
-        'badge': '15% off',
-        'priceFrom': 'From OMR 120',
-        'discount': 'OMR 95',
-        'discountPercent': 15,
-        'slotsLeft': '10 slots left',
-        'isActive': true,
-      },
-      {
-        'id': 'demo_restaurant_3',
-        'name': 'Palm Terrace',
-        'cityId': 'Dubai',
-        'area': 'Palm Jumeirah',
-        'rating': 4.8,
-        'reviewsCount': 214,
-        'coverImageUrl':
-            'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=1200&q=80',
-        'about':
-            'Palm-side terrace featuring chef specials, live music nights, and panoramic views.',
-        'phone': '+971 52 222 3344',
-        'address': 'The Palm, Crescent Rd, Dubai',
-        'geo': {'lat': 25.1124, 'lng': 55.1390},
-        'openHours': {'from': '12:00', 'to': '00:00'},
-        'highlights': ['Sea view', 'Chef specials', 'Live music'],
-        'inclusions': ['Welcome mocktail', 'Dessert platter'],
-        'exclusions': ['Shisha'],
-        'cancellationPolicy': [
-          'Free cancellation up to 6 hours before booking',
-          '50% refund within 6 hours',
-        ],
-        'knowBeforeYouGo': ['Smart casual dress code', 'Valet available'],
-        'badge': 'Top rated',
-        'priceFrom': 'From OMR 200',
-        'discount': 'OMR 160',
-        'discountPercent': 20,
-        'slotsLeft': '4 slots left',
-        'isActive': true,
-      },
-      {
-        'id': 'demo_restaurant_4',
-        'name': 'Spice Avenue',
-        'cityId': 'Dubai',
-        'area': 'Business Bay',
-        'rating': 4.1,
-        'reviewsCount': 76,
-        'coverImageUrl':
-            'https://images.unsplash.com/photo-1421622548261-c45bfe178854?auto=format&fit=crop&w=1200&q=80',
-        'about':
-            'Bold street-food flavors with late-night bites and casual indoor-outdoor seating.',
-        'phone': '+971 56 888 9922',
-        'address': 'Bay Square, Business Bay, Dubai',
-        'geo': {'lat': 25.1886, 'lng': 55.2636},
-        'openHours': {'from': '08:00', 'to': '23:30'},
-        'highlights': ['Street food', 'Late night bites'],
-        'inclusions': ['Soft drinks', 'Free Wi-Fi'],
-        'exclusions': ['Parking fees'],
-        'cancellationPolicy': ['No cancellation within 3 hours'],
-        'knowBeforeYouGo': ['Arrive 10 mins early', 'Family seating available'],
-        'badge': 'Popular',
-        'priceFrom': 'From OMR 95',
-        'discount': 'OMR 75',
-        'discountPercent': 21,
-        'slotsLeft': '12 slots left',
-        'isActive': true,
-      },
-      {
-        'id': 'demo_restaurant_5',
-        'name': 'Marina Grill',
-        'cityId': 'Dubai',
-        'area': 'Dubai Marina',
-        'rating': 4.4,
-        'reviewsCount': 143,
-        'coverImageUrl':
-            'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80',
-        'about':
-            'Marina-side grill buffet with open kitchen, fresh salads, and a breezy terrace.',
-        'phone': '+971 55 707 8899',
-        'address': 'Marina Walk, Dubai',
-        'geo': {'lat': 25.0800, 'lng': 55.1400},
-        'openHours': {'from': '11:00', 'to': '23:00'},
-        'highlights': ['Grill buffet', 'Outdoor terrace'],
-        'inclusions': ['Salad bar', 'Dessert'],
-        'exclusions': ['Alcohol'],
-        'cancellationPolicy': [
-          'Free cancellation up to 2 hours before booking',
-        ],
-        'knowBeforeYouGo': ['Smart casual'],
-        'badge': '10% off',
-        'priceFrom': 'From OMR 125',
-        'discount': 'OMR 110',
-        'discountPercent': 12,
-        'slotsLeft': '8 slots left',
-        'isActive': true,
-      },
-      {
-        'id': 'demo_restaurant_6',
-        'name': 'Old Town Brunch',
-        'cityId': 'Dubai',
-        'area': 'Al Fahidi',
-        'rating': 3.9,
-        'reviewsCount': 41,
-        'coverImageUrl':
-            'https://images.unsplash.com/photo-1481931098730-318b6f776db0?auto=format&fit=crop&w=1200&q=80',
-        'about':
-            'Laid-back brunch spot with traditional dishes, tea service, and heritage vibes.',
-        'phone': '+971 54 111 2233',
-        'address': 'Al Fahidi Historical District, Dubai',
-        'geo': {'lat': 25.2630, 'lng': 55.2972},
-        'openHours': {'from': '07:00', 'to': '16:00'},
-        'highlights': ['Traditional dishes', 'Family friendly'],
-        'inclusions': ['Tea & coffee'],
-        'exclusions': ['Parking'],
-        'cancellationPolicy': ['No cancellation within 1 hour'],
-        'knowBeforeYouGo': ['Casual dress', 'Outdoor seating limited'],
-        'badge': '',
-        'priceFrom': 'From OMR 80',
-        'discount': 'OMR 65',
-        'discountPercent': 18,
-        'slotsLeft': '15 slots left',
-        'isActive': true,
-      },
-    ];
-
-    for (final restaurant in restaurants) {
-      final ref = firestore
-          .collection('restaurants')
-          .doc(restaurant['id'] as String);
-      batch.set(ref, {
-        ...restaurant,
-        ..._restaurantCatalogOverride(restaurant['id'] as String),
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-
-    final attractions = [
-      {
-        'id': 'demo_attraction_1',
-        'name': 'Desert Safari Escape',
-        'cityId': 'Dubai',
-        'area': 'Al Marmoom',
-        'rating': 4.7,
-        'reviewsCount': 312,
-        'coverImageUrl':
-            'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
-        'about':
-            'Premium desert safari with dune bashing, sunset lounge access, and live entertainment.',
-        'phone': '+971 55 404 9191',
-        'address': 'Al Marmoom Desert Conservation Reserve, Dubai',
-        'highlights': [
-          'Sunset dune drive',
-          'VIP seating area',
-          'Live fire and tanoura show',
-        ],
-        'inclusions': ['Round-trip transport', 'Dinner buffet', 'Camel ride'],
-        'badge': 'Best seller',
-        'priceFrom': 'From OMR 38',
-        'discount': 'OMR 31',
-        'slotsLeft': '18 slots left',
-        'isActive': true,
-        'bookingCatalog': {
-          'description':
-              'Choose your arrival time, then book the package that matches the experience you want.',
-          'highlights': [
-            'Shared and VIP packages',
-            'Time-based availability',
-            'Live camp entertainment',
-          ],
-          'included': [
-            'Transport from Dubai',
-            'Desert activities',
-            'Dinner included on selected packages',
-          ],
-          'packageOverview': [
-            'Standard Camp: shared seating and core activities.',
-            'VIP Majlis: premium seating with priority service.',
-            'Adventure Plus: extra activities and premium dining.',
-          ],
-          'notes': [
-            'Children under 2 are not permitted on dune bashing.',
-            'More than one package can be available for the same time slot.',
-            'Packages can vary by selected time slot.',
-          ],
-        },
-      },
-      {
-        'id': 'demo_attraction_2',
-        'name': 'Skyline Marina Cruise',
-        'cityId': 'Dubai',
-        'area': 'Dubai Marina',
-        'rating': 4.5,
-        'reviewsCount': 185,
-        'coverImageUrl':
-            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
-        'about':
-            'A city-light cruise through the marina with multiple boarding times and package tiers.',
-        'phone': '+971 56 220 1110',
-        'address': 'Marina Walk Pier 7, Dubai',
-        'highlights': [
-          'Indoor and upper-deck seating',
-          'Sunset and night departures',
-          'Dinner cruise upgrade',
-        ],
-        'inclusions': ['Cruise ticket', 'Welcome drink'],
-        'badge': 'Evening favorite',
-        'priceFrom': 'From OMR 24',
-        'discount': 'OMR 19',
-        'slotsLeft': '24 slots left',
-        'isActive': true,
-        'bookingCatalog': {
-          'description':
-              'Pick a departure slot first, then select the package available on that sailing.',
-          'highlights': [
-            'Sunset and night departures',
-            'Different prices by package and time',
-          ],
-          'included': ['Boarding access', 'Cruise route around Marina'],
-          'packageOverview': [
-            'Classic Deck: standard boarding access.',
-            'Window Dining: dinner seating with skyline views.',
-            'Premium Upper Deck: best view with upgraded service.',
-          ],
-          'notes': [
-            'Each sailing can include multiple package options.',
-            'Some premium packages are available only on selected sailings.',
-          ],
-        },
-      },
-    ];
-
-    for (final attraction in attractions) {
-      final ref = firestore
-          .collection('attractions')
-          .doc(attraction['id'] as String);
-      batch.set(ref, {
-        ...attraction,
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-
     final dates = List.generate(
-      7,
+      8,
       (index) => DateTime.now().add(Duration(days: index)),
     );
-    final times = [
-      {'start': '09:00', 'end': '11:00', 'title': 'Breakfast Entry'},
-      {'start': '12:00', 'end': '14:00', 'title': 'Lunch Entry'},
-      {'start': '18:00', 'end': '20:00', 'title': 'Dinner Entry'},
-      {'start': '20:30', 'end': '22:00', 'title': 'Late Dinner'},
-      {'start': '22:30', 'end': '00:00', 'title': 'Night Bites'},
-    ];
-    final breakfastLunchOnlyDays = <int>{1, 3, 5};
 
-    for (var rIndex = 0; rIndex < restaurants.length; rIndex++) {
-      final restaurant = restaurants[rIndex];
-      for (var dIndex = 0; dIndex < dates.length; dIndex++) {
-        final date = dates[dIndex];
-        for (var tIndex = 0; tIndex < times.length; tIndex++) {
-          final time = times[tIndex];
-          final isBreakfastOrLunch = tIndex == 0 || tIndex == 1;
-          if (breakfastLunchOnlyDays.contains(dIndex) && !isBreakfastOrLunch) {
-            continue;
-          }
-          final offerRef = firestore
-              .collection('offers')
-              .doc(
-                _offerId(
-                  restaurant['id'] as String,
-                  date,
-                  time['start'] as String,
-                ),
-              );
-
-          final baseAdult = 70.0 + (rIndex * 15) + (tIndex * 8) + (dIndex * 6);
-          final baseChild = baseAdult * 0.5;
-          final capacityAdult = 20 + (rIndex * 5);
-          final capacityChild = 10 + (tIndex * 3);
-          final bookedAdult = (dIndex % 3 == 0)
-              ? (capacityAdult - 2)
-              : (rIndex);
-          final bookedChild = (dIndex % 4 == 0)
-              ? (capacityChild - 1)
-              : (tIndex);
-
-          final isSoldOut =
-              bookedAdult >= capacityAdult ||
-              bookedChild >= capacityChild ||
-              (dIndex == 6 && tIndex == 4);
-          final isLow =
-              !isSoldOut &&
-              ((capacityAdult - bookedAdult) <= 3 ||
-                  (capacityChild - bookedChild) <= 3);
-          final status = isSoldOut
-              ? 'sold_out'
-              : isLow
-              ? 'low'
-              : 'active';
-
-          batch.set(offerRef, {
-            'restaurantId': restaurant['id'],
-            'date': AppDateUtils.formatDate(date),
-            'startTime': time['start'],
-            'endTime': time['end'],
-            'currency': 'OMR',
-            'priceAdult': baseAdult,
-            'priceAdultOriginal': baseAdult + 25,
-            'priceChild': baseChild,
-            'time': time['start'],
-            'price': 'OMR ${baseAdult.toStringAsFixed(1)}',
-            'status': status,
-            'capacityAdult': capacityAdult,
-            'capacityChild': capacityChild,
-            'bookedAdult': bookedAdult,
-            'bookedChild': bookedChild,
-            'title': time['title'],
-            'bookableType': 'restaurant',
-            'bookingCategory': 'buffet',
-            'guestPricingMode': guestPricingModeAdultsChildren,
-            'mealType': _mealTypeForBaseOfferIndex(tIndex),
-            'packageName': '',
-            'packageDescription': '',
-            'entryConditions': [
-              'Arrive 15 minutes early',
-              'Mobile voucher accepted',
-              if (tIndex == 4) 'Late entry allowed',
-            ],
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-        }
-      }
+    for (final restaurant in _restaurantDocs()) {
+      final id = restaurant['id'] as String;
+      batch.set(firestore.collection('restaurants').doc(id), {
+        ...restaurant,
+        ..._seedMetaFields(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     }
 
-    final brunchDays = <int>{1, 4};
-    final brunchRestaurantIds = <String>{
-      'demo_restaurant_1',
-      'demo_restaurant_6',
-    };
-    for (final restaurantId in brunchRestaurantIds) {
-      for (final dayIndex in brunchDays) {
-        final date = dates[dayIndex];
-        final offerRef = firestore
-            .collection('offers')
-            .doc(_offerId(restaurantId, date, '11:30', suffix: 'brunch'));
-        final adultPrice = restaurantId == 'demo_restaurant_1' ? 96.0 : 72.0;
-        final childPrice = restaurantId == 'demo_restaurant_1' ? 48.0 : 36.0;
-        final remainingBoost = restaurantId == 'demo_restaurant_1' ? 0 : 4;
-        batch.set(offerRef, {
-          'restaurantId': restaurantId,
-          'date': AppDateUtils.formatDate(date),
-          'startTime': '11:30',
-          'endTime': '14:30',
-          'currency': 'OMR',
-          'priceAdult': adultPrice + (dayIndex * 2),
-          'priceAdultOriginal': adultPrice + 18 + (dayIndex * 2),
-          'priceChild': childPrice + dayIndex,
-          'time': '11:30',
-          'price': 'OMR ${(adultPrice + (dayIndex * 2)).toStringAsFixed(1)}',
-          'status': dayIndex == 4 ? 'low' : 'active',
-          'capacityAdult': 18,
-          'capacityChild': 10,
-          'bookedAdult': 12 - remainingBoost,
-          'bookedChild': 5,
-          'title': 'Brunch',
-          'bookableType': 'restaurant',
-          'bookingCategory': 'buffet',
-          'guestPricingMode': guestPricingModeAdultsChildren,
-          'mealType': 'brunch',
-          'packageName': '',
-          'packageDescription': '',
-          'entryConditions': [
-            'Weekend brunch seating',
-            'Mocktail station included',
-          ],
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-      }
+    for (final attraction in _attractionDocs()) {
+      final id = attraction['id'] as String;
+      batch.set(firestore.collection('attractions').doc(id), {
+        ...attraction,
+        ..._seedMetaFields(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
     }
 
-    final setMenuRestaurants = <String, double>{
-      'demo_restaurant_2': 82,
-      'demo_restaurant_3': 110,
-      'demo_restaurant_5': 95,
-    };
-    final setMenuOptions = [
-      {
-        'mealType': 'breakfast',
-        'start': '08:30',
-        'end': '10:30',
-        'delta': 0.0,
-        'entryConditions': [
-          'Morning set menu with bakery basket and hot drink',
-          'Best suited for lighter early seating',
-        ],
-      },
-      {
-        'mealType': 'lunch',
-        'start': '12:30',
-        'end': '14:30',
-        'delta': 12.0,
-        'entryConditions': [
-          'Midday set menu with starter and main course selection',
-          'Designed for regular lunch seating',
-        ],
-      },
-      {
-        'mealType': 'dinner',
-        'start': '19:00',
-        'end': '21:30',
-        'delta': 24.0,
-        'entryConditions': [
-          'Evening set menu with expanded main course choices',
-          'Dessert course is part of the dinner experience',
-        ],
-      },
-    ];
-    for (final entry in setMenuRestaurants.entries) {
-      final restaurantId = entry.key;
-      final basePrice = entry.value;
-      for (var dayIndex = 0; dayIndex < dates.length; dayIndex++) {
-        final date = dates[dayIndex];
-        for (
-          var optionIndex = 0;
-          optionIndex < setMenuOptions.length;
-          optionIndex++
-        ) {
-          if (restaurantId == 'demo_restaurant_5' &&
-              dayIndex == 3 &&
-              optionIndex == 0) {
-            continue;
-          }
-          final option = setMenuOptions[optionIndex];
-          final adultPrice = basePrice + (option['delta'] as double) + dayIndex;
-          final soldOut =
-              restaurantId == 'demo_restaurant_3' &&
-              dayIndex == 5 &&
-              option['mealType'] == 'dinner';
-          final low =
-              !soldOut &&
-              restaurantId == 'demo_restaurant_2' &&
-              dayIndex == 2 &&
-              option['mealType'] == 'lunch';
-          final bookedAdultsBase = soldOut
-              ? 16
-              : low
-              ? 14
-              : 4 + optionIndex;
-          final bookedChildrenBase = soldOut
-              ? 8
-              : low
-              ? 7
-              : 2 + (dayIndex % 2);
-          final offerRef = firestore
-              .collection('offers')
-              .doc(
-                _offerId(
-                  restaurantId,
-                  date,
-                  option['start'] as String,
-                  suffix: 'set_${option['mealType']}',
-                ),
-              );
-          batch.set(offerRef, {
-            'restaurantId': restaurantId,
-            'date': AppDateUtils.formatDate(date),
-            'startTime': option['start'],
-            'endTime': option['end'],
-            'currency': 'OMR',
-            'priceAdult': adultPrice,
-            'priceAdultOriginal': adultPrice + 16,
-            'priceChild': 0.0,
-            'time': option['start'],
-            'price': 'OMR ${adultPrice.toStringAsFixed(1)}',
-            'status': soldOut
-                ? 'sold_out'
-                : low
-                ? 'low'
-                : 'active',
-            'capacityAdult': 24,
-            'capacityChild': 0,
-            'bookedAdult': bookedAdultsBase + bookedChildrenBase,
-            'bookedChild': 0,
-            'title': '${_titleize(option['mealType'] as String)} Set Menu',
-            'bookableType': 'restaurant',
-            'bookingCategory': 'set_menu',
-            'guestPricingMode': guestPricingModePerson,
-            'mealType': option['mealType'],
-            'packageName': '',
-            'packageDescription': '',
-            'entryConditions': [
-              'Set menu selection required',
-              'Final item choice will be completed after booking',
-            ],
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-        }
-      }
-    }
+    _seedBuffetOffers(batch, firestore, dates);
+    _seedSetMenuOffers(batch, firestore, dates);
+    _seedComboOffers(batch, firestore, dates);
+    _seedAttractionOffers(batch, firestore, dates);
+    _seedUsers(batch, firestore);
+    _seedBookings(batch, firestore, dates);
 
-    final comboRestaurants = <String, Map<String, dynamic>>{
-      'demo_restaurant_4': {
-        'start': '11:00',
-        'end': '23:00',
-        'options': [
+    await batch.commit();
+  }
+
+  static void _seedBuffetOffers(
+    WriteBatch batch,
+    FirebaseFirestore firestore,
+    List<DateTime> dates,
+  ) {
+    final configs = [
+      {
+        'restaurantId': 'demo_restaurant_1',
+        'slots': [
           {
-            'title': '10 pcs Broasted',
-            'description':
-                'Ten pieces of broasted chicken with fries, garlic sauce, and soft drinks.',
-            'adultBase': 10.0,
-            'adultOriginal': 12.0,
-            'capacityAdult': 30,
-            'bookedAdult': 6,
-          },
-          {
-            'title': '15 pcs Broasted',
-            'description':
-                'Fifteen pieces of broasted chicken prepared for sharing with fries and dips.',
-            'adultBase': 14.0,
-            'adultOriginal': 17.0,
-            'capacityAdult': 22,
-            'bookedAdult': 4,
-          },
-          {
-            'title': 'Family Combo',
-            'description':
-                'Family combo with mixed broasted pieces, fries, sauces, and drinks.',
-            'adultBase': 22.0,
-            'adultOriginal': 26.0,
-            'capacityAdult': 14,
-            'bookedAdult': 2,
-          },
-        ],
-      },
-      'demo_restaurant_6': {
-        'start': '08:00',
-        'end': '16:00',
-        'options': [
-          {
-            'title': 'Breakfast Duo',
-            'description':
-                'Two breakfast plates with tea service and fresh bakery items.',
-            'adultBase': 8.0,
+            'mealType': 'breakfast',
+            'titleEn': 'Breakfast Buffet',
+            'titleAr': 'بوفيه الإفطار',
+            'start': '08:00',
+            'end': '10:30',
+            'adultBase': 8.5,
             'adultOriginal': 10.0,
-            'capacityAdult': 24,
-            'bookedAdult': 5,
+            'childBase': 4.5,
+            'capacityAdult': 28,
+            'capacityChild': 12,
           },
           {
-            'title': 'Heritage Breakfast Box',
-            'description':
-                'Traditional breakfast assortment packed as one ready-to-order combo.',
+            'mealType': 'lunch',
+            'titleEn': 'Lunch Buffet',
+            'titleAr': 'بوفيه الغداء',
+            'start': '13:00',
+            'end': '15:30',
             'adultBase': 11.0,
             'adultOriginal': 13.0,
-            'capacityAdult': 18,
-            'bookedAdult': 3,
+            'childBase': 6.0,
+            'capacityAdult': 30,
+            'capacityChild': 14,
           },
           {
-            'title': 'Tea & Sweets Combo',
-            'description':
-                'Arabic tea service with date cake, luqaimat, and assorted sweets.',
-            'adultBase': 9.0,
-            'adultOriginal': 11.0,
-            'capacityAdult': 16,
-            'bookedAdult': 2,
+            'mealType': 'dinner',
+            'titleEn': 'Dinner Buffet',
+            'titleAr': 'بوفيه العشاء',
+            'start': '19:00',
+            'end': '22:00',
+            'adultBase': 14.0,
+            'adultOriginal': 17.0,
+            'childBase': 7.0,
+            'capacityAdult': 34,
+            'capacityChild': 16,
           },
         ],
       },
-    };
+      {
+        'restaurantId': 'demo_restaurant_2',
+        'slots': [
+          {
+            'mealType': 'breakfast',
+            'titleEn': 'Breakfast Buffet',
+            'titleAr': 'بوفيه الإفطار',
+            'start': '08:30',
+            'end': '10:30',
+            'adultBase': 7.0,
+            'adultOriginal': 8.5,
+            'childBase': 3.5,
+            'capacityAdult': 22,
+            'capacityChild': 10,
+          },
+          {
+            'mealType': 'lunch',
+            'titleEn': 'Lunch Buffet',
+            'titleAr': 'بوفيه الغداء',
+            'start': '12:30',
+            'end': '15:00',
+            'adultBase': 9.5,
+            'adultOriginal': 11.0,
+            'childBase': 5.0,
+            'capacityAdult': 24,
+            'capacityChild': 12,
+          },
+          {
+            'mealType': 'dinner',
+            'titleEn': 'Dinner Buffet',
+            'titleAr': 'بوفيه العشاء',
+            'start': '18:30',
+            'end': '21:30',
+            'adultBase': 12.5,
+            'adultOriginal': 14.5,
+            'childBase': 6.5,
+            'capacityAdult': 26,
+            'capacityChild': 12,
+          },
+        ],
+      },
+      {
+        'restaurantId': 'demo_restaurant_3',
+        'slots': [
+          {
+            'mealType': 'breakfast',
+            'titleEn': 'Breakfast Buffet',
+            'titleAr': 'بوفيه الإفطار',
+            'start': '08:00',
+            'end': '10:30',
+            'adultBase': 9.0,
+            'adultOriginal': 10.5,
+            'childBase': 4.5,
+            'capacityAdult': 20,
+            'capacityChild': 10,
+          },
+          {
+            'mealType': 'lunch',
+            'titleEn': 'Lunch Buffet',
+            'titleAr': 'بوفيه الغداء',
+            'start': '13:00',
+            'end': '15:30',
+            'adultBase': 12.0,
+            'adultOriginal': 14.0,
+            'childBase': 6.0,
+            'capacityAdult': 24,
+            'capacityChild': 12,
+          },
+          {
+            'mealType': 'dinner',
+            'titleEn': 'Dinner Buffet',
+            'titleAr': 'بوفيه العشاء',
+            'start': '19:30',
+            'end': '22:30',
+            'adultBase': 16.0,
+            'adultOriginal': 19.0,
+            'childBase': 8.0,
+            'capacityAdult': 28,
+            'capacityChild': 14,
+          },
+        ],
+      },
+    ];
 
-    for (final entry in comboRestaurants.entries) {
-      final restaurantId = entry.key;
-      final config = entry.value;
-      final startTime = config['start'] as String;
-      final endTime = config['end'] as String;
-      final options = config['options'] as List<dynamic>;
+    for (final config in configs) {
+      final restaurantId = config['restaurantId'] as String;
+      final slots = config['slots'] as List<dynamic>;
 
       for (var dayIndex = 0; dayIndex < dates.length; dayIndex++) {
         final date = dates[dayIndex];
-        for (var optionIndex = 0; optionIndex < options.length; optionIndex++) {
-          final option = options[optionIndex] as Map<String, dynamic>;
+        for (var slotIndex = 0; slotIndex < slots.length; slotIndex++) {
+          final slot = slots[slotIndex] as Map<String, dynamic>;
           final soldOut =
-              restaurantId == 'demo_restaurant_6' &&
-              dayIndex == 5 &&
-              optionIndex == 1;
-          final low =
-              !soldOut &&
-              restaurantId == 'demo_restaurant_4' &&
-              dayIndex == 2 &&
-              optionIndex == 0;
-          final capacityAdult = option['capacityAdult'] as int;
+              restaurantId == 'demo_restaurant_2' &&
+              dayIndex == 6 &&
+              slot['mealType'] == 'dinner';
+          final low = !soldOut && ((dayIndex + slotIndex) % 4 == 0);
+
+          final capacityAdult = slot['capacityAdult'] as int;
+          final capacityChild = slot['capacityChild'] as int;
           final bookedAdult = soldOut
               ? capacityAdult
               : low
               ? capacityAdult - 2
-              : (option['bookedAdult'] as int) + (dayIndex % 3);
-          final priceAdult = option['adultBase'] as double;
-          final priceAdultOriginal = option['adultOriginal'] as double;
-          final offerRef = firestore
-              .collection('offers')
-              .doc(
-                _offerId(
-                  restaurantId,
-                  date,
-                  startTime,
-                  suffix: 'combo_$optionIndex',
-                ),
-              );
+              : 4 + ((dayIndex + slotIndex) % 6);
+          final bookedChild = soldOut
+              ? capacityChild
+              : low
+              ? capacityChild - 1
+              : 1 + ((dayIndex + slotIndex) % 4);
 
-          batch.set(offerRef, {
-            'restaurantId': restaurantId,
-            'date': AppDateUtils.formatDate(date),
-            'startTime': startTime,
-            'endTime': endTime,
-            'currency': 'OMR',
-            'priceAdult': priceAdult,
-            'priceAdultOriginal': priceAdultOriginal,
-            'priceChild': 0.0,
-            'time': startTime,
-            'price': 'OMR ${priceAdult.toStringAsFixed(1)}',
-            'status': soldOut
-                ? 'sold_out'
-                : low
-                ? 'low'
-                : 'active',
-            'capacityAdult': capacityAdult,
-            'capacityChild': 0,
-            'bookedAdult': bookedAdult,
-            'bookedChild': 0,
-            'title': option['title'],
-            'bookableType': 'restaurant',
-            'bookingCategory': 'combo',
-            'guestPricingMode': guestPricingModePerson,
-            'mealType': '',
-            'packageName': '',
-            'packageDescription': option['description'],
-            'entryConditions': [
-              'Quantity-based combo order',
-              'One unit equals one combo package',
-            ],
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+          batch.set(
+            firestore
+                .collection('offers')
+                .doc(
+                  _offerId(
+                    restaurantId,
+                    date,
+                    slot['start'] as String,
+                    suffix: 'buffet_${slot['mealType']}',
+                  ),
+                ),
+            {
+              ..._offerSeedFields(
+                restaurantId: restaurantId,
+                date: date,
+                startTime: slot['start'] as String,
+                endTime: slot['end'] as String,
+                priceAdult: (slot['adultBase'] as double) + (dayIndex * 0.5),
+                priceAdultOriginal:
+                    (slot['adultOriginal'] as double) + (dayIndex * 0.5),
+                priceChild: (slot['childBase'] as double) + (dayIndex * 0.25),
+                capacityAdult: capacityAdult,
+                capacityChild: capacityChild,
+                bookedAdult: bookedAdult,
+                bookedChild: bookedChild,
+                status: soldOut
+                    ? 'sold_out'
+                    : low
+                    ? 'low'
+                    : 'active',
+                titleEn: slot['titleEn'] as String,
+                titleAr: slot['titleAr'] as String,
+                bookingCategory: 'buffet',
+                bookableType: 'restaurant',
+                guestPricingMode: guestPricingModeAdultsChildren,
+                mealType: slot['mealType'] as String,
+                entryConditionsEn: [
+                  'Arrive 15 minutes before your meal window.',
+                  'Children under 5 can enter free when sharing a table.',
+                ],
+                entryConditionsAr: [
+                  'يرجى الحضور قبل الموعد بـ 15 دقيقة.',
+                  'الأطفال دون 5 سنوات يدخلون مجانًا عند مشاركة الطاولة.',
+                ],
+              ),
+            },
+          );
         }
       }
     }
+  }
 
-    final attractionSchedules = <String, List<Map<String, dynamic>>>{
-      'demo_attraction_1': [
-        {
-          'start': '15:00',
-          'end': '21:00',
-          'packages': [
-            {
-              'name': 'Standard Camp',
-              'description':
-                  'Shared camp seating with dinner and core activities.',
-              'adultBase': 31.0,
-              'childBase': 18.0,
-              'capacityAdult': 20,
-              'capacityChild': 12,
-            },
-            {
-              'name': 'VIP Majlis',
-              'description': 'Private seating area with priority service.',
-              'adultBase': 44.0,
-              'childBase': 25.0,
-              'capacityAdult': 10,
-              'capacityChild': 6,
-            },
-            {
-              'name': 'Adventure Plus',
-              'description':
-                  'Premium desert activities with upgraded dinner setup.',
-              'adultBase': 49.0,
-              'childBase': 28.0,
-              'capacityAdult': 12,
-              'capacityChild': 8,
-            },
-          ],
-        },
-        {
-          'start': '16:30',
-          'end': '22:30',
-          'packages': [
-            {
-              'name': 'Adventure Plus',
-              'description':
-                  'Premium desert activities with upgraded dinner setup.',
-              'adultBase': 52.0,
-              'childBase': 29.0,
-              'capacityAdult': 12,
-              'capacityChild': 8,
-            },
-            {
-              'name': 'VIP Majlis',
-              'description': 'Private seating area with priority service.',
-              'adultBase': 47.0,
-              'childBase': 27.0,
-              'capacityAdult': 10,
-              'capacityChild': 6,
-            },
-            {
-              'name': 'Standard Camp',
-              'description':
-                  'Shared camp seating with dinner and core activities.',
-              'adultBase': 36.0,
-              'childBase': 20.0,
-              'capacityAdult': 18,
-              'capacityChild': 10,
-            },
-          ],
-        },
-      ],
-      'demo_attraction_2': [
-        {
-          'start': '17:30',
-          'end': '19:00',
-          'packages': [
-            {
-              'name': 'Classic Deck',
-              'description': 'Entry-level cruise package with shared seating.',
-              'adultBase': 19.0,
-              'childBase': 11.0,
-              'capacityAdult': 24,
-              'capacityChild': 12,
-            },
-            {
-              'name': 'Window Dining',
-              'description': 'Cruise with dinner seating by the glass windows.',
-              'adultBase': 29.0,
-              'childBase': 17.0,
-              'capacityAdult': 14,
-              'capacityChild': 8,
-            },
-            {
-              'name': 'Premium Upper Deck',
-              'description':
-                  'Upper-deck lounge seating with best skyline views.',
-              'adultBase': 33.0,
-              'childBase': 19.0,
-              'capacityAdult': 10,
-              'capacityChild': 6,
-            },
-          ],
-        },
-        {
-          'start': '20:00',
-          'end': '21:30',
-          'packages': [
-            {
-              'name': 'Classic Deck',
-              'description': 'Entry-level cruise package with shared seating.',
-              'adultBase': 22.0,
-              'childBase': 12.0,
-              'capacityAdult': 20,
-              'capacityChild': 10,
-            },
-            {
-              'name': 'Premium Upper Deck',
-              'description':
-                  'Upper-deck lounge seating with best skyline views.',
-              'adultBase': 35.0,
-              'childBase': 20.0,
-              'capacityAdult': 8,
-              'capacityChild': 4,
-            },
-            {
-              'name': 'Window Dining',
-              'description': 'Cruise with dinner seating by the glass windows.',
-              'adultBase': 31.0,
-              'childBase': 18.0,
-              'capacityAdult': 12,
-              'capacityChild': 8,
-            },
-          ],
-        },
-      ],
-    };
+  static void _seedSetMenuOffers(
+    WriteBatch batch,
+    FirebaseFirestore firestore,
+    List<DateTime> dates,
+  ) {
+    final configs = [
+      {'restaurantId': 'demo_restaurant_1'},
+      {'restaurantId': 'demo_restaurant_3'},
+    ];
+    final slots = [
+      {
+        'mealType': 'breakfast',
+        'titleEn': 'Breakfast Set Menu',
+        'titleAr': 'قائمة إفطار ثابتة',
+        'start': '08:30',
+        'end': '10:30',
+        'base': 6.5,
+        'original': 8.0,
+      },
+      {
+        'mealType': 'lunch',
+        'titleEn': 'Lunch Set Menu',
+        'titleAr': 'قائمة غداء ثابتة',
+        'start': '13:00',
+        'end': '15:00',
+        'base': 8.5,
+        'original': 10.0,
+      },
+      {
+        'mealType': 'dinner',
+        'titleEn': 'Dinner Set Menu',
+        'titleAr': 'قائمة عشاء ثابتة',
+        'start': '19:30',
+        'end': '22:00',
+        'base': 11.0,
+        'original': 13.0,
+      },
+    ];
 
-    for (final attraction in attractions) {
-      final attractionId = attraction['id'] as String;
-      final schedule = attractionSchedules[attractionId] ?? const [];
+    for (final config in configs) {
+      final restaurantId = config['restaurantId'] as String;
       for (var dayIndex = 0; dayIndex < dates.length; dayIndex++) {
         final date = dates[dayIndex];
-        for (var slotIndex = 0; slotIndex < schedule.length; slotIndex++) {
-          final slot = schedule[slotIndex];
+        for (var slotIndex = 0; slotIndex < slots.length; slotIndex++) {
+          final slot = slots[slotIndex];
+          final soldOut =
+              restaurantId == 'demo_restaurant_3' &&
+              dayIndex == 5 &&
+              slot['mealType'] == 'dinner';
+          final low =
+              !soldOut &&
+              restaurantId == 'demo_restaurant_1' &&
+              dayIndex == 3 &&
+              slot['mealType'] == 'lunch';
+          final capacity = 20 + (slotIndex * 3);
+          final booked = soldOut
+              ? capacity
+              : low
+              ? capacity - 2
+              : 3 + ((dayIndex + slotIndex) % 5);
+
+          batch.set(
+            firestore
+                .collection('offers')
+                .doc(
+                  _offerId(
+                    restaurantId,
+                    date,
+                    slot['start'] as String,
+                    suffix: 'set_${slot['mealType']}',
+                  ),
+                ),
+            {
+              ..._offerSeedFields(
+                restaurantId: restaurantId,
+                date: date,
+                startTime: slot['start'] as String,
+                endTime: slot['end'] as String,
+                priceAdult:
+                    (slot['base'] as double) +
+                    (dayIndex * 0.5) +
+                    (slotIndex * 0.25),
+                priceAdultOriginal:
+                    (slot['original'] as double) +
+                    (dayIndex * 0.5) +
+                    (slotIndex * 0.25),
+                priceChild: 0,
+                capacityAdult: capacity,
+                capacityChild: 0,
+                bookedAdult: booked,
+                bookedChild: 0,
+                status: soldOut
+                    ? 'sold_out'
+                    : low
+                    ? 'low'
+                    : 'active',
+                titleEn: slot['titleEn'] as String,
+                titleAr: slot['titleAr'] as String,
+                bookingCategory: 'set_menu',
+                bookableType: 'restaurant',
+                guestPricingMode: guestPricingModePerson,
+                mealType: slot['mealType'] as String,
+                entryConditionsEn: [
+                  'One fixed menu is charged per guest.',
+                  'Dish selection is completed after the booking step.',
+                ],
+                entryConditionsAr: [
+                  'يتم احتساب قائمة ثابتة واحدة لكل شخص.',
+                  'اختيار الأطباق يتم بعد خطوة الحجز.',
+                ],
+              ),
+            },
+          );
+        }
+      }
+    }
+  }
+
+  static void _seedComboOffers(
+    WriteBatch batch,
+    FirebaseFirestore firestore,
+    List<DateTime> dates,
+  ) {
+    final configs = [
+      {
+        'restaurantId': 'demo_restaurant_2',
+        'start': '11:00',
+        'end': '23:00',
+        'items': [
+          {
+            'titleEn': 'Broasted Box',
+            'titleAr': 'بوكس بروست',
+            'descriptionEn':
+                'Chicken, fries, garlic sauce, and a soft drink in one box.',
+            'descriptionAr':
+                'دجاج وبطاطس وصوص ثوم ومشروب غازي داخل باقة واحدة.',
+            'base': 4.5,
+            'original': 5.5,
+            'capacity': 40,
+          },
+          {
+            'titleEn': 'Family Crunch Combo',
+            'titleAr': 'كومبو العائلة المقرمش',
+            'descriptionEn':
+                'A sharing combo with chicken, sides, sauces, and drinks.',
+            'descriptionAr':
+                'كومبو للمشاركة مع الدجاج والأطباق الجانبية والصلصات والمشروبات.',
+            'base': 9.5,
+            'original': 11.5,
+            'capacity': 24,
+          },
+          {
+            'titleEn': 'Late Night Snack Combo',
+            'titleAr': 'كومبو سناك آخر الليل',
+            'descriptionEn': 'A lighter combo for late-night orders.',
+            'descriptionAr': 'كومبو أخف لطلبات آخر الليل.',
+            'base': 3.5,
+            'original': 4.5,
+            'capacity': 28,
+          },
+        ],
+      },
+      {
+        'restaurantId': 'demo_restaurant_3',
+        'start': '12:00',
+        'end': '22:30',
+        'items': [
+          {
+            'titleEn': 'Majlis Lunch Combo',
+            'titleAr': 'كومبو غداء المجلس',
+            'descriptionEn': 'One main plate, side, dessert, and drink.',
+            'descriptionAr': 'طبق رئيسي وطبق جانبي وحلى ومشروب.',
+            'base': 6.5,
+            'original': 8.0,
+            'capacity': 26,
+          },
+          {
+            'titleEn': 'Sea View Sharing Box',
+            'titleAr': 'بوكس المشاركة بإطلالة بحرية',
+            'descriptionEn': 'A sharing meal with grills, rice, and drinks.',
+            'descriptionAr': 'وجبة مشاركة مع مشاوي وأرز ومشروبات.',
+            'base': 11.5,
+            'original': 13.5,
+            'capacity': 18,
+          },
+          {
+            'titleEn': 'Dessert & Coffee Duo',
+            'titleAr': 'ثنائي القهوة والحلى',
+            'descriptionEn': 'Two desserts with specialty coffee.',
+            'descriptionAr': 'حصتان من الحلى مع قهوة مختصة.',
+            'base': 5.0,
+            'original': 6.0,
+            'capacity': 20,
+          },
+        ],
+      },
+    ];
+
+    for (final config in configs) {
+      final restaurantId = config['restaurantId'] as String;
+      final items = config['items'] as List<dynamic>;
+      final start = config['start'] as String;
+      final end = config['end'] as String;
+
+      for (var dayIndex = 0; dayIndex < dates.length; dayIndex++) {
+        final date = dates[dayIndex];
+        for (var itemIndex = 0; itemIndex < items.length; itemIndex++) {
+          final item = items[itemIndex] as Map<String, dynamic>;
+          final soldOut =
+              restaurantId == 'demo_restaurant_2' &&
+              dayIndex == 4 &&
+              itemIndex == 1;
+          final low = !soldOut && ((dayIndex + itemIndex) % 5 == 0);
+          final capacity = item['capacity'] as int;
+          final booked = soldOut
+              ? capacity
+              : low
+              ? capacity - 2
+              : 3 + ((dayIndex + itemIndex) % 5);
+
+          batch.set(
+            firestore
+                .collection('offers')
+                .doc(
+                  _offerId(
+                    restaurantId,
+                    date,
+                    start,
+                    suffix: 'combo_$itemIndex',
+                  ),
+                ),
+            {
+              ..._offerSeedFields(
+                restaurantId: restaurantId,
+                date: date,
+                startTime: start,
+                endTime: end,
+                priceAdult: (item['base'] as double) + ((dayIndex % 3) * 0.25),
+                priceAdultOriginal:
+                    (item['original'] as double) + ((dayIndex % 3) * 0.25),
+                priceChild: 0,
+                capacityAdult: capacity,
+                capacityChild: 0,
+                bookedAdult: booked,
+                bookedChild: 0,
+                status: soldOut
+                    ? 'sold_out'
+                    : low
+                    ? 'low'
+                    : 'active',
+                titleEn: item['titleEn'] as String,
+                titleAr: item['titleAr'] as String,
+                bookingCategory: 'combo',
+                bookableType: 'restaurant',
+                guestPricingMode: guestPricingModePerson,
+                packageDescriptionEn: item['descriptionEn'] as String,
+                packageDescriptionAr: item['descriptionAr'] as String,
+                entryConditionsEn: [
+                  'Each quantity equals one combo package.',
+                  'Prepared fresh once the order is confirmed.',
+                ],
+                entryConditionsAr: [
+                  'كل كمية تعادل طلب كومبو واحد.',
+                  'يتم التحضير طازجًا بعد تأكيد الطلب.',
+                ],
+              ),
+            },
+          );
+        }
+      }
+    }
+  }
+
+  static void _seedAttractionOffers(
+    WriteBatch batch,
+    FirebaseFirestore firestore,
+    List<DateTime> dates,
+  ) {
+    final configs = [
+      {
+        'attractionId': 'demo_attraction_1',
+        'guestPricingMode': guestPricingModeAdultsChildren,
+        'slots': [
+          {
+            'start': '10:00',
+            'end': '14:00',
+            'packages': [
+              {
+                'nameEn': 'Explorer Pass',
+                'nameAr': 'تذكرة المستكشف',
+                'descriptionEn': 'Standard park access with main activities.',
+                'descriptionAr': 'دخول عادي للمنتزه مع الأنشطة الأساسية.',
+                'adultBase': 7.5,
+                'adultOriginal': 9.0,
+                'childBase': 4.0,
+                'capacityAdult': 22,
+                'capacityChild': 14,
+              },
+              {
+                'nameEn': 'Family Splash Pass',
+                'nameAr': 'تذكرة المرح العائلية',
+                'descriptionEn':
+                    'Family-oriented package with wider activity access.',
+                'descriptionAr': 'باقة عائلية بتغطية أوسع للأنشطة.',
+                'adultBase': 10.0,
+                'adultOriginal': 12.0,
+                'childBase': 5.0,
+                'capacityAdult': 16,
+                'capacityChild': 10,
+              },
+            ],
+          },
+          {
+            'start': '16:00',
+            'end': '20:00',
+            'packages': [
+              {
+                'nameEn': 'Sunset Adventure',
+                'nameAr': 'مغامرة الغروب',
+                'descriptionEn':
+                    'Evening package with cooler weather and peak fun.',
+                'descriptionAr': 'باقة مسائية مع طقس ألطف وأجواء أكثر حيوية.',
+                'adultBase': 8.5,
+                'adultOriginal': 10.0,
+                'childBase': 4.5,
+                'capacityAdult': 20,
+                'capacityChild': 12,
+              },
+              {
+                'nameEn': 'VIP Family Zone',
+                'nameAr': 'منطقة العائلة VIP',
+                'descriptionEn':
+                    'Premium seating and faster entry for families.',
+                'descriptionAr': 'جلسات مميزة ودخول أسرع للعائلات.',
+                'adultBase': 12.0,
+                'adultOriginal': 14.0,
+                'childBase': 6.0,
+                'capacityAdult': 12,
+                'capacityChild': 8,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        'attractionId': 'demo_attraction_2',
+        'guestPricingMode': guestPricingModePerson,
+        'slots': [
+          {
+            'start': '17:30',
+            'end': '19:00',
+            'packages': [
+              {
+                'nameEn': 'Classic Cruise',
+                'nameAr': 'الرحلة الكلاسيكية',
+                'descriptionEn': 'Shared boarding with open deck seating.',
+                'descriptionAr': 'صعود مشترك مع جلسات سطح مفتوح.',
+                'adultBase': 6.0,
+                'adultOriginal': 7.5,
+                'capacity': 28,
+              },
+              {
+                'nameEn': 'Dinner Cruise',
+                'nameAr': 'رحلة العشاء',
+                'descriptionEn': 'Dinner seating with skyline view.',
+                'descriptionAr': 'جلسة عشاء مع إطلالة على الأفق.',
+                'adultBase': 11.0,
+                'adultOriginal': 13.0,
+                'capacity': 18,
+              },
+              {
+                'nameEn': 'Upper Deck Lounge',
+                'nameAr': 'صالة السطح العلوي',
+                'descriptionEn': 'Premium deck seating and priority boarding.',
+                'descriptionAr': 'جلسة مميزة على السطح مع أولوية الصعود.',
+                'adultBase': 13.5,
+                'adultOriginal': 15.5,
+                'capacity': 10,
+              },
+            ],
+          },
+          {
+            'start': '20:00',
+            'end': '21:30',
+            'packages': [
+              {
+                'nameEn': 'Classic Cruise',
+                'nameAr': 'الرحلة الكلاسيكية',
+                'descriptionEn': 'Late sailing with standard shared seating.',
+                'descriptionAr': 'رحلة متأخرة مع جلسات مشتركة عادية.',
+                'adultBase': 7.0,
+                'adultOriginal': 8.5,
+                'capacity': 24,
+              },
+              {
+                'nameEn': 'Dinner Cruise',
+                'nameAr': 'رحلة العشاء',
+                'descriptionEn': 'Late dinner sailing with table service.',
+                'descriptionAr': 'رحلة عشاء متأخرة مع خدمة على الطاولة.',
+                'adultBase': 12.0,
+                'adultOriginal': 14.0,
+                'capacity': 16,
+              },
+              {
+                'nameEn': 'Upper Deck Lounge',
+                'nameAr': 'صالة السطح العلوي',
+                'descriptionEn': 'Night lounge with premium skyline focus.',
+                'descriptionAr': 'صالة ليلية مميزة مع تركيز على الإطلالة.',
+                'adultBase': 14.5,
+                'adultOriginal': 16.5,
+                'capacity': 8,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        'attractionId': 'demo_attraction_3',
+        'guestPricingMode': guestPricingModeCoupon,
+        'slots': [
+          {
+            'start': '12:00',
+            'end': '23:00',
+            'packages': [
+              {
+                'nameEn': '10 Games Coupon',
+                'nameAr': 'كوبون 10 ألعاب',
+                'descriptionEn':
+                    'Includes 10 game credits for selected arcade machines.',
+                'descriptionAr':
+                    'يشمل 10 أرصدة ألعاب للأجهزة المحددة داخل الصالة.',
+                'adultBase': 3.0,
+                'adultOriginal': 4.0,
+                'capacity': 60,
+              },
+              {
+                'nameEn': '25 Games Coupon',
+                'nameAr': 'كوبون 25 لعبة',
+                'descriptionEn':
+                    'Value pack for frequent players with 25 game credits.',
+                'descriptionAr':
+                    'باقة اقتصادية للاعبين المتكررين وتشمل 25 رصيد لعبة.',
+                'adultBase': 6.0,
+                'adultOriginal': 8.0,
+                'capacity': 36,
+              },
+              {
+                'nameEn': 'VR + Arcade Bundle',
+                'nameAr': 'باقة الواقع الافتراضي والأركيد',
+                'descriptionEn':
+                    'One bundle coupon for VR entry and arcade play.',
+                'descriptionAr':
+                    'كوبون باقة واحدة لدخول الواقع الافتراضي مع الأركيد.',
+                'adultBase': 9.0,
+                'adultOriginal': 11.0,
+                'capacity': 20,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    for (final config in configs) {
+      final attractionId = config['attractionId'] as String;
+      final guestPricingMode = config['guestPricingMode'] as String;
+      final slots = config['slots'] as List<dynamic>;
+
+      for (var dayIndex = 0; dayIndex < dates.length; dayIndex++) {
+        final date = dates[dayIndex];
+        for (var slotIndex = 0; slotIndex < slots.length; slotIndex++) {
+          final slot = slots[slotIndex] as Map<String, dynamic>;
           final packages = slot['packages'] as List<dynamic>;
           for (
             var packageIndex = 0;
@@ -869,502 +819,1128 @@ class SeedFirestore {
                 attractionId == 'demo_attraction_2' &&
                 dayIndex == 4 &&
                 slotIndex == 1 &&
-                packageIndex == 1;
+                packageIndex == 2;
             final low =
                 !soldOut &&
-                attractionId == 'demo_attraction_1' &&
-                dayIndex == 2 &&
-                slotIndex == 0 &&
-                packageIndex == 1;
-            final guestPricingMode = attractionId == 'demo_attraction_1'
-                ? guestPricingModePerson
-                : guestPricingModeAdultsChildren;
-            final usesPersonPricing =
-                guestPricingMode == guestPricingModePerson;
-            final adultPrice =
-                (package['adultBase'] as double) + dayIndex + (slotIndex * 2);
-            final childPrice = usesPersonPricing
-                ? 0.0
-                : (package['childBase'] as double) + (dayIndex * 0.5);
-            final rawCapacityAdult = package['capacityAdult'] as int;
-            final rawCapacityChild = package['capacityChild'] as int;
-            final bookedAdultBase = soldOut
-                ? rawCapacityAdult
+                ((dayIndex + packageIndex + slotIndex) % 4 == 0 ||
+                    (attractionId == 'demo_attraction_3' &&
+                        dayIndex == 3 &&
+                        packageIndex == 1));
+            final splitPricing =
+                guestPricingMode == guestPricingModeAdultsChildren;
+
+            final capacityAdult = splitPricing
+                ? package['capacityAdult'] as int
+                : package['capacity'] as int;
+            final capacityChild = splitPricing
+                ? package['capacityChild'] as int
+                : 0;
+            final bookedAdult = soldOut
+                ? capacityAdult
                 : low
-                ? rawCapacityAdult - 2
-                : 3 + dayIndex;
-            final bookedChildBase = soldOut
-                ? rawCapacityChild
-                : low
-                ? rawCapacityChild - 1
-                : 1 + packageIndex;
-            final capacityAdult = usesPersonPricing
-                ? rawCapacityAdult + rawCapacityChild
-                : rawCapacityAdult;
-            final capacityChild = usesPersonPricing ? 0 : rawCapacityChild;
-            final bookedAdult = usesPersonPricing
-                ? bookedAdultBase + bookedChildBase
-                : bookedAdultBase;
-            final bookedChild = usesPersonPricing ? 0 : bookedChildBase;
-            final offerRef = firestore
-                .collection('offers')
-                .doc(
-                  _offerId(
-                    attractionId,
-                    date,
-                    slot['start'] as String,
-                    suffix: 'pkg_${slotIndex}_$packageIndex',
+                ? capacityAdult - 2
+                : 2 + ((dayIndex + packageIndex) % 5);
+            final bookedChild = splitPricing
+                ? soldOut
+                      ? capacityChild
+                      : low
+                      ? capacityChild - 1
+                      : 1 + ((dayIndex + slotIndex) % 4)
+                : 0;
+
+            batch.set(
+              firestore
+                  .collection('offers')
+                  .doc(
+                    _offerId(
+                      attractionId,
+                      date,
+                      slot['start'] as String,
+                      suffix: 'pkg_${slotIndex}_$packageIndex',
+                    ),
                   ),
-                );
-            batch.set(offerRef, {
-              'restaurantId': attractionId,
-              'date': AppDateUtils.formatDate(date),
-              'startTime': slot['start'],
-              'endTime': slot['end'],
-              'currency': 'OMR',
-              'priceAdult': adultPrice,
-              'priceAdultOriginal': adultPrice + 7,
-              'priceChild': childPrice,
-              'time': slot['start'],
-              'price': 'OMR ${adultPrice.toStringAsFixed(1)}',
-              'status': soldOut
-                  ? 'sold_out'
-                  : low
-                  ? 'low'
-                  : 'active',
-              'capacityAdult': capacityAdult,
-              'capacityChild': capacityChild,
-              'bookedAdult': bookedAdult,
-              'bookedChild': bookedChild,
-              'title': package['name'],
-              'bookableType': 'attraction',
-              'bookingCategory': 'attraction',
-              'guestPricingMode': guestPricingMode,
-              'mealType': '',
-              'packageName': package['name'],
-              'packageDescription': package['description'],
-              'entryConditions': [
-                'Present your confirmation on arrival',
-                if (attractionId == 'demo_attraction_1')
-                  'Transport timing depends on selected slot',
-              ],
-              'createdAt': FieldValue.serverTimestamp(),
-              'updatedAt': FieldValue.serverTimestamp(),
-            }, SetOptions(merge: true));
+              {
+                ..._offerSeedFields(
+                  restaurantId: attractionId,
+                  date: date,
+                  startTime: slot['start'] as String,
+                  endTime: slot['end'] as String,
+                  priceAdult:
+                      (package['adultBase'] as double) + (dayIndex * 0.25),
+                  priceAdultOriginal:
+                      (package['adultOriginal'] as double) + (dayIndex * 0.25),
+                  priceChild: splitPricing
+                      ? (package['childBase'] as double) + (dayIndex * 0.25)
+                      : 0,
+                  capacityAdult: capacityAdult,
+                  capacityChild: capacityChild,
+                  bookedAdult: bookedAdult,
+                  bookedChild: bookedChild,
+                  status: soldOut
+                      ? 'sold_out'
+                      : low
+                      ? 'low'
+                      : 'active',
+                  titleEn: package['nameEn'] as String,
+                  titleAr: package['nameAr'] as String,
+                  packageNameEn: package['nameEn'] as String,
+                  packageNameAr: package['nameAr'] as String,
+                  packageDescriptionEn: package['descriptionEn'] as String,
+                  packageDescriptionAr: package['descriptionAr'] as String,
+                  bookingCategory: 'attraction',
+                  bookableType: 'attraction',
+                  guestPricingMode: guestPricingMode,
+                  entryConditionsEn: guestPricingMode == guestPricingModeCoupon
+                      ? [
+                          'Valid for one visit only.',
+                          'Cannot be split across multiple visits.',
+                        ]
+                      : [
+                          'Present your confirmation before entering the venue.',
+                          'Package access applies only during the selected slot.',
+                        ],
+                  entryConditionsAr: guestPricingMode == guestPricingModeCoupon
+                      ? [
+                          'صالح لزيارة واحدة فقط.',
+                          'لا يمكن تقسيمه على عدة زيارات.',
+                        ]
+                      : [
+                          'يجب إبراز التأكيد قبل دخول المكان.',
+                          'الدخول صالح فقط خلال الفترة الزمنية المختارة.',
+                        ],
+                ),
+              },
+            );
           }
         }
       }
     }
+  }
 
+  static void _seedUsers(WriteBatch batch, FirebaseFirestore firestore) {
     final users = [
       {
         'id': 'demo_user_1',
-        'fullName': 'John Doe',
-        'email': 'john@example.com',
-        'phone': '+971 50 000 0000',
+        'fullName': 'Noor Al Balushi',
+        'email': 'noor@example.com',
+        'phone': '+968 9000 0001',
         'role': 'guest',
       },
       {
         'id': 'demo_user_2',
-        'fullName': 'Sara Ali',
-        'email': 'sara@example.com',
-        'phone': '+971 55 123 0001',
+        'fullName': 'Ahmed Al Hinai',
+        'email': 'ahmed@example.com',
+        'phone': '+968 9000 0002',
         'role': 'guest',
       },
       {
         'id': 'demo_user_3',
-        'fullName': 'Omar Khan',
-        'email': 'omar@example.com',
-        'phone': '+971 52 777 1000',
+        'fullName': 'Fatma Al Riyami',
+        'email': 'fatma@example.com',
+        'phone': '+968 9000 0003',
+        'role': 'guest',
+      },
+      {
+        'id': 'demo_user_4',
+        'fullName': 'Saeed Al Lawati',
+        'email': 'saeed@example.com',
+        'phone': '+968 9000 0004',
         'role': 'guest',
       },
     ];
-    for (final user in users) {
-      final userRef = firestore.collection('users').doc(user['id'] as String);
-      batch.set(userRef, {
-        'fullName': user['fullName'],
-        'email': user['email'],
-        'phone': user['phone'],
-        'role': user['role'],
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
 
+    for (final user in users) {
+      batch.set(firestore.collection('users').doc(user['id'] as String), {
+        ...user,
+        ..._seedMetaFields(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  static void _seedBookings(
+    WriteBatch batch,
+    FirebaseFirestore firestore,
+    List<DateTime> dates,
+  ) {
     final bookings = [
-      {
-        'id': 'demo_booking_1',
-        'userId': 'demo_user_1',
-        'restaurantId': 'demo_restaurant_1',
-        'dateIndex': 0,
-        'timeIndex': 1,
-        'adults': 2,
-        'children': 1,
-        'code': 'BKG1769509734255',
-        'bookingCategory': 'buffet',
-        'bookableType': 'restaurant',
-        'guestPricingMode': guestPricingModeAdultsChildren,
-        'offerTitleSnapshot': 'Lunch Entry',
-      },
-      {
-        'id': 'demo_booking_2',
-        'userId': 'demo_user_2',
-        'restaurantId': 'demo_restaurant_3',
-        'dateIndex': 2,
-        'timeIndex': 2,
-        'adults': 4,
-        'children': 0,
-        'code': 'BKG1769509735001',
-        'bookingCategory': 'buffet',
-        'bookableType': 'restaurant',
-        'guestPricingMode': guestPricingModeAdultsChildren,
-        'offerTitleSnapshot': 'Dinner Entry',
-      },
-      {
-        'id': 'demo_booking_3',
-        'userId': 'demo_user_3',
-        'restaurantId': 'demo_restaurant_5',
-        'dateIndex': 4,
-        'timeIndex': 0,
-        'adults': 1,
-        'children': 2,
-        'code': 'BKG1769509737001',
-        'bookingCategory': 'buffet',
-        'bookableType': 'restaurant',
-        'guestPricingMode': guestPricingModeAdultsChildren,
-        'offerTitleSnapshot': 'Breakfast Entry',
-      },
-      {
-        'id': 'demo_booking_4',
-        'userId': 'demo_user_1',
-        'restaurantId': 'demo_attraction_1',
-        'dateIndex': 1,
-        'offerId': _offerId(
-          'demo_attraction_1',
-          dates[1],
-          '15:00',
-          suffix: 'pkg_0_1',
+      _bookingSeed(
+        id: 'demo_booking_1',
+        userId: 'demo_user_1',
+        venueId: 'demo_restaurant_1',
+        venueName: 'Saffron Court',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
+        date: dates[0],
+        offerId: _offerId(
+          'demo_restaurant_1',
+          dates[0],
+          '13:00',
+          suffix: 'buffet_lunch',
         ),
-        'startTime': '15:00',
-        'endTime': '21:00',
-        'adults': 3,
-        'children': 0,
-        'unitPriceAdult': 45.0,
-        'unitPriceChild': 0.0,
-        'code': 'BKG1769509738999',
-        'bookingCategory': 'attraction',
-        'bookableType': 'attraction',
-        'guestPricingMode': guestPricingModePerson,
-        'restaurantNameSnapshot': 'Desert Safari Escape',
-        'coverImageUrlSnapshot':
-            'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
-        'offerTitleSnapshot': 'VIP Majlis',
-      },
-      {
-        'id': 'demo_booking_5',
-        'userId': 'demo_user_2',
-        'restaurantId': 'demo_restaurant_4',
-        'dateIndex': 2,
-        'offerId': _offerId(
-          'demo_restaurant_4',
+        startTime: '13:00',
+        endTime: '15:30',
+        adults: 2,
+        children: 1,
+        unitPriceAdult: 11.0,
+        unitPriceChild: 6.0,
+        offerTitle: 'Lunch Buffet',
+        bookingCategory: 'buffet',
+        bookableType: 'restaurant',
+        guestPricingMode: guestPricingModeAdultsChildren,
+      ),
+      _bookingSeed(
+        id: 'demo_booking_2',
+        userId: 'demo_user_2',
+        venueId: 'demo_restaurant_3',
+        venueName: 'Harbor Majlis',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=1200&q=80',
+        date: dates[1],
+        offerId: _offerId(
+          'demo_restaurant_3',
+          dates[1],
+          '19:30',
+          suffix: 'set_dinner',
+        ),
+        startTime: '19:30',
+        endTime: '22:00',
+        adults: 3,
+        children: 0,
+        unitPriceAdult: 12.75,
+        unitPriceChild: 0,
+        offerTitle: 'Dinner Set Menu',
+        bookingCategory: 'set_menu',
+        bookableType: 'restaurant',
+        guestPricingMode: guestPricingModePerson,
+      ),
+      _bookingSeed(
+        id: 'demo_booking_3',
+        userId: 'demo_user_3',
+        venueId: 'demo_restaurant_2',
+        venueName: 'Broast District',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1421622548261-c45bfe178854?auto=format&fit=crop&w=1200&q=80',
+        date: dates[2],
+        offerId: _offerId(
+          'demo_restaurant_2',
           dates[2],
           '11:00',
-          suffix: 'combo_0',
+          suffix: 'combo_1',
         ),
-        'startTime': '11:00',
-        'endTime': '23:00',
-        'adults': 2,
-        'children': 0,
-        'unitPriceAdult': 10.0,
-        'unitPriceChild': 0.0,
-        'code': 'BKG1769509740123',
-        'bookingCategory': 'combo',
-        'bookableType': 'restaurant',
-        'guestPricingMode': guestPricingModePerson,
-        'restaurantNameSnapshot': 'Spice Avenue',
-        'offerTitleSnapshot': '10 pcs Broasted',
-      },
+        startTime: '11:00',
+        endTime: '23:00',
+        adults: 2,
+        children: 0,
+        unitPriceAdult: 9.75,
+        unitPriceChild: 0,
+        offerTitle: 'Family Crunch Combo',
+        bookingCategory: 'combo',
+        bookableType: 'restaurant',
+        guestPricingMode: guestPricingModePerson,
+      ),
+      _bookingSeed(
+        id: 'demo_booking_4',
+        userId: 'demo_user_4',
+        venueId: 'demo_attraction_1',
+        venueName: 'Wadi Adventure Park',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+        date: dates[1],
+        offerId: _offerId(
+          'demo_attraction_1',
+          dates[1],
+          '10:00',
+          suffix: 'pkg_0_0',
+        ),
+        startTime: '10:00',
+        endTime: '14:00',
+        adults: 2,
+        children: 1,
+        unitPriceAdult: 7.75,
+        unitPriceChild: 4.25,
+        offerTitle: 'Explorer Pass',
+        bookingCategory: 'attraction',
+        bookableType: 'attraction',
+        guestPricingMode: guestPricingModeAdultsChildren,
+      ),
+      _bookingSeed(
+        id: 'demo_booking_5',
+        userId: 'demo_user_1',
+        venueId: 'demo_attraction_2',
+        venueName: 'Sunset Marina Cruise',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+        date: dates[3],
+        offerId: _offerId(
+          'demo_attraction_2',
+          dates[3],
+          '20:00',
+          suffix: 'pkg_1_1',
+        ),
+        startTime: '20:00',
+        endTime: '21:30',
+        adults: 4,
+        children: 0,
+        unitPriceAdult: 12.75,
+        unitPriceChild: 0,
+        offerTitle: 'Dinner Cruise',
+        bookingCategory: 'attraction',
+        bookableType: 'attraction',
+        guestPricingMode: guestPricingModePerson,
+      ),
+      _bookingSeed(
+        id: 'demo_booking_6',
+        userId: 'demo_user_2',
+        venueId: 'demo_attraction_3',
+        venueName: 'Arcade Galaxy',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
+        date: dates[2],
+        offerId: _offerId(
+          'demo_attraction_3',
+          dates[2],
+          '12:00',
+          suffix: 'pkg_0_0',
+        ),
+        startTime: '12:00',
+        endTime: '23:00',
+        adults: 2,
+        children: 0,
+        unitPriceAdult: 3.5,
+        unitPriceChild: 0,
+        offerTitle: '10 Games Coupon',
+        bookingCategory: 'attraction',
+        bookableType: 'attraction',
+        guestPricingMode: guestPricingModeCoupon,
+      ),
     ];
 
     for (final booking in bookings) {
-      final restaurantId = booking['restaurantId'] as String;
-      final date = dates[booking['dateIndex'] as int];
-      final timeIndex = booking['timeIndex'] as int?;
-      final time = timeIndex == null ? null : times[timeIndex];
-      final offerId =
-          booking['offerId'] as String? ??
-          _offerId(restaurantId, date, time!['start'] as String);
-      final adults = booking['adults'] as int;
-      final children = booking['children'] as int;
-      final unitPriceAdult =
-          (booking['unitPriceAdult'] as num?)?.toDouble() ??
-          (100.0 + (timeIndex ?? 0) * 15);
-      final unitPriceChild =
-          (booking['unitPriceChild'] as num?)?.toDouble() ??
-          (unitPriceAdult * 0.5);
-      final subtotal = unitPriceAdult * adults + unitPriceChild * children;
+      final bookingId = booking['id'] as String;
+      final subtotal =
+          (booking['unitPriceAdult'] as double) * (booking['adults'] as int) +
+          (booking['unitPriceChild'] as double) * (booking['children'] as int);
       final tax = subtotal * 0.05;
-      final discount = 0.0;
-      final total = subtotal + tax - discount;
+      final total = subtotal + tax;
 
-      final bookingRef = firestore
-          .collection('bookings')
-          .doc(booking['id'] as String);
-      batch.set(bookingRef, {
-        'userId': booking['userId'],
-        'restaurantId': restaurantId,
-        'offerId': offerId,
-        'date': AppDateUtils.formatDate(date),
-        'startTime': booking['startTime'] ?? time?['start'],
-        'endTime': booking['endTime'] ?? time?['end'] ?? '',
-        'adults': adults,
-        'children': children,
+      batch.set(firestore.collection('bookings').doc(bookingId), {
+        ...booking,
+        ..._seedMetaFields(),
         'currency': 'OMR',
-        'unitPriceAdult': unitPriceAdult,
-        'unitPriceChild': unitPriceChild,
         'subtotal': subtotal,
         'tax': tax,
-        'discount': discount,
+        'discount': 0.0,
         'total': total,
         'status': 'paid',
-        'bookingCode': booking['code'],
-        'qrPayload': 'BOOKING:${booking['code']}',
-        'restaurantNameSnapshot':
-            booking['restaurantNameSnapshot'] ??
-            _nameForVenueId(restaurantId, restaurants, attractions),
-        'offerTitleSnapshot':
-            booking['offerTitleSnapshot'] ?? time?['title'] ?? '',
-        'bookingCategory': booking['bookingCategory'] ?? '',
-        'bookableType': booking['bookableType'] ?? 'restaurant',
-        'guestPricingMode': booking['guestPricingMode'],
-        'coverImageUrlSnapshot':
-            booking['coverImageUrlSnapshot'] ??
-            _coverForVenueId(restaurantId, restaurants, attractions),
+        'qrPayload': 'BOOKING:${booking['bookingCode']}',
         'createdAt': FieldValue.serverTimestamp(),
         'paidAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      final offerRef = firestore.collection('offers').doc(offerId);
-      batch.update(offerRef, {
-        'bookedAdult': FieldValue.increment(adults),
-        'bookedChild': FieldValue.increment(children),
-        'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      final paymentRef = firestore
-          .collection('payments')
-          .doc('pay_${booking['id']}');
-      batch.set(paymentRef, {
-        'bookingId': booking['id'],
+      batch.set(firestore.collection('payments').doc('pay_$bookingId'), {
+        'bookingId': bookingId,
         'amount': total,
         'status': 'success',
         'method': 'card',
+        ..._seedMetaFields(),
         'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-    }
-
-    await batch.commit();
-  }
-
-  static Map<String, dynamic> _restaurantCatalogOverride(String restaurantId) {
-    switch (restaurantId) {
-      case 'demo_restaurant_1':
-        return {
-          'bookingCatalog': {
-            'supportedCategories': ['buffet'],
-            'buffet': {
-              'description':
-                  'Seafood buffet with breakfast, lunch, dinner, and brunch on selected days.',
-              'included': [
-                'Live cooking stations',
-                'Dessert corner',
-                'Welcome drink',
-              ],
-              'availableMeals': ['Breakfast', 'Lunch', 'Dinner', 'Brunch'],
-              'notes': ['Brunch appears only on selected dates.'],
-            },
-          },
-        };
-      case 'demo_restaurant_2':
-        return {
-          'bookingCatalog': {
-            'supportedCategories': ['buffet', 'set_menu'],
-            'buffet': {
-              'description':
-                  'Family-friendly buffet with lighter breakfast service and strong lunch turnover.',
-              'included': ['Soft drinks', 'Family seating'],
-              'availableMeals': ['Breakfast', 'Lunch', 'Dinner'],
-            },
-            'setMenu': {
-              'description':
-                  'A curated set menu with one price per guest by meal period.',
-              'included': [
-                'Starter, main, and dessert',
-                'Set menu pricing per person',
-              ],
-              'notes': [
-                'Guests will choose the actual dishes after this booking step.',
-              ],
-              'requiresItemSelection': true,
-            },
-          },
-        };
-      case 'demo_restaurant_3':
-        return {
-          'bookingCatalog': {
-            'supportedCategories': ['buffet', 'set_menu'],
-            'buffet': {
-              'description':
-                  'Panoramic terrace buffet with stronger evening demand and premium dinner pricing.',
-              'included': ['Sea-view seating', 'Chef dessert tasting'],
-              'availableMeals': ['Breakfast', 'Lunch', 'Dinner'],
-            },
-            'setMenu': {
-              'description':
-                  'Premium set menu experience with breakfast, lunch, and dinner options.',
-              'included': ['Curated courses', 'Premium service lane'],
-              'notes': [
-                'Dinner set menu can sell out faster than the daytime options.',
-              ],
-              'requiresItemSelection': true,
-            },
-          },
-        };
-      case 'demo_restaurant_4':
-        return {
-          'bookingCatalog': {
-            'supportedCategories': ['buffet', 'combo'],
-            'buffet': {
-              'description':
-                  'Street-food buffet service with flexible lunch and dinner timings.',
-              'included': ['Soft drinks', 'Free Wi-Fi'],
-              'availableMeals': ['Breakfast', 'Lunch', 'Dinner'],
-            },
-            'combo': {
-              'description':
-                  'Ready-to-order restaurant combos with one fixed price per combo unit.',
-              'included': [
-                'Fast service combo packaging',
-                'Fixed pricing per combo order',
-              ],
-              'availableCombos': [
-                '10 pcs Broasted',
-                '15 pcs Broasted',
-                'Family Combo',
-              ],
-              'notes': [
-                'Increase quantity to order more than one combo.',
-                'Each combo option has its own daily availability.',
-              ],
-            },
-          },
-        };
-      case 'demo_restaurant_5':
-        return {
-          'bookingCatalog': {
-            'supportedCategories': ['buffet', 'set_menu'],
-            'buffet': {
-              'description':
-                  'Marina-side grill buffet with open kitchen and family-friendly lunch seating.',
-              'included': ['Salad bar', 'Dessert'],
-              'availableMeals': ['Breakfast', 'Lunch', 'Dinner'],
-            },
-            'setMenu': {
-              'description':
-                  'Grill-driven set menu with a per-person rate that changes across breakfast, lunch, and dinner.',
-              'included': ['Fixed grill menu', 'One per-person set menu rate'],
-              'notes': [
-                'Some breakfast set menu dates are intentionally unavailable for testing.',
-              ],
-              'requiresItemSelection': true,
-            },
-          },
-        };
-      case 'demo_restaurant_6':
-        return {
-          'bookingCatalog': {
-            'supportedCategories': ['buffet', 'combo'],
-            'buffet': {
-              'description':
-                  'Traditional brunch-focused buffet with lighter weekday operations.',
-              'included': ['Tea service', 'Traditional sweets'],
-              'availableMeals': ['Breakfast', 'Lunch', 'Brunch'],
-              'notes': ['Brunch is available only on selected dates.'],
-            },
-            'combo': {
-              'description':
-                  'Traditional ready-made combos sold by quantity instead of guest count.',
-              'included': ['Tea service', 'Freshly packed combo sets'],
-              'availableCombos': [
-                'Breakfast Duo',
-                'Heritage Breakfast Box',
-                'Tea & Sweets Combo',
-              ],
-              'notes': [
-                'Combos are ideal for takeaway or quick dine-in service.',
-              ],
-            },
-          },
-        };
-      default:
-        return {
-          'bookingCatalog': {
-            'supportedCategories': ['buffet'],
-            'buffet': {
-              'description':
-                  'Standard buffet configuration used for catalog testing.',
-              'included': ['Main buffet access'],
-              'availableMeals': ['Breakfast', 'Lunch', 'Dinner'],
-            },
-          },
-        };
+      });
     }
   }
 
-  static String _mealTypeForBaseOfferIndex(int index) {
-    switch (index) {
-      case 0:
-        return 'breakfast';
-      case 1:
-        return 'lunch';
-      default:
-        return 'dinner';
-    }
+  static List<Map<String, dynamic>> _restaurantDocs() {
+    return [
+      _restaurantDoc(
+        id: 'demo_restaurant_1',
+        nameEn: 'Saffron Court',
+        nameAr: 'بلاط الزعفران',
+        cityEn: 'Muscat',
+        cityAr: 'مسقط',
+        areaEn: 'Qurum',
+        areaAr: 'القرم',
+        aboutEn: 'Buffet and set menu venue with polished all-day service.',
+        aboutAr:
+            'مطعم يجمع بين البوفيه والقائمة الثابتة بخدمة أنيقة طوال اليوم.',
+        addressEn: 'Qurum Beach Road, Muscat',
+        addressAr: 'طريق شاطئ القرم، مسقط',
+        phone: '+968 9000 1010',
+        rating: 4.7,
+        reviewsCount: 214,
+        lat: 23.6139,
+        lng: 58.4103,
+        openFrom: '08:00',
+        openTo: '23:00',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80',
+        highlightsEn: ['Open buffet counters', 'Set menu dining', 'Terrace'],
+        highlightsAr: ['محطات بوفيه مفتوحة', 'قوائم ثابتة', 'تراس'],
+        inclusionsEn: ['Welcome drink', 'Dessert station'],
+        inclusionsAr: ['مشروب ترحيبي', 'ركن حلويات'],
+        exclusionsEn: ['Valet service'],
+        exclusionsAr: ['خدمة صف السيارات'],
+        cancellationEn: ['Free cancellation up to 4 hours before booking.'],
+        cancellationAr: ['إلغاء مجاني حتى 4 ساعات قبل موعد الحجز.'],
+        knowBeforeEn: ['Smart casual dress code.'],
+        knowBeforeAr: ['اللباس الذكي غير الرسمي مناسب.'],
+        badgeEn: 'Chef favorite',
+        badgeAr: 'اختيار الشيف',
+        priceFromValue: 8.0,
+        discountValue: 6.5,
+        slotsLeft: 9,
+        supportedCategories: ['buffet', 'set_menu'],
+        buffet: _restaurantCategoryData(
+          descriptionEn:
+              'Flexible buffet windows for breakfast, lunch, and dinner.',
+          descriptionAr: 'فترات بوفيه مرنة للإفطار والغداء والعشاء.',
+          highlightsEn: ['Live carving', 'Daily meal windows'],
+          highlightsAr: ['محطة تقطيع', 'فترات يومية متنوعة'],
+          includedEn: ['Buffet access', 'Soft drinks'],
+          includedAr: ['دخول البوفيه', 'مشروبات غازية'],
+          notesEn: ['Dinner slots move faster on weekends.'],
+          notesAr: ['مواعيد العشاء تنفد أسرع في نهاية الأسبوع.'],
+          availableMealsEn: ['Breakfast', 'Lunch', 'Dinner'],
+          availableMealsAr: ['إفطار', 'غداء', 'عشاء'],
+          badgeEn: '20% off',
+          badgeAr: 'خصم 20%',
+          priceFromValue: 10.0,
+          discountValue: 8.0,
+          slotsLeft: 9,
+        ),
+        setMenu: _restaurantCategoryData(
+          descriptionEn:
+              'Fixed per-person menu with item choice after booking.',
+          descriptionAr: 'قائمة ثابتة بسعر للشخص مع اختيار الأصناف بعد الحجز.',
+          highlightsEn: ['Per-person pricing', 'Curated meals'],
+          highlightsAr: ['تسعير حسب الشخص', 'وجبات مختارة'],
+          includedEn: ['Starter, main, dessert'],
+          includedAr: ['مقبلات وطبق رئيسي وحلى'],
+          notesEn: ['Dish selection is completed after booking.'],
+          notesAr: ['اختيار الأطباق يتم بعد الحجز.'],
+          availableMealsEn: [
+            'Breakfast Set Menu',
+            'Lunch Set Menu',
+            'Dinner Set Menu',
+          ],
+          availableMealsAr: [
+            'قائمة إفطار ثابتة',
+            'قائمة غداء ثابتة',
+            'قائمة عشاء ثابتة',
+          ],
+          requiresItemSelection: true,
+          badgeEn: 'Fixed price',
+          badgeAr: 'سعر ثابت',
+          priceFromValue: 8.0,
+          discountValue: 6.5,
+          slotsLeft: 6,
+        ),
+      ),
+      _restaurantDoc(
+        id: 'demo_restaurant_2',
+        nameEn: 'Broast District',
+        nameAr: 'حي البروست',
+        cityEn: 'Muscat',
+        cityAr: 'مسقط',
+        areaEn: 'Al Khuwair',
+        areaAr: 'الخوير',
+        aboutEn: 'Casual venue for buffet rushes and quantity-based combos.',
+        aboutAr: 'وجهة سريعة للبوفيه وطلبات الكومبو حسب الكمية.',
+        addressEn: 'Al Khuwair Main Street, Muscat',
+        addressAr: 'الشارع الرئيسي بالخوير، مسقط',
+        phone: '+968 9000 2020',
+        rating: 4.3,
+        reviewsCount: 148,
+        lat: 23.5859,
+        lng: 58.4078,
+        openFrom: '08:00',
+        openTo: '23:30',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1421622548261-c45bfe178854?auto=format&fit=crop&w=1200&q=80',
+        highlightsEn: ['Quick service', 'Combo ordering', 'Family seating'],
+        highlightsAr: ['خدمة سريعة', 'طلبات كومبو', 'جلسات عائلية'],
+        inclusionsEn: ['Sauce station'],
+        inclusionsAr: ['ركن صلصات'],
+        exclusionsEn: ['Table reservation guarantee'],
+        exclusionsAr: ['ضمان حجز الطاولة'],
+        cancellationEn: ['No refund after order confirmation.'],
+        cancellationAr: ['لا يوجد استرجاع بعد تأكيد الطلب.'],
+        knowBeforeEn: ['Peak times are usually after 7 PM.'],
+        knowBeforeAr: ['فترة الذروة غالبًا بعد الساعة 7 مساءً.'],
+        badgeEn: 'Popular',
+        badgeAr: 'الأكثر طلبًا',
+        priceFromValue: 5.5,
+        discountValue: 4.5,
+        slotsLeft: 12,
+        supportedCategories: ['buffet', 'combo'],
+        buffet: _restaurantCategoryData(
+          descriptionEn: 'Simple buffet windows with strong lunch demand.',
+          descriptionAr: 'فترات بوفيه بسيطة مع طلب قوي وقت الغداء.',
+          highlightsEn: ['Affordable pricing', 'Fast turnover'],
+          highlightsAr: ['تسعير مناسب', 'دوران سريع'],
+          includedEn: ['Buffet access'],
+          includedAr: ['دخول البوفيه'],
+          availableMealsEn: ['Breakfast', 'Lunch', 'Dinner'],
+          availableMealsAr: ['إفطار', 'غداء', 'عشاء'],
+          badgeEn: 'Hot deal',
+          badgeAr: 'عرض قوي',
+          priceFromValue: 8.5,
+          discountValue: 7.0,
+          slotsLeft: 10,
+        ),
+        combo: _restaurantCategoryData(
+          descriptionEn: 'Fixed-price combos designed for quantity ordering.',
+          descriptionAr: 'كومبوهات بسعر ثابت ومصممة للطلب حسب الكمية.',
+          highlightsEn: ['Ready boxes', 'One quantity = one combo'],
+          highlightsAr: ['صناديق جاهزة', 'كل كمية = كومبو واحد'],
+          includedEn: ['Combo package'],
+          includedAr: ['باقة كومبو'],
+          notesEn: ['Works well for takeaway and quick dine-in.'],
+          notesAr: ['مناسب للسفري والطلبات السريعة.'],
+          availableCombosEn: [
+            'Broasted Box',
+            'Family Crunch Combo',
+            'Late Night Snack Combo',
+          ],
+          availableCombosAr: [
+            'بوكس بروست',
+            'كومبو العائلة المقرمش',
+            'كومبو سناك آخر الليل',
+          ],
+          badgeEn: 'Combo ready',
+          badgeAr: 'كومبو جاهز',
+          priceFromValue: 5.5,
+          discountValue: 4.5,
+          slotsLeft: 12,
+        ),
+      ),
+      _restaurantDoc(
+        id: 'demo_restaurant_3',
+        nameEn: 'Harbor Majlis',
+        nameAr: 'مجلس الميناء',
+        cityEn: 'Sohar',
+        cityAr: 'صحار',
+        areaEn: 'Corniche',
+        areaAr: 'الكورنيش',
+        aboutEn: 'Sea-facing venue that supports buffet, set menu, and combo.',
+        aboutAr: 'وجهة بحرية تدعم البوفيه والقائمة الثابتة والكومبو.',
+        addressEn: 'Corniche Road, Sohar',
+        addressAr: 'طريق الكورنيش، صحار',
+        phone: '+968 9000 3030',
+        rating: 4.8,
+        reviewsCount: 267,
+        lat: 24.3474,
+        lng: 56.7294,
+        openFrom: '08:00',
+        openTo: '23:30',
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&w=1200&q=80',
+        highlightsEn: ['Sea view', 'Premium dinner', 'Multiple modes'],
+        highlightsAr: ['إطلالة بحرية', 'عشاء مميز', 'أنماط متعددة'],
+        inclusionsEn: ['Welcome water'],
+        inclusionsAr: ['مياه ترحيبية'],
+        exclusionsEn: ['Special event nights'],
+        exclusionsAr: ['ليالي الفعاليات الخاصة'],
+        cancellationEn: ['Free cancellation up to 6 hours before booking.'],
+        cancellationAr: ['إلغاء مجاني حتى 6 ساعات قبل موعد الحجز.'],
+        knowBeforeEn: ['Dinner demand can sell out earlier.'],
+        knowBeforeAr: ['قد تنفد مواعيد العشاء أبكر من غيرها.'],
+        badgeEn: 'Top rated',
+        badgeAr: 'الأعلى تقييمًا',
+        priceFromValue: 6.0,
+        discountValue: 5.0,
+        slotsLeft: 7,
+        supportedCategories: ['buffet', 'set_menu', 'combo'],
+        buffet: _restaurantCategoryData(
+          descriptionEn: 'Premium buffet windows with stronger evening demand.',
+          descriptionAr: 'فترات بوفيه مميزة مع طلب أقوى مساءً.',
+          highlightsEn: ['Sea seating', 'Expanded dinner counters'],
+          highlightsAr: ['جلسات بحرية', 'محطات عشاء أوسع'],
+          includedEn: ['Buffet access', 'Dessert tasting'],
+          includedAr: ['دخول البوفيه', 'تذوق حلويات'],
+          availableMealsEn: ['Breakfast', 'Lunch', 'Dinner'],
+          availableMealsAr: ['إفطار', 'غداء', 'عشاء'],
+          badgeEn: 'Premium',
+          badgeAr: 'مميز',
+          priceFromValue: 10.5,
+          discountValue: 9.0,
+          slotsLeft: 7,
+        ),
+        setMenu: _restaurantCategoryData(
+          descriptionEn:
+              'Structured set menu periods with one price per guest.',
+          descriptionAr: 'فترات قائمة ثابتة منظمة بسعر موحد لكل شخص.',
+          highlightsEn: ['Curated courses', 'Guest pricing'],
+          highlightsAr: ['أطباق مختارة', 'تسعير حسب الشخص'],
+          includedEn: ['Starter, main, dessert'],
+          includedAr: ['مقبلات وطبق رئيسي وحلى'],
+          availableMealsEn: [
+            'Breakfast Set Menu',
+            'Lunch Set Menu',
+            'Dinner Set Menu',
+          ],
+          availableMealsAr: [
+            'قائمة إفطار ثابتة',
+            'قائمة غداء ثابتة',
+            'قائمة عشاء ثابتة',
+          ],
+          requiresItemSelection: true,
+          badgeEn: 'Curated',
+          badgeAr: 'مختارة',
+          priceFromValue: 8.5,
+          discountValue: 7.0,
+          slotsLeft: 5,
+        ),
+        combo: _restaurantCategoryData(
+          descriptionEn: 'Ready-to-order combos for lunch, sharing, or sweets.',
+          descriptionAr: 'كومبوهات جاهزة للغداء أو المشاركة أو التحلية.',
+          highlightsEn: ['Quantity ordering', 'Different combo tiers'],
+          highlightsAr: ['طلب حسب الكمية', 'مستويات متعددة'],
+          includedEn: ['Combo pack'],
+          includedAr: ['باقة كومبو'],
+          availableCombosEn: [
+            'Majlis Lunch Combo',
+            'Sea View Sharing Box',
+            'Dessert & Coffee Duo',
+          ],
+          availableCombosAr: [
+            'كومبو غداء المجلس',
+            'بوكس المشاركة بإطلالة بحرية',
+            'ثنائي القهوة والحلى',
+          ],
+          badgeEn: 'Best value',
+          badgeAr: 'أفضل قيمة',
+          priceFromValue: 6.0,
+          discountValue: 5.0,
+          slotsLeft: 8,
+        ),
+      ),
+    ];
   }
 
-  static String _nameForVenueId(
-    String venueId,
-    List<Map<String, dynamic>> restaurants,
-    List<Map<String, dynamic>> attractions,
+  static List<Map<String, dynamic>> _attractionDocs() {
+    return [
+      _attractionDoc(
+        id: 'demo_attraction_1',
+        nameEn: 'Wadi Adventure Park',
+        nameAr: 'منتزه وادي المغامرات',
+        cityEn: 'Muscat',
+        cityAr: 'مسقط',
+        areaEn: 'Seeb',
+        areaAr: 'السيب',
+        aboutEn:
+            'Family attraction with split adult and child package pricing.',
+        aboutAr: 'وجهة عائلية بتسعير منفصل للبالغين والأطفال داخل الباقات.',
+        addressEn: 'Seeb Waterfront, Muscat',
+        addressAr: 'واجهة السيب، مسقط',
+        phone: '+968 9000 5050',
+        rating: 4.6,
+        reviewsCount: 301,
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+        highlightsEn: ['Timed entry', 'Family zones', 'Adventure activities'],
+        highlightsAr: ['دخول بوقت محدد', 'مناطق عائلية', 'أنشطة مغامرات'],
+        inclusionsEn: ['Park access'],
+        inclusionsAr: ['دخول المنتزه'],
+        badgeEn: 'Family day out',
+        badgeAr: 'طلعة عائلية',
+        priceFromValue: 9.0,
+        discountValue: 7.5,
+        slotsLeft: 14,
+        bookingCatalog: _attractionCatalogData(
+          descriptionEn: 'Pick a slot first, then choose the matching package.',
+          descriptionAr: 'اختر الفترة أولًا ثم الباقة المناسبة لها.',
+          highlightsEn: ['Adult + child pricing', 'More than one package'],
+          highlightsAr: ['تسعير بالغ + طفل', 'أكثر من باقة'],
+          includedEn: ['Entry access', 'Family zones'],
+          includedAr: ['دخول', 'مناطق عائلية'],
+          packageOverviewEn: [
+            'Explorer Pass for standard entry.',
+            'Family Splash Pass for wider coverage.',
+          ],
+          packageOverviewAr: [
+            'تذكرة المستكشف للدخول العادي.',
+            'تذكرة المرح العائلية لتغطية أوسع.',
+          ],
+          notesEn: ['Some packages have fewer child spots than adult spots.'],
+          notesAr: ['بعض الباقات سعة الأطفال فيها أقل من سعة البالغين.'],
+          badgeEn: 'Split pricing',
+          badgeAr: 'تسعير منفصل',
+          priceFromValue: 9.0,
+          discountValue: 7.5,
+          slotsLeft: 14,
+        ),
+      ),
+      _attractionDoc(
+        id: 'demo_attraction_2',
+        nameEn: 'Sunset Marina Cruise',
+        nameAr: 'رحلة غروب المارينا',
+        cityEn: 'Muscat',
+        cityAr: 'مسقط',
+        areaEn: 'Muttrah',
+        areaAr: 'مطرح',
+        aboutEn: 'Timed cruise attraction with per-person package pricing.',
+        aboutAr: 'رحلة بحرية بوقت محدد مع تسعير حسب الشخص الواحد.',
+        addressEn: 'Muttrah Marina Gate, Muscat',
+        addressAr: 'بوابة مارينا مطرح، مسقط',
+        phone: '+968 9000 6060',
+        rating: 4.5,
+        reviewsCount: 187,
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+        highlightsEn: ['Two sailings', 'Per-person packages', 'Premium tiers'],
+        highlightsAr: ['فترتا إبحار', 'باقات حسب الشخص', 'فئات مميزة'],
+        inclusionsEn: ['Boarding access'],
+        inclusionsAr: ['دخول الرحلة'],
+        badgeEn: 'Evening favorite',
+        badgeAr: 'مفضل مسائي',
+        priceFromValue: 7.5,
+        discountValue: 6.0,
+        slotsLeft: 8,
+        bookingCatalog: _attractionCatalogData(
+          descriptionEn:
+              'Choose your sailing, then compare the packages there.',
+          descriptionAr: 'اختر الرحلة ثم قارن الباقات المتاحة عليها.',
+          highlightsEn: ['Per-person pricing', 'Different package tiers'],
+          highlightsAr: ['تسعير حسب الشخص', 'مستويات باقات مختلفة'],
+          includedEn: ['Cruise access', 'Marina boarding'],
+          includedAr: ['دخول الرحلة', 'الصعود من المارينا'],
+          packageOverviewEn: [
+            'Classic Cruise for shared boarding.',
+            'Dinner Cruise for table seating.',
+            'Upper Deck Lounge for premium views.',
+          ],
+          packageOverviewAr: [
+            'الرحلة الكلاسيكية للصعود المشترك.',
+            'رحلة العشاء للجلسات على الطاولة.',
+            'صالة السطح العلوي للإطلالات المميزة.',
+          ],
+          notesEn: ['Premium packages can sell out faster at night.'],
+          notesAr: ['قد تنفد الباقات المميزة أسرع في الليل.'],
+          badgeEn: 'Per person',
+          badgeAr: 'حسب الشخص',
+          priceFromValue: 7.5,
+          discountValue: 6.0,
+          slotsLeft: 8,
+        ),
+      ),
+      _attractionDoc(
+        id: 'demo_attraction_3',
+        nameEn: 'Arcade Galaxy',
+        nameAr: 'مجرة الألعاب',
+        cityEn: 'Muscat',
+        cityAr: 'مسقط',
+        areaEn: 'Mall of Oman',
+        areaAr: 'مول عمان',
+        aboutEn: 'Indoor arcade with coupon bundles instead of guest count.',
+        aboutAr: 'صالة ألعاب داخلية تعتمد على باقات كوبونات بدل عدد الضيوف.',
+        addressEn: 'Mall of Oman, Muscat',
+        addressAr: 'مول عمان، مسقط',
+        phone: '+968 9000 7070',
+        rating: 4.4,
+        reviewsCount: 224,
+        coverImageUrl:
+            'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=1200&q=80',
+        highlightsEn: ['Coupon mode', 'Arcade + VR bundles', 'All-day access'],
+        highlightsAr: ['وضع الكوبون', 'باقات أركيد وVR', 'دخول طوال اليوم'],
+        inclusionsEn: ['Coupon packs'],
+        inclusionsAr: ['باقات كوبونات'],
+        badgeEn: 'Coupon mode',
+        badgeAr: 'وضع الكوبون',
+        priceFromValue: 4.0,
+        discountValue: 3.0,
+        slotsLeft: 20,
+        bookingCatalog: _attractionCatalogData(
+          descriptionEn:
+              'Book coupons as units, then redeem them in the arcade.',
+          descriptionAr: 'احجز الكوبونات كوحدات ثم استخدمها داخل الصالة.',
+          highlightsEn: ['Supports coupon pricing', '10 or 25 games packs'],
+          highlightsAr: ['يدعم التسعير بالكوبونات', 'باقات 10 أو 25 لعبة'],
+          includedEn: ['Coupon credits'],
+          includedAr: ['أرصدة كوبونات'],
+          packageOverviewEn: [
+            '10 Games Coupon for light visits.',
+            '25 Games Coupon for regular players.',
+            'VR + Arcade Bundle for mixed play.',
+          ],
+          packageOverviewAr: [
+            'كوبون 10 ألعاب للزيارات الخفيفة.',
+            'كوبون 25 لعبة للاعبين المتكررين.',
+            'باقة الواقع الافتراضي والأركيد للعب المتنوع.',
+          ],
+          notesEn: ['Coupons are units, not adults or children.'],
+          notesAr: ['الكوبونات وحدات وليست بالغين أو أطفال.'],
+          badgeEn: 'Coupons',
+          badgeAr: 'كوبونات',
+          priceFromValue: 4.0,
+          discountValue: 3.0,
+          slotsLeft: 20,
+        ),
+      ),
+    ];
+  }
+
+  static Map<String, dynamic> _restaurantDoc({
+    required String id,
+    required String nameEn,
+    required String nameAr,
+    required String cityEn,
+    required String cityAr,
+    required String areaEn,
+    required String areaAr,
+    required String aboutEn,
+    required String aboutAr,
+    required String addressEn,
+    required String addressAr,
+    required String phone,
+    required double rating,
+    required int reviewsCount,
+    required double lat,
+    required double lng,
+    required String openFrom,
+    required String openTo,
+    required String coverImageUrl,
+    required List<String> highlightsEn,
+    required List<String> highlightsAr,
+    required List<String> inclusionsEn,
+    required List<String> inclusionsAr,
+    required List<String> exclusionsEn,
+    required List<String> exclusionsAr,
+    required List<String> cancellationEn,
+    required List<String> cancellationAr,
+    required List<String> knowBeforeEn,
+    required List<String> knowBeforeAr,
+    required String badgeEn,
+    required String badgeAr,
+    required double priceFromValue,
+    required double discountValue,
+    required int slotsLeft,
+    required List<String> supportedCategories,
+    Map<String, dynamic>? buffet,
+    Map<String, dynamic>? setMenu,
+    Map<String, dynamic>? combo,
+  }) {
+    return {
+      'id': id,
+      ..._textPair('name', nameEn, nameAr),
+      ..._textPair('cityId', cityEn, cityAr),
+      ..._textPair('area', areaEn, areaAr),
+      ..._textPair('about', aboutEn, aboutAr),
+      ..._textPair('address', addressEn, addressAr),
+      ..._listPair('highlights', highlightsEn, highlightsAr),
+      ..._listPair('inclusions', inclusionsEn, inclusionsAr),
+      ..._listPair('exclusions', exclusionsEn, exclusionsAr),
+      ..._listPair('cancellationPolicy', cancellationEn, cancellationAr),
+      ..._listPair('knowBeforeYouGo', knowBeforeEn, knowBeforeAr),
+      'phone': phone,
+      'rating': rating,
+      'reviewsCount': reviewsCount,
+      'coverImageUrl': coverImageUrl,
+      'geo': {'lat': lat, 'lng': lng},
+      'openHours': {'from': openFrom, 'to': openTo},
+      ..._catalogLabels(
+        badgeEn: badgeEn,
+        badgeAr: badgeAr,
+        priceFromValue: priceFromValue,
+        discountValue: discountValue,
+        slotsLeft: slotsLeft,
+      ),
+      'priceFromValue': priceFromValue,
+      'discountValue': discountValue,
+      'isActive': true,
+      'bookingCatalog': {
+        'supportedCategories': supportedCategories,
+        if (buffet != null) 'buffet': buffet,
+        if (setMenu != null) 'setMenu': setMenu,
+        if (combo != null) 'combo': combo,
+      },
+    };
+  }
+
+  static Map<String, dynamic> _attractionDoc({
+    required String id,
+    required String nameEn,
+    required String nameAr,
+    required String cityEn,
+    required String cityAr,
+    required String areaEn,
+    required String areaAr,
+    required String aboutEn,
+    required String aboutAr,
+    required String addressEn,
+    required String addressAr,
+    required String phone,
+    required double rating,
+    required int reviewsCount,
+    required String coverImageUrl,
+    required List<String> highlightsEn,
+    required List<String> highlightsAr,
+    required List<String> inclusionsEn,
+    required List<String> inclusionsAr,
+    required String badgeEn,
+    required String badgeAr,
+    required double priceFromValue,
+    required double discountValue,
+    required int slotsLeft,
+    required Map<String, dynamic> bookingCatalog,
+  }) {
+    return {
+      'id': id,
+      ..._textPair('name', nameEn, nameAr),
+      ..._textPair('cityId', cityEn, cityAr),
+      ..._textPair('area', areaEn, areaAr),
+      ..._textPair('about', aboutEn, aboutAr),
+      ..._textPair('address', addressEn, addressAr),
+      ..._listPair('highlights', highlightsEn, highlightsAr),
+      ..._listPair('inclusions', inclusionsEn, inclusionsAr),
+      'phone': phone,
+      'rating': rating,
+      'reviewsCount': reviewsCount,
+      'coverImageUrl': coverImageUrl,
+      ..._catalogLabels(
+        badgeEn: badgeEn,
+        badgeAr: badgeAr,
+        priceFromValue: priceFromValue,
+        discountValue: discountValue,
+        slotsLeft: slotsLeft,
+      ),
+      'isActive': true,
+      'bookingCatalog': bookingCatalog,
+    };
+  }
+
+  static Map<String, dynamic> _restaurantCategoryData({
+    required String descriptionEn,
+    required String descriptionAr,
+    required List<String> highlightsEn,
+    required List<String> highlightsAr,
+    required List<String> includedEn,
+    required List<String> includedAr,
+    List<String> notesEn = const [],
+    List<String> notesAr = const [],
+    List<String> availableMealsEn = const [],
+    List<String> availableMealsAr = const [],
+    List<String> availableCombosEn = const [],
+    List<String> availableCombosAr = const [],
+    bool requiresItemSelection = false,
+    String badgeEn = '',
+    String badgeAr = '',
+    required double priceFromValue,
+    required double discountValue,
+    required int slotsLeft,
+  }) {
+    return {
+      ..._textPair('description', descriptionEn, descriptionAr),
+      ..._listPair('highlights', highlightsEn, highlightsAr),
+      ..._listPair('included', includedEn, includedAr),
+      ..._listPair('notes', notesEn, notesAr),
+      if (availableMealsEn.isNotEmpty) 'availableMeals': availableMealsEn,
+      if (availableMealsAr.isNotEmpty) 'availableMealsAr': availableMealsAr,
+      if (availableCombosEn.isNotEmpty) 'availableCombos': availableCombosEn,
+      if (availableCombosAr.isNotEmpty) 'availableCombosAr': availableCombosAr,
+      if (requiresItemSelection) 'requiresItemSelection': true,
+      ..._catalogLabels(
+        badgeEn: badgeEn,
+        badgeAr: badgeAr,
+        priceFromValue: priceFromValue,
+        discountValue: discountValue,
+        slotsLeft: slotsLeft,
+      ),
+    };
+  }
+
+  static Map<String, dynamic> _attractionCatalogData({
+    required String descriptionEn,
+    required String descriptionAr,
+    required List<String> highlightsEn,
+    required List<String> highlightsAr,
+    required List<String> includedEn,
+    required List<String> includedAr,
+    required List<String> packageOverviewEn,
+    required List<String> packageOverviewAr,
+    required List<String> notesEn,
+    required List<String> notesAr,
+    required String badgeEn,
+    required String badgeAr,
+    required double priceFromValue,
+    required double discountValue,
+    required int slotsLeft,
+  }) {
+    return {
+      ..._textPair('description', descriptionEn, descriptionAr),
+      ..._listPair('highlights', highlightsEn, highlightsAr),
+      ..._listPair('included', includedEn, includedAr),
+      ..._listPair('packageOverview', packageOverviewEn, packageOverviewAr),
+      ..._listPair('notes', notesEn, notesAr),
+      ..._catalogLabels(
+        badgeEn: badgeEn,
+        badgeAr: badgeAr,
+        priceFromValue: priceFromValue,
+        discountValue: discountValue,
+        slotsLeft: slotsLeft,
+      ),
+    };
+  }
+
+  static Map<String, dynamic> _offerSeedFields({
+    required String restaurantId,
+    required DateTime date,
+    required String startTime,
+    required String endTime,
+    required double priceAdult,
+    required double priceAdultOriginal,
+    required double priceChild,
+    required int capacityAdult,
+    required int capacityChild,
+    required int bookedAdult,
+    required int bookedChild,
+    required String status,
+    required String titleEn,
+    required String titleAr,
+    required String bookingCategory,
+    required String bookableType,
+    required String guestPricingMode,
+    String mealType = '',
+    String packageNameEn = '',
+    String packageNameAr = '',
+    String packageDescriptionEn = '',
+    String packageDescriptionAr = '',
+    List<String> entryConditionsEn = const [],
+    List<String> entryConditionsAr = const [],
+  }) {
+    return {
+      'restaurantId': restaurantId,
+      'date': AppDateUtils.formatDate(date),
+      'startTime': startTime,
+      'endTime': endTime,
+      'currency': 'OMR',
+      'priceAdult': priceAdult,
+      'priceAdultOriginal': priceAdultOriginal,
+      'priceChild': priceChild,
+      'time': startTime,
+      'price': _moneyEn(priceAdult),
+      'status': status,
+      'capacityAdult': capacityAdult,
+      'capacityChild': capacityChild,
+      'bookedAdult': bookedAdult,
+      'bookedChild': bookedChild,
+      ..._textPair('title', titleEn, titleAr),
+      ..._textPair('packageName', packageNameEn, packageNameAr),
+      ..._textPair(
+        'packageDescription',
+        packageDescriptionEn,
+        packageDescriptionAr,
+      ),
+      ..._listPair('entryConditions', entryConditionsEn, entryConditionsAr),
+      'bookingCategory': bookingCategory,
+      'bookableType': bookableType,
+      'guestPricingMode': guestPricingMode,
+      'mealType': mealType,
+      ..._seedMetaFields(),
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
+  static Map<String, dynamic> _bookingSeed({
+    required String id,
+    required String userId,
+    required String venueId,
+    required String venueName,
+    required String coverImageUrl,
+    required DateTime date,
+    required String offerId,
+    required String startTime,
+    required String endTime,
+    required int adults,
+    required int children,
+    required double unitPriceAdult,
+    required double unitPriceChild,
+    required String offerTitle,
+    required String bookingCategory,
+    required String bookableType,
+    required String guestPricingMode,
+  }) {
+    return {
+      'id': id,
+      'userId': userId,
+      'restaurantId': venueId,
+      'offerId': offerId,
+      'date': AppDateUtils.formatDate(date),
+      'startTime': startTime,
+      'endTime': endTime,
+      'adults': adults,
+      'children': children,
+      'unitPriceAdult': unitPriceAdult,
+      'unitPriceChild': unitPriceChild,
+      'bookingCode': 'BKG_${id.toUpperCase()}',
+      'restaurantNameSnapshot': venueName,
+      'offerTitleSnapshot': offerTitle,
+      'bookingCategory': bookingCategory,
+      'bookableType': bookableType,
+      'guestPricingMode': guestPricingMode,
+      'coverImageUrlSnapshot': coverImageUrl,
+    };
+  }
+
+  static Map<String, dynamic> _catalogLabels({
+    required String badgeEn,
+    required String badgeAr,
+    required double priceFromValue,
+    required double discountValue,
+    required int slotsLeft,
+  }) {
+    return {
+      ..._textPair('badge', badgeEn, badgeAr),
+      ..._textPair(
+        'priceFrom',
+        'From ${_moneyEn(priceFromValue)}',
+        'ابتداءً من ${_moneyAr(priceFromValue)}',
+      ),
+      ..._textPair(
+        'discount',
+        _moneyEn(discountValue),
+        _moneyAr(discountValue),
+      ),
+      ..._textPair(
+        'slotsLeft',
+        '$slotsLeft spots left',
+        '$slotsLeft أماكن متبقية',
+      ),
+    };
+  }
+
+  static Map<String, dynamic> _seedMetaFields() {
+    return {'isDemoSeed': true, 'seedVersion': _seedVersion};
+  }
+
+  static Map<String, dynamic> _textPair(
+    String key,
+    String english,
+    String arabic,
   ) {
-    for (final venue in [...restaurants, ...attractions]) {
-      if (venue['id'] == venueId) {
-        return venue['name'] as String? ?? '';
-      }
-    }
-    return '';
+    return {key: english.trim(), '${key}Ar': arabic.trim()};
   }
 
-  static String _coverForVenueId(
-    String venueId,
-    List<Map<String, dynamic>> restaurants,
-    List<Map<String, dynamic>> attractions,
+  static Map<String, dynamic> _listPair(
+    String key,
+    List<String> english,
+    List<String> arabic,
   ) {
-    for (final venue in [...restaurants, ...attractions]) {
-      if (venue['id'] == venueId) {
-        return venue['coverImageUrl'] as String? ?? '';
-      }
-    }
-    return '';
+    return {
+      key: english
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toList(),
+      '${key}Ar': arabic
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toList(),
+    };
   }
 
-  static String _titleize(String value) {
-    if (value.isEmpty) return value;
-    final parts = value.split('_');
-    return parts
-        .where((part) => part.isNotEmpty)
-        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-        .join(' ');
-  }
+  static String _moneyEn(double amount) => 'OMR ${amount.toStringAsFixed(1)}';
+
+  static String _moneyAr(double amount) => '${amount.toStringAsFixed(1)} ر.ع';
 
   static String _offerId(
     String restaurantId,

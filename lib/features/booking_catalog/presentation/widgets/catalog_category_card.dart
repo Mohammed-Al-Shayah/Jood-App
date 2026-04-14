@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/localization/app_localization_controller.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
-import '../../../../core/utils/app_strings.dart';
 import '../../domain/entities/catalog_category_type.dart';
 
 class CatalogCategoryCard extends StatelessWidget {
@@ -48,7 +47,7 @@ class CatalogCategoryCard extends StatelessWidget {
             ],
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 width: 36.r,
@@ -62,33 +61,35 @@ class CatalogCategoryCard extends StatelessWidget {
               SizedBox(height: 12.h),
               Text(
                 _categoryText(category, 'title'),
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: AppTextStyles.cardTitle.copyWith(
                   color: Colors.white,
                   fontSize: 16.sp,
                 ),
               ),
-              const Spacer(),
-              Row(
-                children: [
-                  Text(
-                    AppStrings.explore,
-                    style: AppTextStyles.cardPrice.copyWith(
-                      color: Colors.white,
-                      fontSize: 12.sp,
-                    ),
-                  ),
-                  SizedBox(width: 6.w),
-                  Icon(
-                    isRtl
-                        ? Icons.arrow_back_rounded
-                        : Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 16.sp,
-                  ),
-                ],
-              ),
+              // const Spacer(),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.center,
+              //   children: [
+              //     Text(
+              //       AppStrings.explore,
+              //       style: AppTextStyles.cardPrice.copyWith(
+              //         color: Colors.white,
+              //         fontSize: 12.sp,
+              //       ),
+              //     ),
+              //     SizedBox(width: 6.w),
+              //     Icon(
+              //       isRtl
+              //           ? Icons.arrow_back_rounded
+              //           : Icons.arrow_forward_rounded,
+              //       color: Colors.white,
+              //       size: 16.sp,
+              //     ),
+              //   ],
+              // ),
             ],
           ),
         ),
