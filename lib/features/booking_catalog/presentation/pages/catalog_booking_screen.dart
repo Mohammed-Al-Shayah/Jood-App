@@ -19,9 +19,16 @@ import 'catalog_booking_utils.dart';
 import 'catalog_guests_screen.dart';
 
 class CatalogBookingScreen extends StatelessWidget {
-  const CatalogBookingScreen({super.key, required this.item});
+  const CatalogBookingScreen({
+    super.key,
+    required this.item,
+    this.preferredOfferId,
+    this.preferredOfferDate,
+  });
 
   final CatalogItemEntity item;
+  final String? preferredOfferId;
+  final DateTime? preferredOfferDate;
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +37,8 @@ class CatalogBookingScreen extends StatelessWidget {
         ..initialize(
           restaurantId: item.id,
           bookingCategory: item.category.routeKey,
+          initialDate: preferredOfferDate,
+          preferredOfferId: preferredOfferId,
         ),
       child: _CatalogBookingView(item: item),
     );
@@ -148,6 +157,7 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
 
   void _syncAttractionSelection(BookingFlowState state) {
     final slotOptions = buildTimeSlotOptions(state.offers);
+    final selectedOffer = state.selectedOffer();
     if (slotOptions.isEmpty) {
       if (_selectedTimeSlotKey != null || _selectedPackageKey != null) {
         setState(() {
@@ -159,11 +169,19 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
       return;
     }
 
+    final preferredSlotKey = selectedOffer == null
+        ? null
+        : timeSlotKey(selectedOffer);
     final currentSlotExists = slotOptions.any(
       (slot) => slot.key == _selectedTimeSlotKey && slot.isEnabled,
     );
     final nextSlot = currentSlotExists
         ? _selectedTimeSlotKey
+        : preferredSlotKey != null &&
+              slotOptions.any(
+                (slot) => slot.key == preferredSlotKey && slot.isEnabled,
+              )
+        ? preferredSlotKey
         : firstWhereOrNull(slotOptions, (slot) => slot.isEnabled)?.key;
 
     if (nextSlot == null) {
@@ -179,11 +197,20 @@ class _CatalogBookingViewState extends State<_CatalogBookingView> {
       state.offers,
       timeSlot: nextSlot,
     );
+    final preferredPackageKey = selectedOffer == null
+        ? null
+        : packageLabel(selectedOffer);
     final currentPackageExists = packageOptions.any(
       (package) => package.key == _selectedPackageKey && package.isEnabled,
     );
     final nextPackage = currentPackageExists
         ? _selectedPackageKey
+        : preferredPackageKey != null &&
+              packageOptions.any(
+                (package) =>
+                    package.key == preferredPackageKey && package.isEnabled,
+              )
+        ? preferredPackageKey
         : firstWhereOrNull(packageOptions, (package) => package.isEnabled)?.key;
 
     int? selectedIndex;

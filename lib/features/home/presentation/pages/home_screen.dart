@@ -5,14 +5,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
 import '../../../../core/routing/catalog_route_args.dart';
 import '../../../../core/routing/routes.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../ads/domain/entities/ad_entity.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
+import '../widgets/home_ads_carousel.dart';
 import '../widgets/home_search_bar.dart';
 import '../../../booking_catalog/domain/entities/catalog_item_entity.dart';
 import '../../../booking_catalog/domain/entities/catalog_category_type.dart';
@@ -87,6 +90,7 @@ class _HomeTabState extends State<HomeTab> {
                 previous.errorMessage != current.errorMessage ||
                 previous.filteredItems != current.filteredItems ||
                 previous.items != current.items ||
+                previous.ads != current.ads ||
                 previous.userCity != current.userCity ||
                 previous.userCountry != current.userCountry;
           },
@@ -128,7 +132,7 @@ class _HomeTabState extends State<HomeTab> {
 
             return Skeletonizer(
               enabled: isLoading,
-              child: Stack( 
+              child: Stack(
                 children: [
                   Column(
                     children: [
@@ -164,13 +168,25 @@ class _HomeTabState extends State<HomeTab> {
                                           .read<HomeCubit>()
                                           .updateQuery(value),
                                     ),
+                                    SizedBox(height: 18.h),
+                                    if (isLoading)
+                                      _HomeAdsSkeleton()
+                                    else if (state.ads.isNotEmpty)
+                                      HomeAdsCarousel(
+                                        ads: state.ads,
+                                        onTap: (ad) => _openAdTarget(
+                                          context,
+                                          ad,
+                                          state.items,
+                                        ),
+                                      ),
                                     SizedBox(height: 24.h),
                                     _HomeSectionHeader(
                                       title: AppStrings.bookByCategory,
                                     ),
                                     SizedBox(height: 12.h),
                                     SizedBox(
-                                      height: 135.h,
+                                      height: 110.h,
                                       child: ListView.separated(
                                         scrollDirection: Axis.horizontal,
                                         itemCount:
@@ -306,6 +322,54 @@ void _openItemDetails(BuildContext context, CatalogItemEntity item) {
   );
 }
 
+void _openAdTarget(
+  BuildContext context,
+  AdEntity ad,
+  List<CatalogItemEntity> items,
+) {
+  CatalogCategoryType? category;
+  for (final value in CatalogCategoryType.values) {
+    if (value.routeKey == ad.targetCategory) {
+      category = value;
+      break;
+    }
+  }
+  if (category == null) {
+    showAppSnackBar(
+      context,
+      'This ad is not linked to a valid category.',
+      type: SnackBarType.error,
+    );
+    return;
+  }
+
+  CatalogItemEntity? targetItem;
+  for (final item in items) {
+    if (item.id == ad.targetVenueId && item.category == category) {
+      targetItem = item;
+      break;
+    }
+  }
+
+  if (targetItem == null) {
+    showAppSnackBar(
+      context,
+      'The selected offer is no longer available.',
+      type: SnackBarType.error,
+    );
+    return;
+  }
+
+  context.pushNamed(
+    Routes.catalogBookingScreen,
+    arguments: CatalogBookingArgs(
+      item: targetItem,
+      preferredOfferId: ad.targetOfferId,
+      preferredOfferDate: DateTime.tryParse(ad.targetOfferDate),
+    ),
+  );
+}
+
 class _ScrollToTopButton extends StatelessWidget {
   const _ScrollToTopButton({required this.onTap});
 
@@ -358,9 +422,7 @@ class _HomeSectionHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(title, style: AppTextStyles.sectionTitle),
-        ),
+        Expanded(child: Text(title, style: AppTextStyles.sectionTitle)),
         if (trailing != null && trailing!.trim().isNotEmpty) ...[
           SizedBox(width: 12.w),
           Padding(
@@ -369,6 +431,19 @@ class _HomeSectionHeader extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _HomeAdsSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 178.h,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24.r),
+      ),
     );
   }
 }

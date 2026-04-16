@@ -25,6 +25,8 @@ import '../../features/admin/presentation/pages/admin_restaurants_screen.dart';
 import '../../features/admin/presentation/pages/admin_restaurant_form_screen.dart';
 import '../../features/admin/presentation/pages/admin_offers_screen.dart';
 import '../../features/admin/presentation/pages/admin_offer_form_screen.dart';
+import '../../features/admin/presentation/pages/admin_ads_screen.dart';
+import '../../features/admin/presentation/pages/admin_ad_form_screen.dart';
 import '../../features/admin/presentation/pages/admin_users_screen.dart';
 import '../../features/admin/presentation/pages/admin_user_form_screen.dart';
 import '../../features/admin/presentation/pages/admin_cancelled_orders_screen.dart';
@@ -102,6 +104,14 @@ class AppRouter {
             onSubmit: args?.onSubmit,
           ),
         );
+      case Routes.adminAdsScreen:
+        return MaterialPageRoute(builder: (_) => const AdminAdsScreen());
+      case Routes.adminAdFormScreen:
+        final args = settings.arguments as AdminAdFormArgs?;
+        return MaterialPageRoute(
+          builder: (_) =>
+              AdminAdFormScreen(ad: args?.ad, onSubmit: args?.onSubmit),
+        );
       case Routes.adminUsersScreen:
         return MaterialPageRoute(builder: (_) => const AdminUsersScreen());
       case Routes.adminUserFormScreen:
@@ -139,7 +149,11 @@ class AppRouter {
       case Routes.catalogBookingScreen:
         final args = settings.arguments as CatalogBookingArgs;
         return MaterialPageRoute(
-          builder: (_) => CatalogBookingScreen(item: args.item),
+          builder: (_) => CatalogBookingScreen(
+            item: args.item,
+            preferredOfferId: args.preferredOfferId,
+            preferredOfferDate: args.preferredOfferDate,
+          ),
         );
       case Routes.selectDateTimeScreen:
         final args = settings.arguments as SelectDateTimeArgs;

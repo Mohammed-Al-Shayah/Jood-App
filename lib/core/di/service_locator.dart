@@ -17,6 +17,15 @@ import '../../features/booking_catalog/domain/repositories/catalog_repository.da
 import '../../features/booking_catalog/domain/usecases/get_catalog_items_usecase.dart';
 import '../../features/booking_catalog/domain/usecases/watch_catalog_changes_usecase.dart';
 import '../../features/booking_catalog/presentation/cubit/catalog_list_cubit.dart';
+import '../../features/ads/data/datasources/ad_remote_data_source.dart';
+import '../../features/ads/data/repositories/ad_repository_impl.dart';
+import '../../features/ads/domain/repositories/ad_repository.dart';
+import '../../features/ads/domain/usecases/get_ads_usecase.dart';
+import '../../features/ads/domain/usecases/get_active_ads_usecase.dart';
+import '../../features/ads/domain/usecases/create_ad_usecase.dart';
+import '../../features/ads/domain/usecases/update_ad_usecase.dart';
+import '../../features/ads/domain/usecases/delete_ad_usecase.dart';
+import '../../features/ads/domain/usecases/watch_ads_changes_usecase.dart';
 import '../../features/offers/data/datasources/offer_remote_data_source.dart';
 import '../../features/offers/data/repositories/offer_repository_impl.dart';
 import '../../features/offers/domain/repositories/offer_repository.dart';
@@ -100,12 +109,14 @@ import '../../features/attractions/domain/usecases/update_attraction_usecase.dar
 import '../../features/attractions/domain/usecases/delete_attraction_usecase.dart';
 import '../../features/admin/presentation/cubit/admin_restaurants_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_attractions_cubit.dart';
+import '../../features/admin/presentation/cubit/admin_ads_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_offers_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_users_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_orders_cubit.dart';
 import '../../features/admin/presentation/cubit/admin_overview_cubit.dart';
 import '../../features/admin/data/datasources/admin_storage_remote_data_source.dart';
 import '../../features/admin/domain/usecases/delete_storage_file_usecase.dart';
+import '../../features/admin/domain/usecases/upload_ad_image_usecase.dart';
 import '../../features/admin/domain/usecases/upload_attraction_image_usecase.dart';
 import '../../features/admin/domain/usecases/upload_restaurant_image_usecase.dart';
 
@@ -133,9 +144,25 @@ Future<void> setupServiceLocator() async {
     () => HomeCubit(
       getCatalogItems: getIt(),
       watchCatalogChanges: getIt(),
+      getActiveAds: getIt(),
+      watchAdsChanges: getIt(),
       getUserById: getIt(),
       getCurrentUser: getIt(),
     ),
+  );
+  getIt.registerLazySingleton<AdRemoteDataSource>(
+    () => AdRemoteDataSource(getIt()),
+  );
+  getIt.registerLazySingleton<AdRepository>(() => AdRepositoryImpl(getIt()));
+  getIt.registerLazySingleton<GetAdsUseCase>(() => GetAdsUseCase(getIt()));
+  getIt.registerLazySingleton<GetActiveAdsUseCase>(
+    () => GetActiveAdsUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<CreateAdUseCase>(() => CreateAdUseCase(getIt()));
+  getIt.registerLazySingleton<UpdateAdUseCase>(() => UpdateAdUseCase(getIt()));
+  getIt.registerLazySingleton<DeleteAdUseCase>(() => DeleteAdUseCase(getIt()));
+  getIt.registerLazySingleton<WatchAdsChangesUseCase>(
+    () => WatchAdsChangesUseCase(getIt()),
   );
   getIt.registerLazySingleton<CatalogRemoteDataSource>(
     () => CatalogRemoteDataSource(getIt()),
@@ -434,6 +461,14 @@ Future<void> setupServiceLocator() async {
       deleteAttraction: getIt(),
     ),
   );
+  getIt.registerFactory<AdminAdsCubit>(
+    () => AdminAdsCubit(
+      getAds: getIt(),
+      createAd: getIt(),
+      updateAd: getIt(),
+      deleteAd: getIt(),
+    ),
+  );
   getIt.registerFactory<AdminOffersCubit>(
     () => AdminOffersCubit(
       getOffers: getIt(),
@@ -462,6 +497,9 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<UploadRestaurantImageUseCase>(
     () => UploadRestaurantImageUseCase(getIt()),
+  );
+  getIt.registerLazySingleton<UploadAdImageUseCase>(
+    () => UploadAdImageUseCase(getIt()),
   );
   getIt.registerLazySingleton<UploadAttractionImageUseCase>(
     () => UploadAttractionImageUseCase(getIt()),

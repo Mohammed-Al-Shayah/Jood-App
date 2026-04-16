@@ -37,6 +37,11 @@ enum AdminWebSection {
     subtitle: 'Availability, pricing, and inventory control',
     icon: Icons.local_offer_outlined,
   ),
+  ads(
+    label: 'Ads',
+    subtitle: 'Home slider creatives linked to specific offers',
+    icon: Icons.view_carousel_outlined,
+  ),
   bookings(
     label: 'Bookings',
     subtitle: 'Recent orders, statuses, and operational tracking',

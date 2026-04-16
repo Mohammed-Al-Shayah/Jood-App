@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jood/core/localization/app_localization_controller.dart';
 import 'package:jood/core/utils/app_strings.dart';
 
+import '../../../ads/domain/usecases/get_active_ads_usecase.dart';
+import '../../../ads/domain/usecases/watch_ads_changes_usecase.dart';
 import '../../../../core/utils/number_utils.dart';
 import '../../../auth/domain/usecases/get_current_user_usecase.dart';
 import '../../../booking_catalog/domain/entities/catalog_category_type.dart';
@@ -17,10 +19,14 @@ class HomeCubit extends Cubit<HomeState> {
   HomeCubit({
     required GetCatalogItemsUseCase getCatalogItems,
     required WatchCatalogChangesUseCase watchCatalogChanges,
+    required GetActiveAdsUseCase getActiveAds,
+    required WatchAdsChangesUseCase watchAdsChanges,
     required GetUserByIdUseCase getUserById,
     required GetCurrentUserUseCase getCurrentUser,
   }) : _getCatalogItems = getCatalogItems,
        _watchCatalogChanges = watchCatalogChanges,
+       _getActiveAds = getActiveAds,
+       _watchAdsChanges = watchAdsChanges,
        _getUserById = getUserById,
        _getCurrentUser = getCurrentUser,
        super(const HomeState()) {
@@ -31,9 +37,12 @@ class HomeCubit extends Cubit<HomeState> {
 
   final GetCatalogItemsUseCase _getCatalogItems;
   final WatchCatalogChangesUseCase _watchCatalogChanges;
+  final GetActiveAdsUseCase _getActiveAds;
+  final WatchAdsChangesUseCase _watchAdsChanges;
   final GetUserByIdUseCase _getUserById;
   final GetCurrentUserUseCase _getCurrentUser;
   StreamSubscription<void>? _catalogChangesSubscription;
+  StreamSubscription<void>? _adsChangesSubscription;
   bool _isFetchingRestaurants = false;
 
   void _handleLocaleChanged() {
@@ -47,6 +56,11 @@ class HomeCubit extends Cubit<HomeState> {
       if (isClosed) return;
       unawaited(fetchHomeItems(showLoading: false, shuffleResults: false));
     });
+    _adsChangesSubscription?.cancel();
+    _adsChangesSubscription = _watchAdsChanges().listen((_) {
+      if (isClosed) return;
+      unawaited(_refreshAds());
+    });
   }
 
   Future<void> fetchHomeItems({
@@ -59,6 +73,10 @@ class HomeCubit extends Cubit<HomeState> {
       emit(state.copyWith(status: HomeStatus.loading));
     }
     try {
+      var ads = state.ads;
+      try {
+        ads = await _getActiveAds();
+      } catch (_) {}
       final results = await Future.wait([
         _getCatalogItems(CatalogCategoryType.buffet),
         _getCatalogItems(CatalogCategoryType.setMenu),
@@ -73,6 +91,7 @@ class HomeCubit extends Cubit<HomeState> {
             status: HomeStatus.empty,
             items: const [],
             filteredItems: const [],
+            ads: ads,
           ),
         );
       } else {
@@ -94,6 +113,7 @@ class HomeCubit extends Cubit<HomeState> {
             status: HomeStatus.success,
             items: items,
             filteredItems: filtered,
+            ads: ads,
           ),
         );
       }
@@ -102,6 +122,16 @@ class HomeCubit extends Cubit<HomeState> {
       emit(state.copyWith(status: HomeStatus.failure, errorMessage: null));
     } finally {
       _isFetchingRestaurants = false;
+    }
+  }
+
+  Future<void> _refreshAds() async {
+    try {
+      final ads = await _getActiveAds();
+      if (isClosed) return;
+      emit(state.copyWith(ads: ads));
+    } catch (_) {
+      // Keep current ads if refresh fails.
     }
   }
 
@@ -333,6 +363,7 @@ class HomeCubit extends Cubit<HomeState> {
       _handleLocaleChanged,
     );
     await _catalogChangesSubscription?.cancel();
+    await _adsChangesSubscription?.cancel();
     await super.close();
   }
 }

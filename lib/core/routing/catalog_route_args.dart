@@ -14,7 +14,13 @@ class CatalogDetailArgs {
 }
 
 class CatalogBookingArgs {
-  const CatalogBookingArgs({required this.item});
+  const CatalogBookingArgs({
+    required this.item,
+    this.preferredOfferId,
+    this.preferredOfferDate,
+  });
 
   final CatalogItemEntity item;
+  final String? preferredOfferId;
+  final DateTime? preferredOfferDate;
 }

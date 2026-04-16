@@ -21,21 +21,26 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
   Future<void> initialize({
     required String restaurantId,
     String bookingCategory = '',
+    DateTime? initialDate,
+    String? preferredOfferId,
   }) async {
     _restaurantId = restaurantId;
     _bookingCategory = bookingCategory.trim().toLowerCase();
-    final dates = _buildDates();
-    final selectedDate = dates.first;
+    final selectedDate = _normalizedDate(initialDate ?? DateTime.now());
+    final dates = _buildDates(initialDate: selectedDate);
+    final selectedDateIndex = dates.indexWhere(
+      (date) => _isSameDate(date, selectedDate),
+    );
     _emitIfOpen(
       state.copyWith(
         status: BookingFlowStatus.loading,
         dates: dates,
         selectedDate: selectedDate,
-        selectedDateIndex: 0,
+        selectedDateIndex: selectedDateIndex < 0 ? 0 : selectedDateIndex,
       ),
     );
     await _loadDateStripPrices(dates);
-    await _loadOffersForDate(selectedDate);
+    await _loadOffersForDate(selectedDate, preferredOfferId: preferredOfferId);
   }
 
   Future<void> selectDate(int index) async {
@@ -51,14 +56,23 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
   }
 
   Future<void> selectCustomDate(DateTime date) async {
+    final normalizedDate = _normalizedDate(date);
+    final dates = _mergedDates(state.dates, normalizedDate);
+    final selectedIndex = dates.indexWhere(
+      (candidate) => _isSameDate(candidate, normalizedDate),
+    );
     _emitIfOpen(
       state.copyWith(
-        selectedDate: date,
-        selectedDateIndex: state.dates.length,
+        dates: dates,
+        selectedDate: normalizedDate,
+        selectedDateIndex: selectedIndex < 0
+            ? state.dates.length
+            : selectedIndex,
         selectedOfferIndex: null,
       ),
     );
-    await _loadOffersForDate(date);
+    await _loadDateStripPrices(dates);
+    await _loadOffersForDate(normalizedDate);
   }
 
   void toggleOffer(int index) {
@@ -169,12 +183,17 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
     }
   }
 
-  List<DateTime> _buildDates() {
-    final now = DateTime.now();
-    return List.generate(5, (index) {
-      final base = DateTime(now.year, now.month, now.day);
-      return base.add(Duration(days: index));
-    });
+  List<DateTime> _buildDates({DateTime? initialDate}) {
+    final base = _normalizedDate(DateTime.now());
+    final dates = List.generate(
+      5,
+      (index) => base.add(Duration(days: index)),
+      growable: true,
+    );
+    if (initialDate != null) {
+      return _mergedDates(dates, initialDate);
+    }
+    return dates;
   }
 
   // Date formatting moved to DateUtils
@@ -262,5 +281,25 @@ class BookingFlowCubit extends Cubit<BookingFlowState> {
   void _emitIfOpen(BookingFlowState nextState) {
     if (isClosed) return;
     emit(nextState);
+  }
+
+  List<DateTime> _mergedDates(List<DateTime> dates, DateTime date) {
+    final normalized = _normalizedDate(date);
+    if (dates.any((candidate) => _isSameDate(candidate, normalized))) {
+      return dates;
+    }
+    final next = List<DateTime>.from(dates)..add(normalized);
+    next.sort((left, right) => left.compareTo(right));
+    return next;
+  }
+
+  DateTime _normalizedDate(DateTime value) {
+    return DateTime(value.year, value.month, value.day);
+  }
+
+  bool _isSameDate(DateTime left, DateTime right) {
+    return left.year == right.year &&
+        left.month == right.month &&
+        left.day == right.day;
   }
 }

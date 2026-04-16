@@ -13,55 +13,64 @@ class AdminDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AdminShell(
       title: 'Admin Dashboard',
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _HeaderCard(),
-          SizedBox(height: 18.h),
-          Text('Management', style: AppTextStyles.sectionTitle),
-          SizedBox(height: 12.h),
-          _AdminActionCard(
-            icon: Icons.restaurant_menu,
-            title: 'Restaurants',
-            subtitle: 'Add, edit, and manage listings',
-            onTap: () => context.pushNamed(Routes.adminRestaurantsScreen),
-          ),
-          SizedBox(height: 12.h),
-          _AdminActionCard(
-            icon: Icons.local_activity_outlined,
-            title: 'Attractions',
-            subtitle: 'Manage standalone attraction venues',
-            onTap: () => context.pushNamed(Routes.adminAttractionsScreen),
-          ),
-          SizedBox(height: 12.h),
-          _AdminActionCard(
-            icon: Icons.local_offer_outlined,
-            title: 'Offers',
-            subtitle: 'Create time slots and pricing',
-            onTap: () => context.pushNamed(Routes.adminOffersScreen),
-          ),
-          SizedBox(height: 12.h),
-          _AdminActionCard(
-            icon: Icons.receipt_long,
-            title: 'Orders',
-            subtitle: 'Filter and review bookings',
-            onTap: () => context.pushNamed(Routes.adminOrdersScreen),
-          ),
-          SizedBox(height: 12.h),
-          _AdminActionCard(
-            icon: Icons.admin_panel_settings_outlined,
-            title: 'Users & Roles',
-            subtitle: 'Assign access and roles',
-            onTap: () => context.pushNamed(Routes.adminUsersScreen),
-          ),
-          SizedBox(height: 12.h),
-          _AdminActionCard(
-            icon: Icons.cancel_outlined,
-            title: 'Cancelled Orders',
-            subtitle: 'Review and refund cancelled bookings',
-            onTap: () => context.pushNamed(Routes.adminCancelledOrdersScreen),
-          ),
-        ],
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _HeaderCard(),
+            SizedBox(height: 18.h),
+            Text('Management', style: AppTextStyles.sectionTitle),
+            SizedBox(height: 12.h),
+            _AdminActionCard(
+              icon: Icons.restaurant_menu,
+              title: 'Restaurants',
+              subtitle: 'Add, edit, and manage listings',
+              onTap: () => context.pushNamed(Routes.adminRestaurantsScreen),
+            ),
+            SizedBox(height: 12.h),
+            _AdminActionCard(
+              icon: Icons.local_activity_outlined,
+              title: 'Attractions',
+              subtitle: 'Manage standalone attraction venues',
+              onTap: () => context.pushNamed(Routes.adminAttractionsScreen),
+            ),
+            SizedBox(height: 12.h),
+            _AdminActionCard(
+              icon: Icons.local_offer_outlined,
+              title: 'Offers',
+              subtitle: 'Create time slots and pricing',
+              onTap: () => context.pushNamed(Routes.adminOffersScreen),
+            ),
+            SizedBox(height: 12.h),
+            _AdminActionCard(
+              icon: Icons.view_carousel_outlined,
+              title: 'Ads',
+              subtitle: 'Manage home slider ads linked to offers',
+              onTap: () => context.pushNamed(Routes.adminAdsScreen),
+            ),
+            SizedBox(height: 12.h),
+            _AdminActionCard(
+              icon: Icons.receipt_long,
+              title: 'Orders',
+              subtitle: 'Filter and review bookings',
+              onTap: () => context.pushNamed(Routes.adminOrdersScreen),
+            ),
+            SizedBox(height: 12.h),
+            _AdminActionCard(
+              icon: Icons.admin_panel_settings_outlined,
+              title: 'Users & Roles',
+              subtitle: 'Assign access and roles',
+              onTap: () => context.pushNamed(Routes.adminUsersScreen),
+            ),
+            SizedBox(height: 12.h),
+            _AdminActionCard(
+              icon: Icons.cancel_outlined,
+              title: 'Cancelled Orders',
+              subtitle: 'Review and refund cancelled bookings',
+              onTap: () => context.pushNamed(Routes.adminCancelledOrdersScreen),
+            ),
+          ],
+        ),
       ),
     );
   }

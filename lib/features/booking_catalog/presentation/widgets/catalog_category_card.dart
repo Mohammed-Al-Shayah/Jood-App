@@ -21,7 +21,7 @@ class CatalogCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final config = _configFor(category);
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    // final isRtl = Directionality.of(context) == TextDirection.rtl;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -66,7 +66,7 @@ class CatalogCategoryCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: AppTextStyles.cardTitle.copyWith(
                   color: Colors.white,
-                  fontSize: 16.sp,
+                  fontSize: 13.sp,
                 ),
               ),
               // const Spacer(),

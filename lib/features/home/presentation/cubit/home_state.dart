@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../ads/domain/entities/ad_entity.dart';
 import '../../../booking_catalog/domain/entities/catalog_category_type.dart';
 import '../../../booking_catalog/domain/entities/catalog_item_entity.dart';
 
@@ -16,6 +17,7 @@ class HomeState extends Equatable {
     this.status = HomeStatus.initial,
     this.items = const [],
     this.filteredItems = const [],
+    this.ads = const [],
     this.query = '',
     this.selectedCategory,
     this.sortField,
@@ -28,6 +30,7 @@ class HomeState extends Equatable {
   final HomeStatus status;
   final List<CatalogItemEntity> items;
   final List<CatalogItemEntity> filteredItems;
+  final List<AdEntity> ads;
   final String query;
   final CatalogCategoryType? selectedCategory;
   final SortField? sortField;
@@ -40,6 +43,7 @@ class HomeState extends Equatable {
     HomeStatus? status,
     List<CatalogItemEntity>? items,
     List<CatalogItemEntity>? filteredItems,
+    List<AdEntity>? ads,
     String? query,
     Object? selectedCategory = _unset,
     Object? sortField = _unset,
@@ -52,6 +56,7 @@ class HomeState extends Equatable {
       status: status ?? this.status,
       items: items ?? this.items,
       filteredItems: filteredItems ?? this.filteredItems,
+      ads: ads ?? this.ads,
       query: query ?? this.query,
       selectedCategory: identical(selectedCategory, _unset)
           ? this.selectedCategory
@@ -73,6 +78,7 @@ class HomeState extends Equatable {
     status,
     items,
     filteredItems,
+    ads,
     query,
     selectedCategory,
     sortField,

@@ -38,6 +38,22 @@ class AdminStorageRemoteDataSource {
     return task.ref.getDownloadURL();
   }
 
+  Future<String> uploadAdImage({
+    required String adId,
+    required XFile file,
+  }) async {
+    final safeId = adId.trim().isEmpty ? 'new' : adId.trim();
+    final bytes = await file.readAsBytes();
+    final ref = storage.ref(
+      'ads/$safeId/${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
+    final task = await ref.putData(
+      bytes,
+      SettableMetadata(contentType: file.mimeType ?? 'image/jpeg'),
+    );
+    return task.ref.getDownloadURL();
+  }
+
   Future<void> deleteByUrl(String url) async {
     if (url.trim().isEmpty) return;
     final ref = storage.refFromURL(url);

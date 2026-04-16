@@ -6,6 +6,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/pages/admin_web_bookings_page.dart';
+import 'package:jood/features/admin/presentation/web/pages/admin_web_ads_page.dart';
 import 'package:jood/features/admin/presentation/web/pages/admin_web_offers_page.dart';
 import 'package:jood/features/admin/presentation/web/pages/admin_web_overview_page.dart';
 import 'package:jood/features/admin/presentation/web/pages/admin_web_payments_page.dart';
@@ -165,6 +166,8 @@ class _AdminWebShellScreenState extends State<AdminWebShellScreen> {
         return const AdminWebAttractionsPage();
       case AdminWebSection.offers:
         return const AdminWebOffersPage();
+      case AdminWebSection.ads:
+        return const AdminWebAdsPage();
       case AdminWebSection.bookings:
         return AdminWebBookingsPage(initialRequest: _bookingsRequest);
       case AdminWebSection.payments:
