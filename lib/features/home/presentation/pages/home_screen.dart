@@ -565,8 +565,11 @@ class _ShowcaseCard extends StatelessWidget {
     final originalPriceValue = _normalizeDisplayedPrice(_stripFromPrice(price));
     final currentPriceValue = _normalizeDisplayedPrice(discount);
     final hasDualPrice = price.isNotEmpty && discount.isNotEmpty;
-    final hasBadge = item.badge.trim().isNotEmpty;
-    final topEndLabel = hasBadge ? item.badge : item.ratingLabel;
+    final discountPercent = _discountScore(item);
+    final hasDiscountBadge = discountPercent > 0;
+    final topEndLabel = hasDiscountBadge
+        ? AppStrings.percentOff(discountPercent.round())
+        : '';
 
     return Material(
       color: Colors.transparent,
@@ -622,44 +625,30 @@ class _ShowcaseCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    PositionedDirectional(
-                      top: 12.h,
-                      end: 12.w,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10.w,
-                          vertical: 7.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: hasBadge
-                              ? const Color(0xFF7C3AED).withValues(alpha: 0.92)
-                              : Colors.white.withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(999.r),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (!hasBadge) ...[
-                              Icon(
-                                Icons.star_rounded,
-                                color: AppColors.ratingStar,
-                                size: 14.sp,
-                              ),
-                              SizedBox(width: 4.w),
-                            ],
-                            Text(
-                              topEndLabel,
-                              style: AppTextStyles.cardMeta.copyWith(
-                                color: hasBadge
-                                    ? Colors.white
-                                    : AppColors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
+                    if (hasDiscountBadge)
+                      PositionedDirectional(
+                        top: 12.h,
+                        end: 12.w,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 7.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF7C3AED,
+                            ).withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(999.r),
+                          ),
+                          child: Text(
+                            topEndLabel,
+                            style: AppTextStyles.cardMeta.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
