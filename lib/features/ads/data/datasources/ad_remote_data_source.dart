@@ -25,18 +25,10 @@ class AdRemoteDataSource {
         .collection('ads')
         .where('isActive', isEqualTo: true)
         .get();
-    final todayKey = _todayKey();
+    final now = DateTime.now();
     final items = snapshot.docs
         .map(AdModel.fromDoc)
-        .where(
-          (ad) =>
-              ad.targetOfferDate.trim().isNotEmpty &&
-              ad.targetOfferDate.compareTo(todayKey) >= 0 &&
-              ad.targetOfferId.trim().isNotEmpty &&
-              ad.targetVenueId.trim().isNotEmpty &&
-              ad.targetCategory.trim().isNotEmpty &&
-              ad.imageUrl.trim().isNotEmpty,
-        )
+        .where((ad) => ad.canShowOnHomeSliderAt(now))
         .toList(growable: false);
     items.sort(_sortAds);
     return items;
@@ -73,12 +65,5 @@ class AdRemoteDataSource {
     final sortCompare = left.sortOrder.compareTo(right.sortOrder);
     if (sortCompare != 0) return sortCompare;
     return right.updatedAt.compareTo(left.updatedAt);
-  }
-
-  static String _todayKey() {
-    final now = DateTime.now();
-    final month = now.month.toString().padLeft(2, '0');
-    final day = now.day.toString().padLeft(2, '0');
-    return '${now.year}-$month-$day';
   }
 }

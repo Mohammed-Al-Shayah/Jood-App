@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
@@ -67,6 +69,50 @@ class _AdminRestaurantFormContentState
   late final TextEditingController _slotsLeftController;
   late final TextEditingController _priceFromValueController;
   late final TextEditingController _discountValueController;
+  late final TextEditingController _buffetDescriptionController;
+  late final TextEditingController _buffetDescriptionArController;
+  late final TextEditingController _buffetHighlightsController;
+  late final TextEditingController _buffetHighlightsArController;
+  late final TextEditingController _buffetIncludedController;
+  late final TextEditingController _buffetIncludedArController;
+  late final TextEditingController _buffetExcludedController;
+  late final TextEditingController _buffetExcludedArController;
+  late final TextEditingController _buffetTermsController;
+  late final TextEditingController _buffetTermsArController;
+  late final TextEditingController _buffetCancellationController;
+  late final TextEditingController _buffetCancellationArController;
+  late final TextEditingController _buffetOptionsController;
+  late final TextEditingController _buffetOptionsArController;
+  late final TextEditingController _buffetLocationController;
+  late final TextEditingController _buffetLocationArController;
+  late final TextEditingController _setMenuDescriptionController;
+  late final TextEditingController _setMenuDescriptionArController;
+  late final TextEditingController _setMenuHighlightsController;
+  late final TextEditingController _setMenuHighlightsArController;
+  late final TextEditingController _setMenuIncludedController;
+  late final TextEditingController _setMenuIncludedArController;
+  late final TextEditingController _setMenuTermsController;
+  late final TextEditingController _setMenuTermsArController;
+  late final TextEditingController _setMenuCancellationController;
+  late final TextEditingController _setMenuCancellationArController;
+  late final TextEditingController _setMenuOptionsController;
+  late final TextEditingController _setMenuOptionsArController;
+  late final TextEditingController _setMenuLocationController;
+  late final TextEditingController _setMenuLocationArController;
+  late final TextEditingController _comboDescriptionController;
+  late final TextEditingController _comboDescriptionArController;
+  late final TextEditingController _comboHighlightsController;
+  late final TextEditingController _comboHighlightsArController;
+  late final TextEditingController _comboIncludedController;
+  late final TextEditingController _comboIncludedArController;
+  late final TextEditingController _comboTermsController;
+  late final TextEditingController _comboTermsArController;
+  late final TextEditingController _comboCancellationController;
+  late final TextEditingController _comboCancellationArController;
+  late final TextEditingController _comboOptionsController;
+  late final TextEditingController _comboOptionsArController;
+  late final TextEditingController _comboLocationController;
+  late final TextEditingController _comboLocationArController;
 
   bool _isActive = true;
   bool _isUploadingImage = false;
@@ -183,6 +229,233 @@ class _AdminRestaurantFormContentState
     _discountValueController = TextEditingController(
       text: restaurant?.discountValue.toString() ?? '',
     );
+    _buffetDescriptionController = TextEditingController(
+      text: _preferredText(
+        restaurant?.buffetDescriptionEn,
+        restaurant?.buffetDescription,
+      ),
+    );
+    _buffetDescriptionArController = TextEditingController(
+      text: restaurant?.buffetDescriptionAr ?? '',
+    );
+    _buffetHighlightsController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.buffetHighlightsEn,
+          restaurant?.buffetHighlights,
+        ),
+      ),
+    );
+    _buffetHighlightsArController = TextEditingController(
+      text: _joinLines(restaurant?.buffetHighlightsAr),
+    );
+    _buffetIncludedController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.buffetIncludedEn,
+          restaurant?.buffetIncluded,
+        ),
+      ),
+    );
+    _buffetIncludedArController = TextEditingController(
+      text: _joinLines(restaurant?.buffetIncludedAr),
+    );
+    _buffetExcludedController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.buffetExcludedEn,
+          restaurant?.buffetExcluded,
+        ),
+      ),
+    );
+    _buffetExcludedArController = TextEditingController(
+      text: _joinLines(restaurant?.buffetExcludedAr),
+    );
+    _buffetTermsController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.buffetTermsAndConditionsEn,
+          restaurant?.buffetTermsAndConditions,
+        ),
+      ),
+    );
+    _buffetTermsArController = TextEditingController(
+      text: _joinLines(restaurant?.buffetTermsAndConditionsAr),
+    );
+    _buffetCancellationController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.buffetCancellationPolicyEn,
+          restaurant?.buffetCancellationPolicy,
+        ),
+      ),
+    );
+    _buffetCancellationArController = TextEditingController(
+      text: _joinLines(restaurant?.buffetCancellationPolicyAr),
+    );
+    _buffetOptionsController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.buffetAvailableOptionsEn,
+          restaurant?.buffetAvailableOptions,
+        ),
+      ),
+    );
+    _buffetOptionsArController = TextEditingController(
+      text: _joinLines(restaurant?.buffetAvailableOptionsAr),
+    );
+    _buffetLocationController = TextEditingController(
+      text: _preferredText(
+        restaurant?.buffetLocationEn,
+        restaurant?.buffetLocation,
+      ),
+    );
+    _buffetLocationArController = TextEditingController(
+      text: restaurant?.buffetLocationAr ?? '',
+    );
+    _setMenuDescriptionController = TextEditingController(
+      text: _preferredText(
+        restaurant?.setMenuDescriptionEn,
+        restaurant?.setMenuDescription,
+      ),
+    );
+    _setMenuDescriptionArController = TextEditingController(
+      text: restaurant?.setMenuDescriptionAr ?? '',
+    );
+    _setMenuHighlightsController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.setMenuHighlightsEn,
+          restaurant?.setMenuHighlights,
+        ),
+      ),
+    );
+    _setMenuHighlightsArController = TextEditingController(
+      text: _joinLines(restaurant?.setMenuHighlightsAr),
+    );
+    _setMenuIncludedController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.setMenuIncludedEn,
+          restaurant?.setMenuIncluded,
+        ),
+      ),
+    );
+    _setMenuIncludedArController = TextEditingController(
+      text: _joinLines(restaurant?.setMenuIncludedAr),
+    );
+    _setMenuTermsController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.setMenuTermsAndConditionsEn,
+          restaurant?.setMenuTermsAndConditions,
+        ),
+      ),
+    );
+    _setMenuTermsArController = TextEditingController(
+      text: _joinLines(restaurant?.setMenuTermsAndConditionsAr),
+    );
+    _setMenuCancellationController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.setMenuCancellationPolicyEn,
+          restaurant?.setMenuCancellationPolicy,
+        ),
+      ),
+    );
+    _setMenuCancellationArController = TextEditingController(
+      text: _joinLines(restaurant?.setMenuCancellationPolicyAr),
+    );
+    _setMenuOptionsController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.setMenuAvailableOptionsEn,
+          restaurant?.setMenuAvailableOptions,
+        ),
+      ),
+    );
+    _setMenuOptionsArController = TextEditingController(
+      text: _joinLines(restaurant?.setMenuAvailableOptionsAr),
+    );
+    _setMenuLocationController = TextEditingController(
+      text: _preferredText(
+        restaurant?.setMenuLocationEn,
+        restaurant?.setMenuLocation,
+      ),
+    );
+    _setMenuLocationArController = TextEditingController(
+      text: restaurant?.setMenuLocationAr ?? '',
+    );
+    _comboDescriptionController = TextEditingController(
+      text: _preferredText(
+        restaurant?.comboDescriptionEn,
+        restaurant?.comboDescription,
+      ),
+    );
+    _comboDescriptionArController = TextEditingController(
+      text: restaurant?.comboDescriptionAr ?? '',
+    );
+    _comboHighlightsController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.comboHighlightsEn,
+          restaurant?.comboHighlights,
+        ),
+      ),
+    );
+    _comboHighlightsArController = TextEditingController(
+      text: _joinLines(restaurant?.comboHighlightsAr),
+    );
+    _comboIncludedController = TextEditingController(
+      text: _joinLines(
+        _preferredList(restaurant?.comboIncludedEn, restaurant?.comboIncluded),
+      ),
+    );
+    _comboIncludedArController = TextEditingController(
+      text: _joinLines(restaurant?.comboIncludedAr),
+    );
+    _comboTermsController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.comboTermsAndConditionsEn,
+          restaurant?.comboTermsAndConditions,
+        ),
+      ),
+    );
+    _comboTermsArController = TextEditingController(
+      text: _joinLines(restaurant?.comboTermsAndConditionsAr),
+    );
+    _comboCancellationController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.comboCancellationPolicyEn,
+          restaurant?.comboCancellationPolicy,
+        ),
+      ),
+    );
+    _comboCancellationArController = TextEditingController(
+      text: _joinLines(restaurant?.comboCancellationPolicyAr),
+    );
+    _comboOptionsController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          restaurant?.comboAvailableOptionsEn,
+          restaurant?.comboAvailableOptions,
+        ),
+      ),
+    );
+    _comboOptionsArController = TextEditingController(
+      text: _joinLines(restaurant?.comboAvailableOptionsAr),
+    );
+    _comboLocationController = TextEditingController(
+      text: _preferredText(
+        restaurant?.comboLocationEn,
+        restaurant?.comboLocation,
+      ),
+    );
+    _comboLocationArController = TextEditingController(
+      text: restaurant?.comboLocationAr ?? '',
+    );
     _isActive = restaurant?.isActive ?? true;
   }
 
@@ -224,6 +497,50 @@ class _AdminRestaurantFormContentState
     _slotsLeftController.dispose();
     _priceFromValueController.dispose();
     _discountValueController.dispose();
+    _buffetDescriptionController.dispose();
+    _buffetDescriptionArController.dispose();
+    _buffetHighlightsController.dispose();
+    _buffetHighlightsArController.dispose();
+    _buffetIncludedController.dispose();
+    _buffetIncludedArController.dispose();
+    _buffetExcludedController.dispose();
+    _buffetExcludedArController.dispose();
+    _buffetTermsController.dispose();
+    _buffetTermsArController.dispose();
+    _buffetCancellationController.dispose();
+    _buffetCancellationArController.dispose();
+    _buffetOptionsController.dispose();
+    _buffetOptionsArController.dispose();
+    _buffetLocationController.dispose();
+    _buffetLocationArController.dispose();
+    _setMenuDescriptionController.dispose();
+    _setMenuDescriptionArController.dispose();
+    _setMenuHighlightsController.dispose();
+    _setMenuHighlightsArController.dispose();
+    _setMenuIncludedController.dispose();
+    _setMenuIncludedArController.dispose();
+    _setMenuTermsController.dispose();
+    _setMenuTermsArController.dispose();
+    _setMenuCancellationController.dispose();
+    _setMenuCancellationArController.dispose();
+    _setMenuOptionsController.dispose();
+    _setMenuOptionsArController.dispose();
+    _setMenuLocationController.dispose();
+    _setMenuLocationArController.dispose();
+    _comboDescriptionController.dispose();
+    _comboDescriptionArController.dispose();
+    _comboHighlightsController.dispose();
+    _comboHighlightsArController.dispose();
+    _comboIncludedController.dispose();
+    _comboIncludedArController.dispose();
+    _comboTermsController.dispose();
+    _comboTermsArController.dispose();
+    _comboCancellationController.dispose();
+    _comboCancellationArController.dispose();
+    _comboOptionsController.dispose();
+    _comboOptionsArController.dispose();
+    _comboLocationController.dispose();
+    _comboLocationArController.dispose();
     super.dispose();
   }
 
@@ -337,6 +654,65 @@ class _AdminRestaurantFormContentState
             ),
           ),
           SizedBox(height: 14.h),
+          _buildCatalogContentSection(
+            title: 'Buffet Booking Content',
+            descriptionController: _buffetDescriptionController,
+            descriptionArController: _buffetDescriptionArController,
+            highlightsController: _buffetHighlightsController,
+            highlightsArController: _buffetHighlightsArController,
+            includedController: _buffetIncludedController,
+            includedArController: _buffetIncludedArController,
+            termsController: _buffetTermsController,
+            termsArController: _buffetTermsArController,
+            cancellationController: _buffetCancellationController,
+            cancellationArController: _buffetCancellationArController,
+            optionsController: _buffetOptionsController,
+            optionsArController: _buffetOptionsArController,
+            locationController: _buffetLocationController,
+            locationArController: _buffetLocationArController,
+            optionsLabel: 'Available Options',
+            excludedController: _buffetExcludedController,
+            excludedArController: _buffetExcludedArController,
+          ),
+          SizedBox(height: 14.h),
+          _buildCatalogContentSection(
+            title: 'Set Menu Booking Content',
+            descriptionController: _setMenuDescriptionController,
+            descriptionArController: _setMenuDescriptionArController,
+            highlightsController: _setMenuHighlightsController,
+            highlightsArController: _setMenuHighlightsArController,
+            includedController: _setMenuIncludedController,
+            includedArController: _setMenuIncludedArController,
+            termsController: _setMenuTermsController,
+            termsArController: _setMenuTermsArController,
+            cancellationController: _setMenuCancellationController,
+            cancellationArController: _setMenuCancellationArController,
+            optionsController: _setMenuOptionsController,
+            optionsArController: _setMenuOptionsArController,
+            locationController: _setMenuLocationController,
+            locationArController: _setMenuLocationArController,
+            optionsLabel: 'Available Options',
+          ),
+          SizedBox(height: 14.h),
+          _buildCatalogContentSection(
+            title: 'Combo Booking Content',
+            descriptionController: _comboDescriptionController,
+            descriptionArController: _comboDescriptionArController,
+            highlightsController: _comboHighlightsController,
+            highlightsArController: _comboHighlightsArController,
+            includedController: _comboIncludedController,
+            includedArController: _comboIncludedArController,
+            termsController: _comboTermsController,
+            termsArController: _comboTermsArController,
+            cancellationController: _comboCancellationController,
+            cancellationArController: _comboCancellationArController,
+            optionsController: _comboOptionsController,
+            optionsArController: _comboOptionsArController,
+            locationController: _comboLocationController,
+            locationArController: _comboLocationArController,
+            optionsLabel: 'Combo Options',
+          ),
+          SizedBox(height: 14.h),
           AdminSectionCard(
             title: 'Cover Image',
             child: Column(
@@ -448,14 +824,106 @@ class _AdminRestaurantFormContentState
     );
   }
 
+  Widget _buildCatalogContentSection({
+    required String title,
+    required TextEditingController descriptionController,
+    required TextEditingController descriptionArController,
+    required TextEditingController highlightsController,
+    required TextEditingController highlightsArController,
+    required TextEditingController includedController,
+    required TextEditingController includedArController,
+    required TextEditingController termsController,
+    required TextEditingController termsArController,
+    required TextEditingController cancellationController,
+    required TextEditingController cancellationArController,
+    required TextEditingController optionsController,
+    required TextEditingController optionsArController,
+    required TextEditingController locationController,
+    required TextEditingController locationArController,
+    required String optionsLabel,
+    TextEditingController? excludedController,
+    TextEditingController? excludedArController,
+  }) {
+    return AdminSectionCard(
+      title: title,
+      child: Column(
+        children: [
+          ..._localizedFields(
+            englishController: descriptionController,
+            arabicController: descriptionArController,
+            label: 'Description',
+            maxLines: 4,
+            englishRequired: false,
+          ),
+          ..._localizedFields(
+            englishController: highlightsController,
+            arabicController: highlightsArController,
+            label: 'Experience Highlights (one per line)',
+            maxLines: 4,
+            englishRequired: false,
+          ),
+          ..._localizedFields(
+            englishController: termsController,
+            arabicController: termsArController,
+            label: 'Terms & Conditions (one per line)',
+            maxLines: 4,
+            englishRequired: false,
+          ),
+          ..._localizedFields(
+            englishController: includedController,
+            arabicController: includedArController,
+            label: 'What\'s Included (one per line)',
+            maxLines: 4,
+            englishRequired: false,
+          ),
+          if (excludedController != null && excludedArController != null)
+            ..._localizedFields(
+              englishController: excludedController,
+              arabicController: excludedArController,
+              label: 'What\'s Excluded (one per line)',
+              maxLines: 4,
+              englishRequired: false,
+            ),
+          ..._localizedFields(
+            englishController: cancellationController,
+            arabicController: cancellationArController,
+            label: 'Cancellation Policy (one per line)',
+            maxLines: 4,
+            englishRequired: false,
+          ),
+          ..._localizedFields(
+            englishController: optionsController,
+            arabicController: optionsArController,
+            label: '$optionsLabel (one per line)',
+            maxLines: 4,
+            englishRequired: false,
+          ),
+          ..._localizedFields(
+            englishController: locationController,
+            arabicController: locationArController,
+            label: 'Location',
+            maxLines: 2,
+            englishRequired: false,
+          ),
+        ],
+      ),
+    );
+  }
+
   List<Widget> _localizedFields({
     required TextEditingController englishController,
     required TextEditingController arabicController,
     required String label,
     int maxLines = 1,
+    bool englishRequired = true,
   }) {
     return [
-      _textField(englishController, '$label (EN)', maxLines: maxLines),
+      _textField(
+        englishController,
+        '$label (EN)',
+        maxLines: maxLines,
+        required: englishRequired,
+      ),
       _textField(
         arabicController,
         '$label (AR optional)',
@@ -528,6 +996,18 @@ class _AdminRestaurantFormContentState
     return values.join(', ');
   }
 
+  List<String> _splitLines(String value) {
+    return LineSplitter.split(value)
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  String _joinLines(List<String>? values) {
+    if (values == null || values.isEmpty) return '';
+    return values.join('\n');
+  }
+
   List<String> _preferredList(List<String>? english, List<String>? fallback) {
     final normalizedEnglish = _cleanList(english);
     if (normalizedEnglish.isNotEmpty) return normalizedEnglish;
@@ -577,6 +1057,32 @@ class _AdminRestaurantFormContentState
     final exclusionsEn = _splitList(_exclusionsController.text);
     final cancellationPolicyEn = _splitList(_cancellationController.text);
     final knowBeforeYouGoEn = _splitList(_knowBeforeController.text);
+    final buffetDescriptionEn = _buffetDescriptionController.text.trim();
+    final buffetHighlightsEn = _splitLines(_buffetHighlightsController.text);
+    final buffetIncludedEn = _splitLines(_buffetIncludedController.text);
+    final buffetExcludedEn = _splitLines(_buffetExcludedController.text);
+    final buffetTermsEn = _splitLines(_buffetTermsController.text);
+    final buffetCancellationEn = _splitLines(
+      _buffetCancellationController.text,
+    );
+    final buffetOptionsEn = _splitLines(_buffetOptionsController.text);
+    final buffetLocationEn = _buffetLocationController.text.trim();
+    final setMenuDescriptionEn = _setMenuDescriptionController.text.trim();
+    final setMenuHighlightsEn = _splitLines(_setMenuHighlightsController.text);
+    final setMenuIncludedEn = _splitLines(_setMenuIncludedController.text);
+    final setMenuTermsEn = _splitLines(_setMenuTermsController.text);
+    final setMenuCancellationEn = _splitLines(
+      _setMenuCancellationController.text,
+    );
+    final setMenuOptionsEn = _splitLines(_setMenuOptionsController.text);
+    final setMenuLocationEn = _setMenuLocationController.text.trim();
+    final comboDescriptionEn = _comboDescriptionController.text.trim();
+    final comboHighlightsEn = _splitLines(_comboHighlightsController.text);
+    final comboIncludedEn = _splitLines(_comboIncludedController.text);
+    final comboTermsEn = _splitLines(_comboTermsController.text);
+    final comboCancellationEn = _splitLines(_comboCancellationController.text);
+    final comboOptionsEn = _splitLines(_comboOptionsController.text);
+    final comboLocationEn = _comboLocationController.text.trim();
 
     final restaurant = RestaurantModel(
       id: widget.restaurant?.id ?? '',
@@ -635,6 +1141,78 @@ class _AdminRestaurantFormContentState
       cancellationPolicyAr: _splitList(_cancellationArController.text),
       knowBeforeYouGoEn: knowBeforeYouGoEn,
       knowBeforeYouGoAr: _splitList(_knowBeforeArController.text),
+      buffetDescription: buffetDescriptionEn,
+      buffetHighlights: buffetHighlightsEn,
+      buffetIncluded: buffetIncludedEn,
+      buffetExcluded: buffetExcludedEn,
+      buffetTermsAndConditions: buffetTermsEn,
+      buffetCancellationPolicy: buffetCancellationEn,
+      buffetAvailableOptions: buffetOptionsEn,
+      buffetLocation: buffetLocationEn,
+      buffetDescriptionEn: buffetDescriptionEn,
+      buffetDescriptionAr: _buffetDescriptionArController.text.trim(),
+      buffetHighlightsEn: buffetHighlightsEn,
+      buffetHighlightsAr: _splitLines(_buffetHighlightsArController.text),
+      buffetIncludedEn: buffetIncludedEn,
+      buffetIncludedAr: _splitLines(_buffetIncludedArController.text),
+      buffetExcludedEn: buffetExcludedEn,
+      buffetExcludedAr: _splitLines(_buffetExcludedArController.text),
+      buffetTermsAndConditionsEn: buffetTermsEn,
+      buffetTermsAndConditionsAr: _splitLines(_buffetTermsArController.text),
+      buffetCancellationPolicyEn: buffetCancellationEn,
+      buffetCancellationPolicyAr: _splitLines(
+        _buffetCancellationArController.text,
+      ),
+      buffetAvailableOptionsEn: buffetOptionsEn,
+      buffetAvailableOptionsAr: _splitLines(_buffetOptionsArController.text),
+      buffetLocationEn: buffetLocationEn,
+      buffetLocationAr: _buffetLocationArController.text.trim(),
+      setMenuDescription: setMenuDescriptionEn,
+      setMenuHighlights: setMenuHighlightsEn,
+      setMenuIncluded: setMenuIncludedEn,
+      setMenuTermsAndConditions: setMenuTermsEn,
+      setMenuCancellationPolicy: setMenuCancellationEn,
+      setMenuAvailableOptions: setMenuOptionsEn,
+      setMenuLocation: setMenuLocationEn,
+      setMenuDescriptionEn: setMenuDescriptionEn,
+      setMenuDescriptionAr: _setMenuDescriptionArController.text.trim(),
+      setMenuHighlightsEn: setMenuHighlightsEn,
+      setMenuHighlightsAr: _splitLines(_setMenuHighlightsArController.text),
+      setMenuIncludedEn: setMenuIncludedEn,
+      setMenuIncludedAr: _splitLines(_setMenuIncludedArController.text),
+      setMenuTermsAndConditionsEn: setMenuTermsEn,
+      setMenuTermsAndConditionsAr: _splitLines(_setMenuTermsArController.text),
+      setMenuCancellationPolicyEn: setMenuCancellationEn,
+      setMenuCancellationPolicyAr: _splitLines(
+        _setMenuCancellationArController.text,
+      ),
+      setMenuAvailableOptionsEn: setMenuOptionsEn,
+      setMenuAvailableOptionsAr: _splitLines(_setMenuOptionsArController.text),
+      setMenuLocationEn: setMenuLocationEn,
+      setMenuLocationAr: _setMenuLocationArController.text.trim(),
+      comboDescription: comboDescriptionEn,
+      comboHighlights: comboHighlightsEn,
+      comboIncluded: comboIncludedEn,
+      comboTermsAndConditions: comboTermsEn,
+      comboCancellationPolicy: comboCancellationEn,
+      comboAvailableOptions: comboOptionsEn,
+      comboLocation: comboLocationEn,
+      comboDescriptionEn: comboDescriptionEn,
+      comboDescriptionAr: _comboDescriptionArController.text.trim(),
+      comboHighlightsEn: comboHighlightsEn,
+      comboHighlightsAr: _splitLines(_comboHighlightsArController.text),
+      comboIncludedEn: comboIncludedEn,
+      comboIncludedAr: _splitLines(_comboIncludedArController.text),
+      comboTermsAndConditionsEn: comboTermsEn,
+      comboTermsAndConditionsAr: _splitLines(_comboTermsArController.text),
+      comboCancellationPolicyEn: comboCancellationEn,
+      comboCancellationPolicyAr: _splitLines(
+        _comboCancellationArController.text,
+      ),
+      comboAvailableOptionsEn: comboOptionsEn,
+      comboAvailableOptionsAr: _splitLines(_comboOptionsArController.text),
+      comboLocationEn: comboLocationEn,
+      comboLocationAr: _comboLocationArController.text.trim(),
     );
 
     setState(() => _isSubmitting = true);

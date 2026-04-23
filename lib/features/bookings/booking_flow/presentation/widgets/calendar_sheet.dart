@@ -7,6 +7,7 @@ import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/date_utils.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 
 class CalendarSheet extends StatefulWidget {
   const CalendarSheet({
@@ -320,8 +321,8 @@ class _DayCell extends StatelessWidget {
             if (price != null)
               FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
-                  formatCurrency(currency, price!),
+                child: CurrencyAmountInlineText(
+                  text: formatCurrency(currency, price!),
                   style: priceStyle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

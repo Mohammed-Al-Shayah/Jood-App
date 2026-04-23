@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_filter_dropdown_field.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
@@ -519,8 +521,8 @@ class _PaymentsTable extends StatelessWidget {
                     ),
                   ),
                   DataCell(
-                    Text(
-                      '${booking.currency} ${booking.total.toStringAsFixed(1)}',
+                    CurrencyAmountInlineText(
+                      text: formatCurrency(booking.currency, booking.total),
                     ),
                   ),
                   DataCell(
@@ -565,7 +567,7 @@ Color _paymentColor(String state) {
   }
 }
 
-String _formatMoney(double amount) => 'OMR ${amount.toStringAsFixed(1)}';
+String _formatMoney(double amount) => formatCurrency('OMR', amount);
 
 class _SearchField extends StatelessWidget {
   const _SearchField({required this.controller, required this.hintText});

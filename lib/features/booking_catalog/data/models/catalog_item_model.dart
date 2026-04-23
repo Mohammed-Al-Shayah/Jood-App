@@ -22,9 +22,13 @@ class CatalogItemModel extends CatalogItemEntity {
     required super.description,
     required super.highlights,
     required super.inclusions,
+    super.exclusions,
+    super.termsAndConditions,
+    super.cancellationPolicy,
     required super.availableMeals,
     required super.packageOverview,
     required super.bookingNotes,
+    super.location,
     required super.requiresMenuItemSelection,
     required super.badge,
     required super.priceFrom,
@@ -78,8 +82,40 @@ class CatalogItemModel extends CatalogItemEntity {
       _stringList(categoryData['includedAr']),
       _stringList(data['inclusionsAr']),
     );
+    final exclusionsEn = _firstNonEmptyList(
+      _stringList(categoryData['excluded']),
+      _stringList(data['exclusions']),
+    );
+    final exclusionsAr = _firstNonEmptyList(
+      _stringList(categoryData['excludedAr']),
+      _stringList(data['exclusionsAr']),
+    );
+    final termsAndConditionsEn = _firstNonEmptyList(
+      _stringList(categoryData['terms']),
+      _stringList(categoryData['notes']),
+    );
+    final termsAndConditionsAr = _firstNonEmptyList(
+      _stringList(categoryData['termsAr']),
+      _stringList(categoryData['notesAr']),
+    );
+    final cancellationPolicyEn = _firstNonEmptyList(
+      _stringList(categoryData['cancellationPolicy']),
+      _stringList(data['cancellationPolicy']),
+    );
+    final cancellationPolicyAr = _firstNonEmptyList(
+      _stringList(categoryData['cancellationPolicyAr']),
+      _stringList(data['cancellationPolicyAr']),
+    );
     final bookingNotesEn = _stringList(categoryData['notes']);
     final bookingNotesAr = _stringList(categoryData['notesAr']);
+    final locationEn = _firstNonEmptyString(
+      _stringValue(categoryData['location']),
+      addressEn,
+    );
+    final locationAr = _firstNonEmptyString(
+      _stringValue(categoryData['locationAr']),
+      addressAr,
+    );
 
     final availableMealsEn = category == CatalogCategoryType.combo
         ? _stringList(categoryData['availableCombos'])
@@ -112,6 +148,18 @@ class CatalogItemModel extends CatalogItemEntity {
         english: inclusionsEn,
         arabic: inclusionsAr,
       ),
+      exclusions: resolveLocalizedList(
+        english: exclusionsEn,
+        arabic: exclusionsAr,
+      ),
+      termsAndConditions: resolveLocalizedList(
+        english: termsAndConditionsEn,
+        arabic: termsAndConditionsAr,
+      ),
+      cancellationPolicy: resolveLocalizedList(
+        english: cancellationPolicyEn,
+        arabic: cancellationPolicyAr,
+      ),
       availableMeals: resolveLocalizedList(
         english: availableMealsEn,
         arabic: availableMealsAr,
@@ -130,6 +178,7 @@ class CatalogItemModel extends CatalogItemEntity {
         english: bookingNotesEn,
         arabic: bookingNotesAr,
       ),
+      location: resolveLocalizedText(english: locationEn, arabic: locationAr),
       requiresMenuItemSelection:
           category == CatalogCategoryType.setMenu &&
           (categoryData['requiresItemSelection'] as bool? ?? true),
@@ -138,24 +187,28 @@ class CatalogItemModel extends CatalogItemEntity {
         fallback: bookingCatalog,
         labels: labels.badge,
         key: 'badge',
+        overrideStoredValues: labels.overrideStoredValues,
       ),
       priceFrom: _catalogLabel(
         primary: categoryData,
         fallback: bookingCatalog,
         labels: labels.priceFrom,
         key: 'priceFrom',
+        overrideStoredValues: labels.overrideStoredValues,
       ),
       discount: _catalogLabel(
         primary: categoryData,
         fallback: bookingCatalog,
         labels: labels.discount,
         key: 'discount',
+        overrideStoredValues: labels.overrideStoredValues,
       ),
       slotsLeft: _catalogLabel(
         primary: categoryData,
         fallback: bookingCatalog,
         labels: labels.slotsLeft,
         key: 'slotsLeft',
+        overrideStoredValues: labels.overrideStoredValues,
       ),
       isActive: data['isActive'] as bool? ?? true,
     );
@@ -200,6 +253,14 @@ class CatalogItemModel extends CatalogItemEntity {
       _stringList(bookingCatalog['includedAr']),
       _stringList(data['inclusionsAr']),
     );
+    final exclusionsEn = _firstNonEmptyList(
+      _stringList(bookingCatalog['excluded']),
+      const <String>[],
+    );
+    final exclusionsAr = _firstNonEmptyList(
+      _stringList(bookingCatalog['excludedAr']),
+      const <String>[],
+    );
     final packageOverviewEn = _firstNonEmptyList(
       _stringList(bookingCatalog['packageOverview']),
       _firstNonEmptyList(
@@ -216,6 +277,30 @@ class CatalogItemModel extends CatalogItemEntity {
     );
     final bookingNotesEn = _stringList(bookingCatalog['notes']);
     final bookingNotesAr = _stringList(bookingCatalog['notesAr']);
+    final termsAndConditionsEn = _firstNonEmptyList(
+      _stringList(bookingCatalog['terms']),
+      bookingNotesEn,
+    );
+    final termsAndConditionsAr = _firstNonEmptyList(
+      _stringList(bookingCatalog['termsAr']),
+      bookingNotesAr,
+    );
+    final cancellationPolicyEn = _firstNonEmptyList(
+      _stringList(bookingCatalog['cancellationPolicy']),
+      const <String>[],
+    );
+    final cancellationPolicyAr = _firstNonEmptyList(
+      _stringList(bookingCatalog['cancellationPolicyAr']),
+      const <String>[],
+    );
+    final locationEn = _firstNonEmptyString(
+      _stringValue(bookingCatalog['location']),
+      addressEn,
+    );
+    final locationAr = _firstNonEmptyString(
+      _stringValue(bookingCatalog['locationAr']),
+      addressAr,
+    );
 
     return CatalogItemModel(
       id: doc.id,
@@ -241,6 +326,18 @@ class CatalogItemModel extends CatalogItemEntity {
         english: inclusionsEn,
         arabic: inclusionsAr,
       ),
+      exclusions: resolveLocalizedList(
+        english: exclusionsEn,
+        arabic: exclusionsAr,
+      ),
+      termsAndConditions: resolveLocalizedList(
+        english: termsAndConditionsEn,
+        arabic: termsAndConditionsAr,
+      ),
+      cancellationPolicy: resolveLocalizedList(
+        english: cancellationPolicyEn,
+        arabic: cancellationPolicyAr,
+      ),
       availableMeals: const [],
       packageOverview: resolveLocalizedList(
         english: packageOverviewEn,
@@ -250,26 +347,31 @@ class CatalogItemModel extends CatalogItemEntity {
         english: bookingNotesEn,
         arabic: bookingNotesAr,
       ),
+      location: resolveLocalizedText(english: locationEn, arabic: locationAr),
       requiresMenuItemSelection: false,
       badge: _catalogLabel(
         primary: bookingCatalog,
         labels: labels.badge,
         key: 'badge',
+        overrideStoredValues: labels.overrideStoredValues,
       ),
       priceFrom: _catalogLabel(
         primary: bookingCatalog,
         labels: labels.priceFrom,
         key: 'priceFrom',
+        overrideStoredValues: labels.overrideStoredValues,
       ),
       discount: _catalogLabel(
         primary: bookingCatalog,
         labels: labels.discount,
         key: 'discount',
+        overrideStoredValues: labels.overrideStoredValues,
       ),
       slotsLeft: _catalogLabel(
         primary: bookingCatalog,
         labels: labels.slotsLeft,
         key: 'slotsLeft',
+        overrideStoredValues: labels.overrideStoredValues,
       ),
       isActive: data['isActive'] as bool? ?? true,
     );
@@ -310,7 +412,12 @@ class CatalogItemModel extends CatalogItemEntity {
     Map<String, dynamic> fallback = const <String, dynamic>{},
     required String labels,
     required String key,
+    required bool overrideStoredValues,
   }) {
+    if (overrideStoredValues) {
+      return labels;
+    }
+
     final english = _firstNonEmptyString(
       _stringValue(primary[key]),
       _stringValue(fallback[key]),
@@ -346,10 +453,12 @@ class CatalogListLabels {
     required this.priceFrom,
     required this.discount,
     required this.slotsLeft,
+    this.overrideStoredValues = false,
   });
 
   final String badge;
   final String priceFrom;
   final String discount;
   final String slotsLeft;
+  final bool overrideStoredValues;
 }

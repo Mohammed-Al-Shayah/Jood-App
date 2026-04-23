@@ -7,6 +7,7 @@ import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
 import '../../../../core/widgets/bottom_cta_bar.dart';
+import '../../../../core/widgets/currency_amount_text.dart';
 import '../../../bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
 import '../../../bookings/booking_flow/presentation/cubit/booking_flow_state.dart';
 import '../../../bookings/booking_flow/presentation/widgets/calendar_sheet.dart';
@@ -656,8 +657,8 @@ class _OptionCardState extends State<_OptionCard> {
         ),
         if (option.subtitle.isNotEmpty) ...[
           SizedBox(height: 8.h),
-          Text(
-            option.subtitle,
+          CurrencyAmountInlineText(
+            text: option.subtitle,
             textAlign: isTimeSlotCard ? TextAlign.center : TextAlign.start,
             style: AppTextStyles.cardMeta.copyWith(
               color: isTimeSlotCard
@@ -700,8 +701,8 @@ class _OptionCardState extends State<_OptionCard> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 if (option.originalPriceLabel.isNotEmpty)
-                  Text(
-                    option.originalPriceLabel,
+                  CurrencyAmountInlineText(
+                    text: option.originalPriceLabel,
                     style: AppTextStyles.cardMeta.copyWith(
                       color: const Color(0xFFDD5A5A),
                       fontSize: 10.5.sp,
@@ -712,8 +713,8 @@ class _OptionCardState extends State<_OptionCard> {
                     ),
                   ),
                 if (option.primaryPriceLabel.isNotEmpty)
-                  Text(
-                    option.primaryPriceLabel,
+                  CurrencyAmountInlineText(
+                    text: option.primaryPriceLabel,
                     style: AppTextStyles.cardPrice.copyWith(
                       fontSize: 12.sp,
                       color: option.isEnabled
@@ -725,8 +726,8 @@ class _OptionCardState extends State<_OptionCard> {
             )
           else ...[
             if (option.originalPriceLabel.isNotEmpty) ...[
-              Text(
-                option.originalPriceLabel,
+              CurrencyAmountInlineText(
+                text: option.originalPriceLabel,
                 style: AppTextStyles.cardMeta.copyWith(
                   color: const Color(0xFFDD5A5A),
                   fontSize: 10.5.sp,
@@ -739,8 +740,8 @@ class _OptionCardState extends State<_OptionCard> {
               SizedBox(height: 4.h),
             ],
             if (option.primaryPriceLabel.isNotEmpty)
-              Text(
-                option.primaryPriceLabel,
+              CurrencyAmountInlineText(
+                text: option.primaryPriceLabel,
                 style: AppTextStyles.cardPrice.copyWith(
                   fontSize: 12.sp,
                   color: option.isEnabled
@@ -751,8 +752,8 @@ class _OptionCardState extends State<_OptionCard> {
           ],
           if (option.secondaryPriceLabel.isNotEmpty) ...[
             SizedBox(height: 4.h),
-            Text(
-              option.secondaryPriceLabel,
+            CurrencyAmountInlineText(
+              text: option.secondaryPriceLabel,
               style: AppTextStyles.cardMeta.copyWith(
                 color: AppColors.textSecondary,
                 fontSize: 10.5.sp,
@@ -812,8 +813,8 @@ class _OptionCardState extends State<_OptionCard> {
         ),
         if (option.subtitle.isNotEmpty) ...[
           SizedBox(height: 8.h),
-          Text(
-            option.subtitle,
+          CurrencyAmountInlineText(
+            text: option.subtitle,
             maxLines: widget.expandSubtitle ? null : 2,
             overflow: widget.expandSubtitle ? null : TextOverflow.ellipsis,
             style: AppTextStyles.cardMeta.copyWith(
@@ -843,8 +844,8 @@ class _OptionCardState extends State<_OptionCard> {
             option.secondaryPriceLabel.isNotEmpty) ...[
           SizedBox(height: 10.h),
           if (option.originalPriceLabel.isNotEmpty) ...[
-            Text(
-              option.originalPriceLabel,
+            CurrencyAmountInlineText(
+              text: option.originalPriceLabel,
               style: AppTextStyles.cardMeta.copyWith(
                 color: const Color(0xFFDD5A5A),
                 decoration: TextDecoration.lineThrough,
@@ -858,8 +859,8 @@ class _OptionCardState extends State<_OptionCard> {
             runSpacing: 4.h,
             children: [
               if (option.primaryPriceLabel.isNotEmpty)
-                Text(
-                  option.primaryPriceLabel,
+                CurrencyAmountInlineText(
+                  text: option.primaryPriceLabel,
                   style: AppTextStyles.cardPrice.copyWith(
                     color: option.isEnabled
                         ? AppColors.primary
@@ -867,8 +868,8 @@ class _OptionCardState extends State<_OptionCard> {
                   ),
                 ),
               if (option.secondaryPriceLabel.isNotEmpty)
-                Text(
-                  option.secondaryPriceLabel,
+                CurrencyAmountInlineText(
+                  text: option.secondaryPriceLabel,
                   style: AppTextStyles.cardMeta.copyWith(
                     color: AppColors.textSecondary,
                   ),

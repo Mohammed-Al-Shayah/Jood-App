@@ -7,6 +7,7 @@ import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/guest_pricing_utils.dart';
 import '../../../../core/utils/payment_amount_utils.dart';
+import '../../../../core/widgets/currency_amount_text.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/bottom_cta_bar.dart';
 import '../../../bookings/booking_flow/presentation/cubit/booking_flow_cubit.dart';
@@ -314,11 +315,9 @@ class _SelectedOptionSection extends StatelessWidget {
                 SizedBox(height: 12.h),
                 Row(
                   children: [
-                    Text(
-                      formatCurrency(
-                        selectedOffer!.currency,
-                        selectedOffer!.priceAdult,
-                      ),
+                    CurrencyAmountText(
+                      currency: selectedOffer!.currency,
+                      amount: selectedOffer!.priceAdult,
                       style: AppTextStyles.cardPrice.copyWith(
                         color: AppColors.primary,
                       ),
@@ -337,8 +336,8 @@ class _SelectedOptionSection extends StatelessWidget {
                       ),
                     ] else ...[
                       SizedBox(width: 10.w),
-                      Text(
-                        AppStrings.childPrice(
+                      CurrencyAmountInlineText(
+                        text: AppStrings.childPrice(
                           formatCurrency(
                             selectedOffer!.currency,
                             selectedOffer!.priceChild,
@@ -416,12 +415,25 @@ class _GuestsSection extends StatelessWidget {
                   : isCouponPricing
                   ? AppStrings.samePriceForAllCoupons
                   : AppStrings.samePriceForAllGuests,
-              priceLabel:
-                  '${formatCurrency(currency, adultPrice)} ${isCombo
-                      ? AppStrings.perCombo
-                      : isCouponPricing
-                      ? AppStrings.perCoupon
-                      : AppStrings.perPerson}',
+              priceWidget: Wrap(
+                spacing: 6.w,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  CurrencyAmountText(
+                    currency: currency,
+                    amount: adultPrice,
+                    style: AppTextStyles.cardPrice.copyWith(fontSize: 14.sp),
+                  ),
+                  Text(
+                    isCombo
+                        ? AppStrings.perCombo
+                        : isCouponPricing
+                        ? AppStrings.perCoupon
+                        : AppStrings.perPerson,
+                    style: AppTextStyles.cardPrice.copyWith(fontSize: 14.sp),
+                  ),
+                ],
+              ),
               count: unifiedCount,
               onAdd: canAddMore
                   ? () => cubit.setGuestCounts(
@@ -440,7 +452,11 @@ class _GuestsSection extends StatelessWidget {
             TicketRow(
               label: AppStrings.adults,
               ageLabel: AppStrings.adultsAge,
-              priceLabel: formatCurrency(currency, adultPrice),
+              priceWidget: CurrencyAmountText(
+                currency: currency,
+                amount: adultPrice,
+                style: AppTextStyles.cardPrice.copyWith(fontSize: 14.sp),
+              ),
               count: state.adultCount,
               onAdd: canAddMore
                   ? () => cubit.setAdultCount(state.adultCount + 1)
@@ -453,7 +469,11 @@ class _GuestsSection extends StatelessWidget {
             TicketRow(
               label: AppStrings.children,
               ageLabel: AppStrings.childrenAge,
-              priceLabel: formatCurrency(currency, childPrice),
+              priceWidget: CurrencyAmountText(
+                currency: currency,
+                amount: childPrice,
+                style: AppTextStyles.cardPrice.copyWith(fontSize: 14.sp),
+              ),
               count: state.childCount,
               onAdd: canAddMore
                   ? () => cubit.setChildCount(state.childCount + 1)
@@ -507,22 +527,54 @@ class _SummarySection extends StatelessWidget {
         children: [
           SummaryRow(
             label: AppStrings.beforeDiscount,
-            value: formatCurrency(currency, amounts.originalSubtotal),
+            valueWidget: CurrencyAmountText(
+              currency: currency,
+              amount: amounts.originalSubtotal,
+              style: AppTextStyles.cardMeta.copyWith(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           SizedBox(height: 6.h),
           SummaryRow(
             label: AppStrings.discount,
-            value: formatCurrency(currency, -amounts.discountTotal),
+            valueWidget: CurrencyAmountText(
+              currency: currency,
+              amount: -amounts.discountTotal,
+              style: AppTextStyles.cardMeta.copyWith(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           SizedBox(height: 6.h),
           SummaryRow(
             label: AppStrings.vatWithRate('5%'),
-            value: formatCurrency(currency, amounts.tax),
+            valueWidget: CurrencyAmountText(
+              currency: currency,
+              amount: amounts.tax,
+              style: AppTextStyles.cardMeta.copyWith(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           SizedBox(height: 6.h),
           SummaryRow(
             label: AppStrings.totalPayable,
-            value: formatCurrency(currency, amounts.totalPayable),
+            valueWidget: CurrencyAmountText(
+              currency: currency,
+              amount: amounts.totalPayable,
+              style: AppTextStyles.cardMeta.copyWith(
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
             isBold: true,
           ),
           if (item.requiresMenuItemSelection) ...[

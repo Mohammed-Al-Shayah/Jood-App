@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
-import 'package:jood/core/utils/payment_amount_utils.dart';
 import '../cubit/booking_flow_cubit.dart';
 import '../cubit/booking_flow_state.dart';
 import '../widgets/date_utils.dart';
@@ -17,6 +16,7 @@ import 'package:jood/core/routing/app_router.dart';
 import 'package:jood/core/routing/routes.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 import '../models/booking_amounts_view_model.dart';
 // import 'package:jood/core/payments/payment_verification_service.dart';
@@ -183,9 +183,12 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen> {
                               TicketRow(
                                 label: AppStrings.adults,
                                 ageLabel: AppStrings.adultsAge,
-                                priceLabel: formatCurrency(
-                                  currency,
-                                  adultPrice,
+                                priceWidget: CurrencyAmountText(
+                                  currency: currency,
+                                  amount: adultPrice,
+                                  style: AppTextStyles.cardPrice.copyWith(
+                                    fontSize: 14.sp,
+                                  ),
                                 ),
                                 count: vm.adultCount,
                                 onAdd: adultsCanAdd
@@ -206,9 +209,12 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen> {
                               TicketRow(
                                 label: AppStrings.children,
                                 ageLabel: AppStrings.childrenAge,
-                                priceLabel: formatCurrency(
-                                  currency,
-                                  childPrice,
+                                priceWidget: CurrencyAmountText(
+                                  currency: currency,
+                                  amount: childPrice,
+                                  style: AppTextStyles.cardPrice.copyWith(
+                                    fontSize: 14.sp,
+                                  ),
                                 ),
                                 count: vm.childCount,
                                 onAdd: childrenCanAdd
@@ -274,9 +280,14 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen> {
                                 label: AppStrings.adultsCountLabel(
                                   vm.adultCount,
                                 ),
-                                value: formatCurrency(
-                                  currency,
-                                  amounts.adultTotal,
+                                valueWidget: CurrencyAmountText(
+                                  currency: currency,
+                                  amount: amounts.adultTotal,
+                                  style: AppTextStyles.cardMeta.copyWith(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
                               if (vm.childCount > 0) ...[
@@ -285,9 +296,14 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen> {
                                   label: AppStrings.childrenCountLabel(
                                     vm.childCount,
                                   ),
-                                  value: formatCurrency(
-                                    currency,
-                                    amounts.childTotal,
+                                  valueWidget: CurrencyAmountText(
+                                    currency: currency,
+                                    amount: amounts.childTotal,
+                                    style: AppTextStyles.cardMeta.copyWith(
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -301,30 +317,53 @@ class _SelectGuestsScreenState extends State<SelectGuestsScreen> {
                               SizedBox(height: 10.h),
                               SummaryRow(
                                 label: AppStrings.beforeDiscount,
-                                value: formatCurrency(
-                                  currency,
-                                  amounts.originalSubtotal,
+                                valueWidget: CurrencyAmountText(
+                                  currency: currency,
+                                  amount: amounts.originalSubtotal,
+                                  style: AppTextStyles.cardMeta.copyWith(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
                               SizedBox(height: 6.h),
                               SummaryRow(
                                 label: AppStrings.discount,
-                                value: formatCurrency(
-                                  currency,
-                                  -amounts.discountTotal,
+                                valueWidget: CurrencyAmountText(
+                                  currency: currency,
+                                  amount: -amounts.discountTotal,
+                                  style: AppTextStyles.cardMeta.copyWith(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
                               SizedBox(height: 6.h),
                               SummaryRow(
                                 label: AppStrings.vatWithRate('5%'),
-                                value: formatCurrency(currency, amounts.tax),
+                                valueWidget: CurrencyAmountText(
+                                  currency: currency,
+                                  amount: amounts.tax,
+                                  style: AppTextStyles.cardMeta.copyWith(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
                               ),
                               SizedBox(height: 6.h),
                               SummaryRow(
                                 label: AppStrings.totalPayable,
-                                value: formatCurrency(
-                                  currency,
-                                  amounts.totalPayable,
+                                valueWidget: CurrencyAmountText(
+                                  currency: currency,
+                                  amount: amounts.totalPayable,
+                                  style: AppTextStyles.cardMeta.copyWith(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
                                 isBold: true,
                               ),

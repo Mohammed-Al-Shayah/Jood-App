@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:jood/core/utils/date_utils.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
@@ -43,6 +44,10 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
   late final TextEditingController _imageUrlController;
   late final TextEditingController _sortOrderController;
   late final TextEditingController _displaySecondsController;
+  late final TextEditingController _startDateController;
+  late final TextEditingController _startTimeController;
+  late final TextEditingController _endDateController;
+  late final TextEditingController _endTimeController;
 
   List<RestaurantEntity> _restaurants = const [];
   List<AttractionEntity> _attractions = const [];
@@ -74,6 +79,19 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
     _displaySecondsController = TextEditingController(
       text: (ad?.displaySeconds ?? 3).toString(),
     );
+    final initialScheduleDate = ad?.targetOfferDate ?? '';
+    _startDateController = TextEditingController(
+      text: ad != null && ad.startDate.trim().isNotEmpty
+          ? ad.startDate
+          : initialScheduleDate,
+    );
+    _startTimeController = TextEditingController(text: ad?.startTime ?? '');
+    _endDateController = TextEditingController(
+      text: ad != null && ad.endDate.trim().isNotEmpty
+          ? ad.endDate
+          : initialScheduleDate,
+    );
+    _endTimeController = TextEditingController(text: ad?.endTime ?? '');
     _category = _normalizedCategory(ad?.targetCategory ?? 'buffet');
     _venueId = ad?.targetVenueId;
     _offerId = ad?.targetOfferId;
@@ -89,6 +107,10 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
       ..dispose();
     _sortOrderController.dispose();
     _displaySecondsController.dispose();
+    _startDateController.dispose();
+    _startTimeController.dispose();
+    _endDateController.dispose();
+    _endTimeController.dispose();
     super.dispose();
   }
 
@@ -133,7 +155,28 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
         !availableOffers.any((offer) => offer.id == _offerId)) {
       _offerId = null;
     }
+    _tryPopulateScheduleFromSelectedOffer();
     if (mounted) setState(() {});
+  }
+
+  void _tryPopulateScheduleFromSelectedOffer() {
+    final selectedOffer = _selectedOffer();
+    if (selectedOffer == null) return;
+
+    if (_startDateController.text.trim().isEmpty) {
+      _startDateController.text = selectedOffer.date.trim();
+    }
+    if (_endDateController.text.trim().isEmpty) {
+      _endDateController.text = selectedOffer.date.trim();
+    }
+    if (_startTimeController.text.trim().isEmpty &&
+        selectedOffer.startTime.trim().isNotEmpty) {
+      _startTimeController.text = selectedOffer.startTime.trim();
+    }
+    if (_endTimeController.text.trim().isEmpty &&
+        selectedOffer.endTime.trim().isNotEmpty) {
+      _endTimeController.text = selectedOffer.endTime.trim();
+    }
   }
 
   List<_VenueOption> get _venueOptions {
@@ -317,12 +360,123 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
     }
   }
 
+  Future<void> _pickDate(TextEditingController controller) async {
+    final now = DateTime.now();
+    final initial =
+        DateTime.tryParse(controller.text.trim()) ??
+        DateTime.tryParse(_startDateController.text.trim()) ??
+        now;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2),
+    );
+    if (picked == null) return;
+    controller.text = AppDateUtils.formatDate(picked);
+  }
+
+  Future<void> _pickTime(TextEditingController controller) async {
+    final parts = _parseTimeParts(controller.text.trim());
+    final initialTime = parts == null
+        ? const TimeOfDay(hour: 12, minute: 0)
+        : TimeOfDay(hour: parts[0], minute: parts[1]);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+    );
+    if (picked == null) return;
+    controller.text = _formatTime(picked);
+  }
+
+  DateTime? _composeDateTime(
+    TextEditingController dateController,
+    TextEditingController timeController, {
+    required bool endOfDayWhenTimeMissing,
+  }) {
+    final parsedDate = DateTime.tryParse(dateController.text.trim());
+    if (parsedDate == null) return null;
+
+    final parts = _parseTimeParts(timeController.text.trim());
+    final hour = parts?[0] ?? (endOfDayWhenTimeMissing ? 23 : 0);
+    final minute = parts?[1] ?? (endOfDayWhenTimeMissing ? 59 : 0);
+
+    return DateTime(
+      parsedDate.year,
+      parsedDate.month,
+      parsedDate.day,
+      hour,
+      minute,
+    );
+  }
+
+  List<int>? _parseTimeParts(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+
+    final parts = trimmed.split(':');
+    if (parts.length != 2) return null;
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    return [hour, minute];
+  }
+
+  bool _isValidTime(String value) => _parseTimeParts(value) != null;
+
+  String _formatTime(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  Widget _scheduleField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+    required String? Function(String? value) validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      readOnly: true,
+      onTap: _isSubmitting ? null : onTap,
+      decoration: adminInputDecoration(label).copyWith(
+        suffixIcon: Icon(icon),
+      ),
+      validator: validator,
+    );
+  }
+
   Future<void> _save() async {
     FocusManager.instance.primaryFocus?.unfocus();
     if (!(_formKey.currentState?.validate() ?? false)) return;
     final selectedOffer = _selectedOffer();
     if (selectedOffer == null) {
       setState(() => _loadError = 'Select a target offer first.');
+      return;
+    }
+    final scheduleStart = _composeDateTime(
+      _startDateController,
+      _startTimeController,
+      endOfDayWhenTimeMissing: false,
+    );
+    final scheduleEnd = _composeDateTime(
+      _endDateController,
+      _endTimeController,
+      endOfDayWhenTimeMissing: true,
+    );
+    if (scheduleStart == null || scheduleEnd == null) {
+      setState(() => _loadError = 'Select a valid ad start and end schedule.');
+      return;
+    }
+    if (scheduleEnd.isBefore(scheduleStart)) {
+      setState(() {
+        _loadError = 'Ad end date and time must be after the start date and time.';
+      });
       return;
     }
 
@@ -345,6 +499,10 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
       targetOfferId: selectedOffer.id,
       targetOfferTitle: _offerLabel(selectedOffer),
       targetOfferDate: selectedOffer.date,
+      startDate: _startDateController.text.trim(),
+      startTime: _startTimeController.text.trim(),
+      endDate: _endDateController.text.trim(),
+      endTime: _endTimeController.text.trim(),
       createdAt: widget.ad?.createdAt ?? now,
       updatedAt: now,
     );
@@ -420,7 +578,6 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
                     return null;
                   },
                 ),
-                SizedBox(height: 12.h),
                 SwitchListTile.adaptive(
                   value: _isActive,
                   onChanged: _isSubmitting
@@ -432,6 +589,93 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
                   subtitle: const Text(
                     'Only active ads appear on the home slider.',
                   ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 16.h),
+          AdminSectionCard(
+            title: 'Ad schedule',
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _scheduleField(
+                        controller: _startDateController,
+                        label: 'Start date',
+                        icon: Icons.calendar_today_outlined,
+                        onTap: () => _pickDate(_startDateController),
+                        validator: (value) {
+                          if ((value ?? '').trim().isEmpty) {
+                            return 'Select the ad start date.';
+                          }
+                          if (DateTime.tryParse(value!.trim()) == null) {
+                            return 'Choose a valid start date.';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: _scheduleField(
+                        controller: _startTimeController,
+                        label: 'Start time',
+                        icon: Icons.access_time_rounded,
+                        onTap: () => _pickTime(_startTimeController),
+                        validator: (value) {
+                          if ((value ?? '').trim().isEmpty) {
+                            return 'Select the ad start time.';
+                          }
+                          if (!_isValidTime(value!.trim())) {
+                            return 'Choose a valid start time.';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _scheduleField(
+                        controller: _endDateController,
+                        label: 'End date',
+                        icon: Icons.event_available_outlined,
+                        onTap: () => _pickDate(_endDateController),
+                        validator: (value) {
+                          if ((value ?? '').trim().isEmpty) {
+                            return 'Select the ad end date.';
+                          }
+                          if (DateTime.tryParse(value!.trim()) == null) {
+                            return 'Choose a valid end date.';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: _scheduleField(
+                        controller: _endTimeController,
+                        label: 'End time',
+                        icon: Icons.timer_off_outlined,
+                        onTap: () => _pickTime(_endTimeController),
+                        validator: (value) {
+                          if ((value ?? '').trim().isEmpty) {
+                            return 'Select the ad end time.';
+                          }
+                          if (!_isValidTime(value!.trim())) {
+                            return 'Choose a valid end time.';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -567,7 +811,10 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
                   },
                   onChanged: _isSubmitting || _isLoadingOptions
                       ? null
-                      : (value) => setState(() => _offerId = value),
+                      : (value) {
+                          setState(() => _offerId = value);
+                          _tryPopulateScheduleFromSelectedOffer();
+                        },
                 ),
                 if (selectedOffer != null) ...[
                   SizedBox(height: 12.h),
@@ -579,7 +826,7 @@ class _AdminAdFormContentState extends State<AdminAdFormContent> {
                       borderRadius: BorderRadius.circular(14.r),
                     ),
                     child: Text(
-                      'Ad will open ${_categoryLabel(_category)} booking for ${_selectedVenueName()} on ${selectedOffer.date}.',
+                      'Ad will open ${_categoryLabel(_category)} booking for ${_selectedVenueName()} on ${selectedOffer.date}, and it will run from ${_startDateController.text.trim()} ${_startTimeController.text.trim()} until ${_endDateController.text.trim()} ${_endTimeController.text.trim()}.',
                       style: AppTextStyles.cardMeta,
                     ),
                   ),

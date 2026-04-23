@@ -12,7 +12,10 @@ import 'package:jood/features/admin/presentation/cubit/admin_offers_state.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_list_tile.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
+import 'package:jood/features/attractions/domain/entities/attraction_entity.dart';
+import 'package:jood/features/attractions/domain/usecases/get_all_attractions_usecase.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
+import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
 import 'package:jood/features/restaurants/domain/usecases/get_all_restaurants_usecase.dart';
 
 class AdminOffersScreen extends StatefulWidget {
@@ -37,14 +40,23 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
 
   Future<void> _loadRestaurants() async {
     try {
-      final usecase = getIt<GetAllRestaurantsUseCase>();
-      final restaurants = await usecase();
+      final results = await Future.wait([
+        getIt<GetAllRestaurantsUseCase>()(),
+        getIt<GetAllAttractionsUseCase>()(),
+      ]);
+      final restaurants = results[0] as List<RestaurantEntity>;
+      final attractions = results[1] as List<AttractionEntity>;
       if (!mounted) return;
       setState(() {
-        _restaurantNames = {for (final r in restaurants) r.id: r.name};
+        _restaurantNames = {
+          for (final r in restaurants) r.id: r.name,
+          for (final attraction in attractions)
+            attraction.id: attraction.name.trim().isNotEmpty
+                ? attraction.name
+                : attraction.id,
+        };
       });
     } catch (_) {
-      // Ignore; we'll fallback to restaurantId in the UI.
     }
   }
 
@@ -83,14 +95,32 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => getIt<AdminOffersCubit>()..load(),
-      child: Builder(
-        builder: (context) {
+      child: BlocBuilder<AdminOffersCubit, AdminOffersState>(
+        builder: (context, state) {
+          final isLoading = state.status == AdminOffersStatus.loading;
+          final allOffersSelected =
+              state.offers.isNotEmpty &&
+              state.offers.every((offer) => _selectedOfferIds.contains(offer.id));
+
           return AdminShell(
             title: _selectionMode
                 ? 'Selected ${_selectedOfferIds.length}'
                 : 'Offers',
             actions: _selectionMode
                 ? [
+                    TextButton(
+                      onPressed: state.offers.isEmpty
+                          ? null
+                          : () => _toggleSelectAll(state.offers),
+                      child: Text(
+                        allOffersSelected ? 'Deselect all' : 'Select all',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.sp,
+                        ),
+                      ),
+                    ),
                     IconButton(
                       onPressed: () => _confirmDeleteSelected(context),
                       icon: const Icon(Icons.delete_outline),
@@ -124,139 +154,128 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
                     backgroundColor: AppColors.primary,
                     child: const Icon(Icons.add, color: Colors.white),
                   ),
-            body: BlocBuilder<AdminOffersCubit, AdminOffersState>(
-              builder: (context, state) {
-                final isLoading = state.status == AdminOffersStatus.loading;
-                if (state.status == AdminOffersStatus.failure) {
-                  return Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(24.w),
-                      child: Text(
-                        state.errorMessage ?? 'Failed to load offers.',
-                        style: AppTextStyles.cardMeta,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                }
-                final items = isLoading ? _skeletonOffers() : state.offers;
-                if (!isLoading && items.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No offers yet.',
-                      style: AppTextStyles.cardMeta,
-                    ),
-                  );
-                }
-                final groupedItems = _groupByRestaurant(
-                  items,
-                  _restaurantNames,
-                );
-                return Skeletonizer(
-                  enabled: isLoading,
-                  child: ListView.builder(
-                    padding: EdgeInsets.fromLTRB(0, 12.h, 0, 80.h),
-                    itemCount: groupedItems.length,
-                    itemBuilder: (context, index) {
-                      final group = groupedItems[index];
-                      final isExpanded = _expandedRestaurants.contains(
-                        group.restaurantId,
-                      );
-                      return ExpansionTile(
-                        key: PageStorageKey(group.restaurantId),
-                        initiallyExpanded: isExpanded,
-                        tilePadding: EdgeInsets.symmetric(
-                          horizontal: 16.w,
-                          vertical: 4.h,
-                        ),
-                        title: Text(
-                          group.restaurantName,
-                          style: AppTextStyles.cardTitle.copyWith(
-                            fontSize: 14.sp,
-                          ),
-                        ),
-                        onExpansionChanged: (expanded) {
-                          setState(() {
-                            if (expanded) {
-                              _expandedRestaurants.add(group.restaurantId);
-                            } else {
-                              _expandedRestaurants.remove(group.restaurantId);
-                            }
-                          });
-                        },
-                        children: group.offers
-                            .map(
-                              (offer) => Padding(
-                                padding: EdgeInsets.only(
-                                  left: 6.w,
-                                  right: 6.w,
-                                  bottom: 12.h,
-                                ),
-                                child: AdminListTile(
-                                  leading: _OfferIcon(),
-                                  title: offer.title,
-                                  subtitles: [
-                                    SizedBox(height: 4.h),
-                                    Text(
-                                      offer.date,
-                                      style: AppTextStyles.cardMeta,
-                                    ),
-                                    SizedBox(height: 4.h),
-                                    Text(
-                                      '${offer.startTime} - ${offer.endTime}',
-                                      style: AppTextStyles.cardMeta,
-                                    ),
-                                  ],
-                                  onTap: isLoading
-                                      ? null
-                                      : () async {
-                                          if (_selectionMode) {
-                                            _toggleSelection(offer);
-                                            return;
-                                          }
-                                          final result =
-                                              await Navigator.of(
-                                                context,
-                                              ).pushNamed(
-                                                Routes.adminOfferFormScreen,
-                                                arguments: AdminOfferFormArgs(
-                                                  offer: offer,
-                                                  onSubmit: (payload) =>
-                                                      _submitFormResult(
-                                                        context,
-                                                        payload,
-                                                      ),
-                                                ),
-                                              );
-                                          if (result != null &&
-                                              context.mounted) {
-                                            showAppSnackBar(
-                                              context,
-                                              _saveSuccessMessage(result),
-                                              type: SnackBarType.success,
-                                            );
-                                          }
-                                        },
-                                  onLongPress: isLoading
-                                      ? null
-                                      : () => _toggleSelection(offer),
-                                  onDelete: isLoading
-                                      ? null
-                                      : () => _confirmDelete(context, offer),
-                                  isSelected: _selectedOfferIds.contains(
-                                    offer.id,
-                                  ),
-                                  selectionMode: _selectionMode,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      );
-                    },
-                  ),
-                );
-              },
+            body: _buildBody(context, state, isLoading),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    AdminOffersState state,
+    bool isLoading,
+  ) {
+    if (state.status == AdminOffersStatus.failure) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(24.w),
+          child: Text(
+            state.errorMessage ?? 'Failed to load offers.',
+            style: AppTextStyles.cardMeta,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    final items = isLoading ? _skeletonOffers() : state.offers;
+    if (!isLoading && items.isEmpty) {
+      return Center(
+        child: Text(
+          'No offers yet.',
+          style: AppTextStyles.cardMeta,
+        ),
+      );
+    }
+
+    final groupedItems = _groupByRestaurant(items, _restaurantNames);
+    return Skeletonizer(
+      enabled: isLoading,
+      child: ListView.builder(
+        padding: EdgeInsets.fromLTRB(0, 12.h, 0, 80.h),
+        itemCount: groupedItems.length,
+        itemBuilder: (context, index) {
+          final group = groupedItems[index];
+          final isExpanded = _expandedRestaurants.contains(group.restaurantId);
+          return ExpansionTile(
+            key: PageStorageKey(group.restaurantId),
+            initiallyExpanded: isExpanded,
+            tilePadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
+            title: Text(
+              group.restaurantName,
+              style: AppTextStyles.cardTitle.copyWith(
+                fontSize: 14.sp,
+              ),
             ),
+            onExpansionChanged: (expanded) {
+              setState(() {
+                if (expanded) {
+                  _expandedRestaurants.add(group.restaurantId);
+                } else {
+                  _expandedRestaurants.remove(group.restaurantId);
+                }
+              });
+            },
+            children: group.offers
+                .map(
+                  (offer) => Padding(
+                    padding: EdgeInsets.only(
+                      left: 6.w,
+                      right: 6.w,
+                      bottom: 12.h,
+                    ),
+                    child: AdminListTile(
+                      leading: _OfferIcon(),
+                      title: offer.title,
+                      subtitles: [
+                        SizedBox(height: 4.h),
+                        Text(
+                          offer.date,
+                          style: AppTextStyles.cardMeta,
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          '${offer.startTime} - ${offer.endTime}',
+                          style: AppTextStyles.cardMeta,
+                        ),
+                      ],
+                      onTap: isLoading
+                          ? null
+                          : () async {
+                              if (_selectionMode) {
+                                _toggleSelection(offer);
+                                return;
+                              }
+                              final result = await Navigator.of(context)
+                                  .pushNamed(
+                                    Routes.adminOfferFormScreen,
+                                    arguments: AdminOfferFormArgs(
+                                      offer: offer,
+                                      onSubmit: (payload) =>
+                                          _submitFormResult(context, payload),
+                                    ),
+                                  );
+                              if (result != null && context.mounted) {
+                                showAppSnackBar(
+                                  context,
+                                  _saveSuccessMessage(result),
+                                  type: SnackBarType.success,
+                                );
+                              }
+                            },
+                      onLongPress: isLoading
+                          ? null
+                          : () => _toggleSelection(offer),
+                      onDelete: isLoading
+                          ? null
+                          : () => _confirmDelete(context, offer),
+                      isSelected: _selectedOfferIds.contains(offer.id),
+                      selectionMode: _selectionMode,
+                    ),
+                  ),
+                )
+                .toList(),
           );
         },
       ),
@@ -276,6 +295,25 @@ class _AdminOffersScreenState extends State<AdminOffersScreen> {
   void _clearSelection() {
     setState(() {
       _selectedOfferIds.clear();
+    });
+  }
+
+  void _toggleSelectAll(List<OfferEntity> offers) {
+    if (offers.isEmpty) return;
+
+    setState(() {
+      final allSelected = offers.every(
+        (offer) => _selectedOfferIds.contains(offer.id),
+      );
+      if (allSelected) {
+        for (final offer in offers) {
+          _selectedOfferIds.remove(offer.id);
+        }
+      } else {
+        for (final offer in offers) {
+          _selectedOfferIds.add(offer.id);
+        }
+      }
     });
   }
 
@@ -312,7 +350,7 @@ class _OfferIcon extends StatelessWidget {
       width: 44.w,
       height: 44.w,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.12),
+        color: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14.r),
       ),
       child: Icon(Icons.local_offer_outlined, color: AppColors.primary),

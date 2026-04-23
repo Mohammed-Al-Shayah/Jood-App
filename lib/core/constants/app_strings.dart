@@ -120,6 +120,7 @@ class AppStrings {
   static String get description => _tr('description');
   static String get continueToBooking => _tr('continue_to_booking');
   static String get whatsIncluded => _tr('whats_included');
+  static String get whatsExcluded => _tr('whats_excluded');
   static String get packagesOverview => _tr('packages_overview');
   static String get availableOptions => _tr('available_options');
   static String get availableCombos => _tr('available_combos');
@@ -127,6 +128,8 @@ class AppStrings {
   static String get setMenuConcept => _tr('set_menu_concept');
   static String get comboConcept => _tr('combo_concept');
   static String get experienceHighlights => _tr('experience_highlights');
+  static String get termsAndConditions => _tr('terms_and_conditions');
+  static String get locationTitle => _tr('location_title');
   static String get bookingFlowSetMenuSelectionNote =>
       _tr('booking_flow_set_menu_selection_note');
   static String get bookingFlowComboSelectionNote =>

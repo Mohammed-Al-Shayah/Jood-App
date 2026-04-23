@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
+import '../../../../core/widgets/currency_amount_text.dart';
 
 class RestaurantCard extends StatelessWidget {
   const RestaurantCard({
@@ -168,8 +169,8 @@ class RestaurantCard extends StatelessWidget {
                               color: AppColors.discountBackground,
                               borderRadius: BorderRadius.circular(12.r),
                             ),
-                            child: Text(
-                              trimmedSlots,
+                            child: CurrencyAmountInlineText(
+                              text: trimmedSlots,
                               style: AppTextStyles.cardMeta.copyWith(
                                 color: AppColors.primaryDark,
                                 fontWeight: FontWeight.w600,
@@ -191,14 +192,14 @@ class RestaurantCard extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              Text(
-                                normalizedDiscount,
+                              CurrencyAmountInlineText(
+                                text: normalizedDiscount,
                                 style: AppTextStyles.cardDiscount.copyWith(
                                   fontSize: 18.sp,
                                 ),
                               ),
-                              Text(
-                                priceValue,
+                              CurrencyAmountInlineText(
+                                text: priceValue,
                                 style: AppTextStyles.cardPrice.copyWith(
                                   fontSize: 16.sp,
                                   color: const Color(0xFF5D6875),
@@ -212,8 +213,8 @@ class RestaurantCard extends StatelessWidget {
                           ),
 
                         if (!hasDualPrice && trimmedPrice.isNotEmpty)
-                          Text(
-                            normalizedPrice,
+                          CurrencyAmountInlineText(
+                            text: normalizedPrice,
                             style: AppTextStyles.cardPrice.copyWith(
                               fontSize: 18.sp,
                             ),

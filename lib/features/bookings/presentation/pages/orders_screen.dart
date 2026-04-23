@@ -11,6 +11,7 @@ import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/utils/guest_pricing_utils.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../domain/entities/booking_entity.dart';
@@ -429,8 +430,8 @@ class _OrderCard extends StatelessWidget {
               style: AppTextStyles.cardMeta,
             ),
             SizedBox(height: 4.h),
-            Text(
-              AppStrings.totalValue(
+            CurrencyAmountInlineText(
+              text: AppStrings.totalValue(
                 formatCurrency(order.currency, order.total),
               ),
               style: AppTextStyles.cardPrice,
@@ -557,8 +558,8 @@ class _OrderCard extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 6.h),
-              Text(
-                AppStrings.totalValue(
+              CurrencyAmountInlineText(
+                text: AppStrings.totalValue(
                   formatCurrency(order.currency, order.total),
                 ),
                 style: AppTextStyles.cardPrice.copyWith(
@@ -798,8 +799,8 @@ class _DetailRow extends StatelessWidget {
               ),
             ),
           ),
-          Text(
-            value,
+          CurrencyAmountInlineText(
+            text: value,
             style: AppTextStyles.cardMeta.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,

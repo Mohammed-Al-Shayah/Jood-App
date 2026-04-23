@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_restaurants_cubit.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_restaurants_state.dart';
@@ -404,10 +406,8 @@ class _RestaurantsTable extends StatelessWidget {
                   ),
                   DataCell(Text(restaurant.rating.toStringAsFixed(1))),
                   DataCell(
-                    Text(
-                      restaurant.priceFrom.trim().isNotEmpty
-                          ? restaurant.priceFrom
-                          : 'OMR ${restaurant.priceFromValue.toStringAsFixed(1)}',
+                    CurrencyAmountInlineText(
+                      text: formatCurrency('OMR', restaurant.priceFromValue),
                     ),
                   ),
                   DataCell(

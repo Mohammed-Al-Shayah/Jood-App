@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 
 class PaymentSummaryCard extends StatelessWidget {
   const PaymentSummaryCard({
@@ -77,8 +78,8 @@ class PaymentSummaryCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 4.h),
-                  Text(
-                    totalAmount,
+                  CurrencyAmountInlineText(
+                    text: totalAmount,
                     style: AppTextStyles.cardTitle.copyWith(
                       color: Colors.white,
                       fontSize: 20.sp,

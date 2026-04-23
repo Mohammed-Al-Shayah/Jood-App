@@ -55,6 +55,72 @@ class RestaurantModel extends RestaurantEntity {
     super.cancellationPolicyAr,
     super.knowBeforeYouGoEn,
     super.knowBeforeYouGoAr,
+    super.buffetDescription,
+    super.buffetHighlights,
+    super.buffetIncluded,
+    super.buffetExcluded,
+    super.buffetTermsAndConditions,
+    super.buffetCancellationPolicy,
+    super.buffetAvailableOptions,
+    super.buffetLocation,
+    super.buffetDescriptionEn,
+    super.buffetDescriptionAr,
+    super.buffetHighlightsEn,
+    super.buffetHighlightsAr,
+    super.buffetIncludedEn,
+    super.buffetIncludedAr,
+    super.buffetExcludedEn,
+    super.buffetExcludedAr,
+    super.buffetTermsAndConditionsEn,
+    super.buffetTermsAndConditionsAr,
+    super.buffetCancellationPolicyEn,
+    super.buffetCancellationPolicyAr,
+    super.buffetAvailableOptionsEn,
+    super.buffetAvailableOptionsAr,
+    super.buffetLocationEn,
+    super.buffetLocationAr,
+    super.setMenuDescription,
+    super.setMenuHighlights,
+    super.setMenuIncluded,
+    super.setMenuTermsAndConditions,
+    super.setMenuCancellationPolicy,
+    super.setMenuAvailableOptions,
+    super.setMenuLocation,
+    super.setMenuDescriptionEn,
+    super.setMenuDescriptionAr,
+    super.setMenuHighlightsEn,
+    super.setMenuHighlightsAr,
+    super.setMenuIncludedEn,
+    super.setMenuIncludedAr,
+    super.setMenuTermsAndConditionsEn,
+    super.setMenuTermsAndConditionsAr,
+    super.setMenuCancellationPolicyEn,
+    super.setMenuCancellationPolicyAr,
+    super.setMenuAvailableOptionsEn,
+    super.setMenuAvailableOptionsAr,
+    super.setMenuLocationEn,
+    super.setMenuLocationAr,
+    super.comboDescription,
+    super.comboHighlights,
+    super.comboIncluded,
+    super.comboTermsAndConditions,
+    super.comboCancellationPolicy,
+    super.comboAvailableOptions,
+    super.comboLocation,
+    super.comboDescriptionEn,
+    super.comboDescriptionAr,
+    super.comboHighlightsEn,
+    super.comboHighlightsAr,
+    super.comboIncludedEn,
+    super.comboIncludedAr,
+    super.comboTermsAndConditionsEn,
+    super.comboTermsAndConditionsAr,
+    super.comboCancellationPolicyEn,
+    super.comboCancellationPolicyAr,
+    super.comboAvailableOptionsEn,
+    super.comboAvailableOptionsAr,
+    super.comboLocationEn,
+    super.comboLocationAr,
   });
 
   factory RestaurantModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -69,6 +135,9 @@ class RestaurantModel extends RestaurantEntity {
     final geo = (data['geo'] as Map?) ?? {};
     final openHours = (data['openHours'] as Map?) ?? {};
     final bookingCatalog = _asMap(data['bookingCatalog']);
+    final buffetConfig = _asMap(bookingCatalog['buffet']);
+    final setMenuConfig = _asMap(bookingCatalog['setMenu']);
+    final comboConfig = _asMap(bookingCatalog['combo']);
 
     final nameEn = _stringValue(data['name']);
     final nameAr = _stringValue(data['nameAr']);
@@ -90,6 +159,174 @@ class RestaurantModel extends RestaurantEntity {
     final cancellationPolicyAr = _stringList(data['cancellationPolicyAr']);
     final knowBeforeYouGoEn = _stringList(data['knowBeforeYouGo']);
     final knowBeforeYouGoAr = _stringList(data['knowBeforeYouGoAr']);
+    final buffetDescriptionEn = _firstNonEmptyString(
+      _stringValue(buffetConfig['description']),
+      aboutEn,
+    );
+    final buffetDescriptionAr = _firstNonEmptyString(
+      _stringValue(buffetConfig['descriptionAr']),
+      aboutAr,
+    );
+    final buffetHighlightsEn = _firstNonEmptyList(
+      _stringList(buffetConfig['highlights']),
+      highlightsEn,
+    );
+    final buffetHighlightsAr = _firstNonEmptyList(
+      _stringList(buffetConfig['highlightsAr']),
+      highlightsAr,
+    );
+    final buffetIncludedEn = _firstNonEmptyList(
+      _stringList(buffetConfig['included']),
+      inclusionsEn,
+    );
+    final buffetIncludedAr = _firstNonEmptyList(
+      _stringList(buffetConfig['includedAr']),
+      inclusionsAr,
+    );
+    final buffetExcludedEn = _firstNonEmptyList(
+      _stringList(buffetConfig['excluded']),
+      exclusionsEn,
+    );
+    final buffetExcludedAr = _firstNonEmptyList(
+      _stringList(buffetConfig['excludedAr']),
+      exclusionsAr,
+    );
+    final buffetTermsAndConditionsEn = _firstNonEmptyList(
+      _stringList(buffetConfig['terms']),
+      _stringList(buffetConfig['notes']),
+    );
+    final buffetTermsAndConditionsAr = _firstNonEmptyList(
+      _stringList(buffetConfig['termsAr']),
+      _stringList(buffetConfig['notesAr']),
+    );
+    final buffetCancellationPolicyEn = _firstNonEmptyList(
+      _stringList(buffetConfig['cancellationPolicy']),
+      cancellationPolicyEn,
+    );
+    final buffetCancellationPolicyAr = _firstNonEmptyList(
+      _stringList(buffetConfig['cancellationPolicyAr']),
+      cancellationPolicyAr,
+    );
+    final buffetAvailableOptionsEn = _stringList(buffetConfig['availableMeals']);
+    final buffetAvailableOptionsAr = _stringList(
+      buffetConfig['availableMealsAr'],
+    );
+    final buffetLocationEn = _firstNonEmptyString(
+      _stringValue(buffetConfig['location']),
+      addressEn,
+    );
+    final buffetLocationAr = _firstNonEmptyString(
+      _stringValue(buffetConfig['locationAr']),
+      addressAr,
+    );
+    final setMenuDescriptionEn = _firstNonEmptyString(
+      _stringValue(setMenuConfig['description']),
+      aboutEn,
+    );
+    final setMenuDescriptionAr = _firstNonEmptyString(
+      _stringValue(setMenuConfig['descriptionAr']),
+      aboutAr,
+    );
+    final setMenuHighlightsEn = _firstNonEmptyList(
+      _stringList(setMenuConfig['highlights']),
+      highlightsEn,
+    );
+    final setMenuHighlightsAr = _firstNonEmptyList(
+      _stringList(setMenuConfig['highlightsAr']),
+      highlightsAr,
+    );
+    final setMenuIncludedEn = _firstNonEmptyList(
+      _stringList(setMenuConfig['included']),
+      inclusionsEn,
+    );
+    final setMenuIncludedAr = _firstNonEmptyList(
+      _stringList(setMenuConfig['includedAr']),
+      inclusionsAr,
+    );
+    final setMenuTermsAndConditionsEn = _firstNonEmptyList(
+      _stringList(setMenuConfig['terms']),
+      _stringList(setMenuConfig['notes']),
+    );
+    final setMenuTermsAndConditionsAr = _firstNonEmptyList(
+      _stringList(setMenuConfig['termsAr']),
+      _stringList(setMenuConfig['notesAr']),
+    );
+    final setMenuCancellationPolicyEn = _firstNonEmptyList(
+      _stringList(setMenuConfig['cancellationPolicy']),
+      cancellationPolicyEn,
+    );
+    final setMenuCancellationPolicyAr = _firstNonEmptyList(
+      _stringList(setMenuConfig['cancellationPolicyAr']),
+      cancellationPolicyAr,
+    );
+    final setMenuAvailableOptionsEn = _stringList(
+      setMenuConfig['availableMeals'],
+    );
+    final setMenuAvailableOptionsAr = _stringList(
+      setMenuConfig['availableMealsAr'],
+    );
+    final setMenuLocationEn = _firstNonEmptyString(
+      _stringValue(setMenuConfig['location']),
+      addressEn,
+    );
+    final setMenuLocationAr = _firstNonEmptyString(
+      _stringValue(setMenuConfig['locationAr']),
+      addressAr,
+    );
+    final comboDescriptionEn = _firstNonEmptyString(
+      _stringValue(comboConfig['description']),
+      aboutEn,
+    );
+    final comboDescriptionAr = _firstNonEmptyString(
+      _stringValue(comboConfig['descriptionAr']),
+      aboutAr,
+    );
+    final comboHighlightsEn = _firstNonEmptyList(
+      _stringList(comboConfig['highlights']),
+      highlightsEn,
+    );
+    final comboHighlightsAr = _firstNonEmptyList(
+      _stringList(comboConfig['highlightsAr']),
+      highlightsAr,
+    );
+    final comboIncludedEn = _firstNonEmptyList(
+      _stringList(comboConfig['included']),
+      inclusionsEn,
+    );
+    final comboIncludedAr = _firstNonEmptyList(
+      _stringList(comboConfig['includedAr']),
+      inclusionsAr,
+    );
+    final comboTermsAndConditionsEn = _firstNonEmptyList(
+      _stringList(comboConfig['terms']),
+      _stringList(comboConfig['notes']),
+    );
+    final comboTermsAndConditionsAr = _firstNonEmptyList(
+      _stringList(comboConfig['termsAr']),
+      _stringList(comboConfig['notesAr']),
+    );
+    final comboCancellationPolicyEn = _firstNonEmptyList(
+      _stringList(comboConfig['cancellationPolicy']),
+      cancellationPolicyEn,
+    );
+    final comboCancellationPolicyAr = _firstNonEmptyList(
+      _stringList(comboConfig['cancellationPolicyAr']),
+      cancellationPolicyAr,
+    );
+    final comboAvailableOptionsEn = _stringList(
+      comboConfig['availableCombos'],
+    );
+    final comboAvailableOptionsAr = _stringList(
+      comboConfig['availableCombosAr'],
+    );
+    final comboLocationEn = _firstNonEmptyString(
+      _stringValue(comboConfig['location']),
+      addressEn,
+    );
+    final comboLocationAr = _firstNonEmptyString(
+      _stringValue(comboConfig['locationAr']),
+      addressAr,
+    );
 
     return RestaurantModel(
       id: id,
@@ -156,10 +393,218 @@ class RestaurantModel extends RestaurantEntity {
       cancellationPolicyAr: cancellationPolicyAr,
       knowBeforeYouGoEn: knowBeforeYouGoEn,
       knowBeforeYouGoAr: knowBeforeYouGoAr,
+      buffetDescription: resolveLocalizedText(
+        english: buffetDescriptionEn,
+        arabic: buffetDescriptionAr,
+      ),
+      buffetHighlights: resolveLocalizedList(
+        english: buffetHighlightsEn,
+        arabic: buffetHighlightsAr,
+      ),
+      buffetIncluded: resolveLocalizedList(
+        english: buffetIncludedEn,
+        arabic: buffetIncludedAr,
+      ),
+      buffetExcluded: resolveLocalizedList(
+        english: buffetExcludedEn,
+        arabic: buffetExcludedAr,
+      ),
+      buffetTermsAndConditions: resolveLocalizedList(
+        english: buffetTermsAndConditionsEn,
+        arabic: buffetTermsAndConditionsAr,
+      ),
+      buffetCancellationPolicy: resolveLocalizedList(
+        english: buffetCancellationPolicyEn,
+        arabic: buffetCancellationPolicyAr,
+      ),
+      buffetAvailableOptions: resolveLocalizedList(
+        english: buffetAvailableOptionsEn,
+        arabic: buffetAvailableOptionsAr,
+      ),
+      buffetLocation: resolveLocalizedText(
+        english: buffetLocationEn,
+        arabic: buffetLocationAr,
+      ),
+      buffetDescriptionEn: buffetDescriptionEn,
+      buffetDescriptionAr: buffetDescriptionAr,
+      buffetHighlightsEn: buffetHighlightsEn,
+      buffetHighlightsAr: buffetHighlightsAr,
+      buffetIncludedEn: buffetIncludedEn,
+      buffetIncludedAr: buffetIncludedAr,
+      buffetExcludedEn: buffetExcludedEn,
+      buffetExcludedAr: buffetExcludedAr,
+      buffetTermsAndConditionsEn: buffetTermsAndConditionsEn,
+      buffetTermsAndConditionsAr: buffetTermsAndConditionsAr,
+      buffetCancellationPolicyEn: buffetCancellationPolicyEn,
+      buffetCancellationPolicyAr: buffetCancellationPolicyAr,
+      buffetAvailableOptionsEn: buffetAvailableOptionsEn,
+      buffetAvailableOptionsAr: buffetAvailableOptionsAr,
+      buffetLocationEn: buffetLocationEn,
+      buffetLocationAr: buffetLocationAr,
+      setMenuDescription: resolveLocalizedText(
+        english: setMenuDescriptionEn,
+        arabic: setMenuDescriptionAr,
+      ),
+      setMenuHighlights: resolveLocalizedList(
+        english: setMenuHighlightsEn,
+        arabic: setMenuHighlightsAr,
+      ),
+      setMenuIncluded: resolveLocalizedList(
+        english: setMenuIncludedEn,
+        arabic: setMenuIncludedAr,
+      ),
+      setMenuTermsAndConditions: resolveLocalizedList(
+        english: setMenuTermsAndConditionsEn,
+        arabic: setMenuTermsAndConditionsAr,
+      ),
+      setMenuCancellationPolicy: resolveLocalizedList(
+        english: setMenuCancellationPolicyEn,
+        arabic: setMenuCancellationPolicyAr,
+      ),
+      setMenuAvailableOptions: resolveLocalizedList(
+        english: setMenuAvailableOptionsEn,
+        arabic: setMenuAvailableOptionsAr,
+      ),
+      setMenuLocation: resolveLocalizedText(
+        english: setMenuLocationEn,
+        arabic: setMenuLocationAr,
+      ),
+      setMenuDescriptionEn: setMenuDescriptionEn,
+      setMenuDescriptionAr: setMenuDescriptionAr,
+      setMenuHighlightsEn: setMenuHighlightsEn,
+      setMenuHighlightsAr: setMenuHighlightsAr,
+      setMenuIncludedEn: setMenuIncludedEn,
+      setMenuIncludedAr: setMenuIncludedAr,
+      setMenuTermsAndConditionsEn: setMenuTermsAndConditionsEn,
+      setMenuTermsAndConditionsAr: setMenuTermsAndConditionsAr,
+      setMenuCancellationPolicyEn: setMenuCancellationPolicyEn,
+      setMenuCancellationPolicyAr: setMenuCancellationPolicyAr,
+      setMenuAvailableOptionsEn: setMenuAvailableOptionsEn,
+      setMenuAvailableOptionsAr: setMenuAvailableOptionsAr,
+      setMenuLocationEn: setMenuLocationEn,
+      setMenuLocationAr: setMenuLocationAr,
+      comboDescription: resolveLocalizedText(
+        english: comboDescriptionEn,
+        arabic: comboDescriptionAr,
+      ),
+      comboHighlights: resolveLocalizedList(
+        english: comboHighlightsEn,
+        arabic: comboHighlightsAr,
+      ),
+      comboIncluded: resolveLocalizedList(
+        english: comboIncludedEn,
+        arabic: comboIncludedAr,
+      ),
+      comboTermsAndConditions: resolveLocalizedList(
+        english: comboTermsAndConditionsEn,
+        arabic: comboTermsAndConditionsAr,
+      ),
+      comboCancellationPolicy: resolveLocalizedList(
+        english: comboCancellationPolicyEn,
+        arabic: comboCancellationPolicyAr,
+      ),
+      comboAvailableOptions: resolveLocalizedList(
+        english: comboAvailableOptionsEn,
+        arabic: comboAvailableOptionsAr,
+      ),
+      comboLocation: resolveLocalizedText(
+        english: comboLocationEn,
+        arabic: comboLocationAr,
+      ),
+      comboDescriptionEn: comboDescriptionEn,
+      comboDescriptionAr: comboDescriptionAr,
+      comboHighlightsEn: comboHighlightsEn,
+      comboHighlightsAr: comboHighlightsAr,
+      comboIncludedEn: comboIncludedEn,
+      comboIncludedAr: comboIncludedAr,
+      comboTermsAndConditionsEn: comboTermsAndConditionsEn,
+      comboTermsAndConditionsAr: comboTermsAndConditionsAr,
+      comboCancellationPolicyEn: comboCancellationPolicyEn,
+      comboCancellationPolicyAr: comboCancellationPolicyAr,
+      comboAvailableOptionsEn: comboAvailableOptionsEn,
+      comboAvailableOptionsAr: comboAvailableOptionsAr,
+      comboLocationEn: comboLocationEn,
+      comboLocationAr: comboLocationAr,
     );
   }
 
   Map<String, dynamic> toMap() {
+    final buffetCatalog = _buildCategoryCatalogContent(
+      descriptionEn: buffetDescriptionEn,
+      description: buffetDescription,
+      descriptionAr: buffetDescriptionAr,
+      highlightsEn: buffetHighlightsEn,
+      highlights: buffetHighlights,
+      highlightsAr: buffetHighlightsAr,
+      includedEn: buffetIncludedEn,
+      included: buffetIncluded,
+      includedAr: buffetIncludedAr,
+      termsEn: buffetTermsAndConditionsEn,
+      terms: buffetTermsAndConditions,
+      termsAr: buffetTermsAndConditionsAr,
+      cancellationEn: buffetCancellationPolicyEn,
+      cancellation: buffetCancellationPolicy,
+      cancellationAr: buffetCancellationPolicyAr,
+      locationEn: buffetLocationEn,
+      location: buffetLocation,
+      locationAr: buffetLocationAr,
+      optionValuesEn: buffetAvailableOptionsEn,
+      optionValues: buffetAvailableOptions,
+      optionValuesAr: buffetAvailableOptionsAr,
+      optionKey: 'availableMeals',
+      excludedEn: buffetExcludedEn,
+      excluded: buffetExcluded,
+      excludedAr: buffetExcludedAr,
+    );
+    final setMenuCatalog = _buildCategoryCatalogContent(
+      descriptionEn: setMenuDescriptionEn,
+      description: setMenuDescription,
+      descriptionAr: setMenuDescriptionAr,
+      highlightsEn: setMenuHighlightsEn,
+      highlights: setMenuHighlights,
+      highlightsAr: setMenuHighlightsAr,
+      includedEn: setMenuIncludedEn,
+      included: setMenuIncluded,
+      includedAr: setMenuIncludedAr,
+      termsEn: setMenuTermsAndConditionsEn,
+      terms: setMenuTermsAndConditions,
+      termsAr: setMenuTermsAndConditionsAr,
+      cancellationEn: setMenuCancellationPolicyEn,
+      cancellation: setMenuCancellationPolicy,
+      cancellationAr: setMenuCancellationPolicyAr,
+      locationEn: setMenuLocationEn,
+      location: setMenuLocation,
+      locationAr: setMenuLocationAr,
+      optionValuesEn: setMenuAvailableOptionsEn,
+      optionValues: setMenuAvailableOptions,
+      optionValuesAr: setMenuAvailableOptionsAr,
+      optionKey: 'availableMeals',
+    );
+    final comboCatalog = _buildCategoryCatalogContent(
+      descriptionEn: comboDescriptionEn,
+      description: comboDescription,
+      descriptionAr: comboDescriptionAr,
+      highlightsEn: comboHighlightsEn,
+      highlights: comboHighlights,
+      highlightsAr: comboHighlightsAr,
+      includedEn: comboIncludedEn,
+      included: comboIncluded,
+      includedAr: comboIncludedAr,
+      termsEn: comboTermsAndConditionsEn,
+      terms: comboTermsAndConditions,
+      termsAr: comboTermsAndConditionsAr,
+      cancellationEn: comboCancellationPolicyEn,
+      cancellation: comboCancellationPolicy,
+      cancellationAr: comboCancellationPolicyAr,
+      locationEn: comboLocationEn,
+      location: comboLocation,
+      locationAr: comboLocationAr,
+      optionValuesEn: comboAvailableOptionsEn,
+      optionValues: comboAvailableOptions,
+      optionValuesAr: comboAvailableOptionsAr,
+      optionKey: 'availableCombos',
+    );
+
     return {
       'name': _baseText(nameEn, name),
       'nameAr': nameAr.trim(),
@@ -194,6 +639,11 @@ class RestaurantModel extends RestaurantEntity {
       'slotsLeft': slotsLeft,
       'priceFromValue': priceFromValue,
       'discountValue': discountValue,
+      'bookingCatalog': {
+        if (buffetCatalog != null) 'buffet': buffetCatalog,
+        if (setMenuCatalog != null) 'setMenu': setMenuCatalog,
+        if (comboCatalog != null) 'combo': comboCatalog,
+      },
     };
   }
 
@@ -279,5 +729,121 @@ class RestaurantModel extends RestaurantEntity {
         .map((value) => value.trim())
         .where((value) => value.isNotEmpty)
         .toList(growable: false);
+  }
+
+  static String _firstNonEmptyString(String primary, String fallback) {
+    if (primary.trim().isNotEmpty) return primary.trim();
+    return fallback.trim();
+  }
+
+  static List<String> _firstNonEmptyList(
+    List<String> primary,
+    List<String> fallback,
+  ) {
+    final normalizedPrimary = _cleanList(primary);
+    if (normalizedPrimary.isNotEmpty) return normalizedPrimary;
+    return _cleanList(fallback);
+  }
+
+  static Map<String, dynamic>? _buildCategoryCatalogContent({
+    required String descriptionEn,
+    required String description,
+    required String descriptionAr,
+    required List<String> highlightsEn,
+    required List<String> highlights,
+    required List<String> highlightsAr,
+    required List<String> includedEn,
+    required List<String> included,
+    required List<String> includedAr,
+    required List<String> termsEn,
+    required List<String> terms,
+    required List<String> termsAr,
+    required List<String> cancellationEn,
+    required List<String> cancellation,
+    required List<String> cancellationAr,
+    required String locationEn,
+    required String location,
+    required String locationAr,
+    required List<String> optionValuesEn,
+    required List<String> optionValues,
+    required List<String> optionValuesAr,
+    required String optionKey,
+    List<String> excludedEn = const [],
+    List<String> excluded = const [],
+    List<String> excludedAr = const [],
+  }) {
+    final content = <String, dynamic>{};
+
+    final resolvedDescription = _baseText(descriptionEn, description);
+    if (resolvedDescription.isNotEmpty) {
+      content['description'] = resolvedDescription;
+    }
+    if (descriptionAr.trim().isNotEmpty) {
+      content['descriptionAr'] = descriptionAr.trim();
+    }
+
+    final resolvedHighlights = _baseList(highlightsEn, highlights);
+    if (resolvedHighlights.isNotEmpty) {
+      content['highlights'] = resolvedHighlights;
+    }
+    final resolvedHighlightsAr = _cleanList(highlightsAr);
+    if (resolvedHighlightsAr.isNotEmpty) {
+      content['highlightsAr'] = resolvedHighlightsAr;
+    }
+
+    final resolvedIncluded = _baseList(includedEn, included);
+    if (resolvedIncluded.isNotEmpty) {
+      content['included'] = resolvedIncluded;
+    }
+    final resolvedIncludedAr = _cleanList(includedAr);
+    if (resolvedIncludedAr.isNotEmpty) {
+      content['includedAr'] = resolvedIncludedAr;
+    }
+
+    final resolvedExcluded = _baseList(excludedEn, excluded);
+    if (resolvedExcluded.isNotEmpty) {
+      content['excluded'] = resolvedExcluded;
+    }
+    final resolvedExcludedAr = _cleanList(excludedAr);
+    if (resolvedExcludedAr.isNotEmpty) {
+      content['excludedAr'] = resolvedExcludedAr;
+    }
+
+    final resolvedTerms = _baseList(termsEn, terms);
+    if (resolvedTerms.isNotEmpty) {
+      content['terms'] = resolvedTerms;
+    }
+    final resolvedTermsAr = _cleanList(termsAr);
+    if (resolvedTermsAr.isNotEmpty) {
+      content['termsAr'] = resolvedTermsAr;
+    }
+
+    final resolvedCancellation = _baseList(cancellationEn, cancellation);
+    if (resolvedCancellation.isNotEmpty) {
+      content['cancellationPolicy'] = resolvedCancellation;
+    }
+    final resolvedCancellationAr = _cleanList(cancellationAr);
+    if (resolvedCancellationAr.isNotEmpty) {
+      content['cancellationPolicyAr'] = resolvedCancellationAr;
+    }
+
+    final resolvedLocation = _baseText(locationEn, location);
+    if (resolvedLocation.isNotEmpty) {
+      content['location'] = resolvedLocation;
+    }
+    if (locationAr.trim().isNotEmpty) {
+      content['locationAr'] = locationAr.trim();
+    }
+
+    final resolvedOptions = _baseList(optionValuesEn, optionValues);
+    if (resolvedOptions.isNotEmpty) {
+      content[optionKey] = resolvedOptions;
+    }
+    final resolvedOptionsAr = _cleanList(optionValuesAr);
+    if (resolvedOptionsAr.isNotEmpty) {
+      content['${optionKey}Ar'] = resolvedOptionsAr;
+    }
+
+    return content.isEmpty ? null : content;
   }
 }

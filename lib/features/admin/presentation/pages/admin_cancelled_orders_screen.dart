@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
 import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
@@ -196,8 +198,8 @@ class _CancelledOrderCard extends StatelessWidget {
           SizedBox(height: 6.h),
           Text('$date  $startTime', style: AppTextStyles.cardMeta),
           SizedBox(height: 6.h),
-          Text(
-            'Total: $currency ${total.toStringAsFixed(1)}',
+          CurrencyAmountInlineText(
+            text: 'Total: ${formatCurrency(currency, total)}',
             style: AppTextStyles.cardPrice,
           ),
           SizedBox(height: 8.h),

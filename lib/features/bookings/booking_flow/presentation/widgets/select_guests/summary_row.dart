@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 
 class SummaryRow extends StatelessWidget {
   const SummaryRow({
     super.key,
     required this.label,
-    required this.value,
+    this.value = '',
+    this.valueWidget,
     this.isBold = false,
   });
 
   final String label;
   final String value;
+  final Widget? valueWidget;
   final bool isBold;
 
   @override
@@ -26,7 +29,12 @@ class SummaryRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: textStyle),
-        Text(value, style: textStyle),
+        valueWidget ??
+            CurrencyAmountInlineText(
+              text: value,
+              style: textStyle,
+              textAlign: TextAlign.end,
+            ),
       ],
     );
   }

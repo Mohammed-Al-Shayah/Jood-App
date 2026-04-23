@@ -51,6 +51,72 @@ class RestaurantEntity extends Equatable {
     this.cancellationPolicyAr = const [],
     this.knowBeforeYouGoEn = const [],
     this.knowBeforeYouGoAr = const [],
+    this.buffetDescription = '',
+    this.buffetHighlights = const [],
+    this.buffetIncluded = const [],
+    this.buffetExcluded = const [],
+    this.buffetTermsAndConditions = const [],
+    this.buffetCancellationPolicy = const [],
+    this.buffetAvailableOptions = const [],
+    this.buffetLocation = '',
+    this.buffetDescriptionEn = '',
+    this.buffetDescriptionAr = '',
+    this.buffetHighlightsEn = const [],
+    this.buffetHighlightsAr = const [],
+    this.buffetIncludedEn = const [],
+    this.buffetIncludedAr = const [],
+    this.buffetExcludedEn = const [],
+    this.buffetExcludedAr = const [],
+    this.buffetTermsAndConditionsEn = const [],
+    this.buffetTermsAndConditionsAr = const [],
+    this.buffetCancellationPolicyEn = const [],
+    this.buffetCancellationPolicyAr = const [],
+    this.buffetAvailableOptionsEn = const [],
+    this.buffetAvailableOptionsAr = const [],
+    this.buffetLocationEn = '',
+    this.buffetLocationAr = '',
+    this.setMenuDescription = '',
+    this.setMenuHighlights = const [],
+    this.setMenuIncluded = const [],
+    this.setMenuTermsAndConditions = const [],
+    this.setMenuCancellationPolicy = const [],
+    this.setMenuAvailableOptions = const [],
+    this.setMenuLocation = '',
+    this.setMenuDescriptionEn = '',
+    this.setMenuDescriptionAr = '',
+    this.setMenuHighlightsEn = const [],
+    this.setMenuHighlightsAr = const [],
+    this.setMenuIncludedEn = const [],
+    this.setMenuIncludedAr = const [],
+    this.setMenuTermsAndConditionsEn = const [],
+    this.setMenuTermsAndConditionsAr = const [],
+    this.setMenuCancellationPolicyEn = const [],
+    this.setMenuCancellationPolicyAr = const [],
+    this.setMenuAvailableOptionsEn = const [],
+    this.setMenuAvailableOptionsAr = const [],
+    this.setMenuLocationEn = '',
+    this.setMenuLocationAr = '',
+    this.comboDescription = '',
+    this.comboHighlights = const [],
+    this.comboIncluded = const [],
+    this.comboTermsAndConditions = const [],
+    this.comboCancellationPolicy = const [],
+    this.comboAvailableOptions = const [],
+    this.comboLocation = '',
+    this.comboDescriptionEn = '',
+    this.comboDescriptionAr = '',
+    this.comboHighlightsEn = const [],
+    this.comboHighlightsAr = const [],
+    this.comboIncludedEn = const [],
+    this.comboIncludedAr = const [],
+    this.comboTermsAndConditionsEn = const [],
+    this.comboTermsAndConditionsAr = const [],
+    this.comboCancellationPolicyEn = const [],
+    this.comboCancellationPolicyAr = const [],
+    this.comboAvailableOptionsEn = const [],
+    this.comboAvailableOptionsAr = const [],
+    this.comboLocationEn = '',
+    this.comboLocationAr = '',
   });
 
   final String id;
@@ -102,6 +168,72 @@ class RestaurantEntity extends Equatable {
   final List<String> cancellationPolicyAr;
   final List<String> knowBeforeYouGoEn;
   final List<String> knowBeforeYouGoAr;
+  final String buffetDescription;
+  final List<String> buffetHighlights;
+  final List<String> buffetIncluded;
+  final List<String> buffetExcluded;
+  final List<String> buffetTermsAndConditions;
+  final List<String> buffetCancellationPolicy;
+  final List<String> buffetAvailableOptions;
+  final String buffetLocation;
+  final String buffetDescriptionEn;
+  final String buffetDescriptionAr;
+  final List<String> buffetHighlightsEn;
+  final List<String> buffetHighlightsAr;
+  final List<String> buffetIncludedEn;
+  final List<String> buffetIncludedAr;
+  final List<String> buffetExcludedEn;
+  final List<String> buffetExcludedAr;
+  final List<String> buffetTermsAndConditionsEn;
+  final List<String> buffetTermsAndConditionsAr;
+  final List<String> buffetCancellationPolicyEn;
+  final List<String> buffetCancellationPolicyAr;
+  final List<String> buffetAvailableOptionsEn;
+  final List<String> buffetAvailableOptionsAr;
+  final String buffetLocationEn;
+  final String buffetLocationAr;
+  final String setMenuDescription;
+  final List<String> setMenuHighlights;
+  final List<String> setMenuIncluded;
+  final List<String> setMenuTermsAndConditions;
+  final List<String> setMenuCancellationPolicy;
+  final List<String> setMenuAvailableOptions;
+  final String setMenuLocation;
+  final String setMenuDescriptionEn;
+  final String setMenuDescriptionAr;
+  final List<String> setMenuHighlightsEn;
+  final List<String> setMenuHighlightsAr;
+  final List<String> setMenuIncludedEn;
+  final List<String> setMenuIncludedAr;
+  final List<String> setMenuTermsAndConditionsEn;
+  final List<String> setMenuTermsAndConditionsAr;
+  final List<String> setMenuCancellationPolicyEn;
+  final List<String> setMenuCancellationPolicyAr;
+  final List<String> setMenuAvailableOptionsEn;
+  final List<String> setMenuAvailableOptionsAr;
+  final String setMenuLocationEn;
+  final String setMenuLocationAr;
+  final String comboDescription;
+  final List<String> comboHighlights;
+  final List<String> comboIncluded;
+  final List<String> comboTermsAndConditions;
+  final List<String> comboCancellationPolicy;
+  final List<String> comboAvailableOptions;
+  final String comboLocation;
+  final String comboDescriptionEn;
+  final String comboDescriptionAr;
+  final List<String> comboHighlightsEn;
+  final List<String> comboHighlightsAr;
+  final List<String> comboIncludedEn;
+  final List<String> comboIncludedAr;
+  final List<String> comboTermsAndConditionsEn;
+  final List<String> comboTermsAndConditionsAr;
+  final List<String> comboCancellationPolicyEn;
+  final List<String> comboCancellationPolicyAr;
+  final List<String> comboAvailableOptionsEn;
+  final List<String> comboAvailableOptionsAr;
+  final String comboLocationEn;
+  final String comboLocationAr;
 
   @override
   List<Object?> get props => [
@@ -154,5 +286,71 @@ class RestaurantEntity extends Equatable {
     cancellationPolicyAr,
     knowBeforeYouGoEn,
     knowBeforeYouGoAr,
+    buffetDescription,
+    buffetHighlights,
+    buffetIncluded,
+    buffetExcluded,
+    buffetTermsAndConditions,
+    buffetCancellationPolicy,
+    buffetAvailableOptions,
+    buffetLocation,
+    buffetDescriptionEn,
+    buffetDescriptionAr,
+    buffetHighlightsEn,
+    buffetHighlightsAr,
+    buffetIncludedEn,
+    buffetIncludedAr,
+    buffetExcludedEn,
+    buffetExcludedAr,
+    buffetTermsAndConditionsEn,
+    buffetTermsAndConditionsAr,
+    buffetCancellationPolicyEn,
+    buffetCancellationPolicyAr,
+    buffetAvailableOptionsEn,
+    buffetAvailableOptionsAr,
+    buffetLocationEn,
+    buffetLocationAr,
+    setMenuDescription,
+    setMenuHighlights,
+    setMenuIncluded,
+    setMenuTermsAndConditions,
+    setMenuCancellationPolicy,
+    setMenuAvailableOptions,
+    setMenuLocation,
+    setMenuDescriptionEn,
+    setMenuDescriptionAr,
+    setMenuHighlightsEn,
+    setMenuHighlightsAr,
+    setMenuIncludedEn,
+    setMenuIncludedAr,
+    setMenuTermsAndConditionsEn,
+    setMenuTermsAndConditionsAr,
+    setMenuCancellationPolicyEn,
+    setMenuCancellationPolicyAr,
+    setMenuAvailableOptionsEn,
+    setMenuAvailableOptionsAr,
+    setMenuLocationEn,
+    setMenuLocationAr,
+    comboDescription,
+    comboHighlights,
+    comboIncluded,
+    comboTermsAndConditions,
+    comboCancellationPolicy,
+    comboAvailableOptions,
+    comboLocation,
+    comboDescriptionEn,
+    comboDescriptionAr,
+    comboHighlightsEn,
+    comboHighlightsAr,
+    comboIncludedEn,
+    comboIncludedAr,
+    comboTermsAndConditionsEn,
+    comboTermsAndConditionsAr,
+    comboCancellationPolicyEn,
+    comboCancellationPolicyAr,
+    comboAvailableOptionsEn,
+    comboAvailableOptionsAr,
+    comboLocationEn,
+    comboLocationAr,
   ];
 }

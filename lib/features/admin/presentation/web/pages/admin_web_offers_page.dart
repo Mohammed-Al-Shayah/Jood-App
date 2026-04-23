@@ -5,6 +5,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_offers_cubit.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_offers_state.dart';
@@ -778,10 +780,10 @@ class _OffersTable extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_priceLabel(offer)),
+                        CurrencyAmountInlineText(text: _priceLabel(offer)),
                         if (_originalPriceLabel(offer).isNotEmpty)
-                          Text(
-                            _originalPriceLabel(offer),
+                          CurrencyAmountInlineText(
+                            text: _originalPriceLabel(offer),
                             style: AppTextStyles.cardMeta.copyWith(
                               decoration: TextDecoration.lineThrough,
                             ),
@@ -830,12 +832,12 @@ class _OffersTable extends StatelessWidget {
   }
 
   String _priceLabel(OfferEntity offer) {
-    final amount = '${offer.currency} ${offer.priceAdult.toStringAsFixed(1)}';
+    final amount = formatCurrency(offer.currency, offer.priceAdult);
     if (offer.usesUnifiedGuestCount) {
       final unit = _categoryKey(offer) == 'combo' ? 'combo' : 'person';
       return '$amount / $unit';
     }
-    return '$amount / ${offer.priceChild.toStringAsFixed(1)}';
+    return '$amount / ${formatCurrency(offer.currency, offer.priceChild)}';
   }
 
   String _originalPriceLabel(OfferEntity offer) {
@@ -843,7 +845,7 @@ class _OffersTable extends StatelessWidget {
         offer.priceAdultOriginal <= offer.priceAdult) {
       return '';
     }
-    return '${offer.currency} ${offer.priceAdultOriginal.toStringAsFixed(1)}';
+    return formatCurrency(offer.currency, offer.priceAdultOriginal);
   }
 
   String _remainingLabel(OfferEntity offer) {

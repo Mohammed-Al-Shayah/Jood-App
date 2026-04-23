@@ -16,6 +16,10 @@ class AdModel extends AdEntity {
     required super.targetOfferId,
     required super.targetOfferTitle,
     required super.targetOfferDate,
+    required super.startDate,
+    required super.startTime,
+    required super.endDate,
+    required super.endTime,
     required super.createdAt,
     required super.updatedAt,
   });
@@ -35,6 +39,10 @@ class AdModel extends AdEntity {
       targetOfferId: (data['targetOfferId'] as String? ?? '').trim(),
       targetOfferTitle: (data['targetOfferTitle'] as String? ?? '').trim(),
       targetOfferDate: (data['targetOfferDate'] as String? ?? '').trim(),
+      startDate: (data['startDate'] as String? ?? '').trim(),
+      startTime: (data['startTime'] as String? ?? '').trim(),
+      endDate: (data['endDate'] as String? ?? '').trim(),
+      endTime: (data['endTime'] as String? ?? '').trim(),
       createdAt: _toDateTime(data['createdAt']),
       updatedAt: _toDateTime(data['updatedAt']),
     );
@@ -53,6 +61,10 @@ class AdModel extends AdEntity {
       'targetOfferId': targetOfferId.trim(),
       'targetOfferTitle': targetOfferTitle.trim(),
       'targetOfferDate': targetOfferDate.trim(),
+      'startDate': startDate.trim(),
+      'startTime': startTime.trim(),
+      'endDate': endDate.trim(),
+      'endTime': endTime.trim(),
     };
   }
 

@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_filter_dropdown_field.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
@@ -500,8 +502,9 @@ class _RefundCard extends StatelessWidget {
                     'Schedule: ${booking.date} ${booking.startTime}',
                     style: AppTextStyles.cardMeta,
                   ),
-                  Text(
-                    'Amount: ${booking.currency} ${booking.total.toStringAsFixed(1)}',
+                  CurrencyAmountInlineText(
+                    text:
+                        'Amount: ${formatCurrency(booking.currency, booking.total)}',
                     style: AppTextStyles.cardMeta.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,

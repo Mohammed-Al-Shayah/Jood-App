@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import 'date_utils.dart';
 import 'guest_pricing_utils.dart';
+import 'payment_amount_utils.dart';
 
 class SeedFirestore {
   const SeedFirestore._();
@@ -1938,7 +1939,7 @@ class SeedFirestore {
     };
   }
 
-  static String _moneyEn(double amount) => 'OMR ${amount.toStringAsFixed(1)}';
+  static String _moneyEn(double amount) => formatCurrency('OMR', amount);
 
   static String _moneyAr(double amount) => '${amount.toStringAsFixed(1)} ر.ع';
 

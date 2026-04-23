@@ -5,6 +5,7 @@ import '../../../restaurants/data/models/restaurant_model.dart';
 import '../../../restaurants/domain/entities/restaurant_entity.dart';
 import '../../../../core/utils/number_utils.dart';
 import '../../../../core/utils/date_utils.dart';
+import '../../../../core/utils/payment_amount_utils.dart';
 
 abstract class RestaurantRemoteDataSource {
   Future<List<RestaurantEntity>> fetchRestaurants();
@@ -50,7 +51,11 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
         final status = (offer['status'] as String? ?? 'active')
             .toLowerCase()
             .replaceAll(' ', '');
-        if (status == 'soldout' || status == 'sold_out') continue;
+        if (status == 'soldout' ||
+            status == 'sold_out' ||
+            _isOfferExpired(offer)) {
+          continue;
+        }
         final priceAdult = NumberUtils.toDouble(offer['priceAdult']);
         if (priceAdult > 0 && priceAdult < minPrice) {
           minPrice = priceAdult;
@@ -85,11 +90,13 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
         minPrice: resolvedCurrent,
         preferComputed: resolvedCurrent > 0 && resolvedOriginal > 0,
       );
-      final labelCurrency = currency.isNotEmpty
-          ? currency
-          : _currencyFromLabel(data['priceFrom']) ??
-                _currencyFromLabel(data['discount']) ??
-                '';
+      final labelCurrency = displayCurrencyLabel(
+        currency.isNotEmpty
+            ? currency
+            : currencyFromFormattedLabel(data['priceFrom']) ??
+                  currencyFromFormattedLabel(data['discount']) ??
+                  '',
+      );
       if (resolvedCurrent > 0) {
         final priceLabel =
             '${labelCurrency.isEmpty ? '' : '$labelCurrency '}${resolvedCurrent.toStringAsFixed(1)}';
@@ -108,7 +115,15 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
           data['priceFromValue'] = resolvedCurrent;
         }
       }
-      if ((data['slotsLeft'] as String?)?.isEmpty ?? true) {
+      final hasAvailableTodayOffers = minPrice.isFinite;
+      if (!hasAvailableTodayOffers) {
+        data['badge'] = '';
+        data['priceFrom'] = '';
+        data['discount'] = '';
+        data['priceFromValue'] = 0;
+        data['discountValue'] = 0;
+        data['slotsLeft'] = AppStrings.noOffersTodayExploreOtherDates;
+      } else if ((data['slotsLeft'] as String?)?.isEmpty ?? true) {
         if (remainingTotal > 0) {
           data['slotsLeft'] = AppStrings.slotsLeftCount(remainingTotal);
         }
@@ -116,7 +131,9 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
       data['priceFromValue'] ??= NumberUtils.parseNumber(data['priceFrom']);
       data['discountValue'] ??= NumberUtils.parseNumber(data['discount']);
 
-      if (discountPercent > 0) {
+      if (!hasAvailableTodayOffers) {
+        data['badge'] = '';
+      } else if (discountPercent > 0) {
         data['badge'] = AppStrings.percentOff(discountPercent.round());
       } else {
         final ratingValue = NumberUtils.toDouble(data['rating']);
@@ -146,27 +163,6 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
 
   static double _max(double a, double b) {
     return a > b ? a : b;
-  }
-
-  static String? _currencyFromLabel(dynamic value) {
-    if (value == null) return null;
-    final text = value.toString().trim();
-    if (text.isEmpty) return null;
-    final buffer = StringBuffer();
-    for (final rune in text.runes) {
-      final character = String.fromCharCode(rune);
-      final isLetter =
-          (rune >= 65 && rune <= 90) || (rune >= 97 && rune <= 122);
-      if (isLetter) {
-        buffer.write(character);
-        continue;
-      }
-      if (buffer.isNotEmpty) {
-        break;
-      }
-    }
-    final result = buffer.toString();
-    return result.isEmpty ? null : result;
   }
 
   static double _resolveDiscountPercent({
@@ -210,5 +206,56 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
       default:
         return trimmed;
     }
+  }
+
+  static bool _isOfferExpired(Map<String, dynamic> offer) {
+    final date = DateTime.tryParse((offer['date'] as String? ?? '').trim());
+    if (date == null) return false;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final offerDate = DateTime(date.year, date.month, date.day);
+    if (offerDate.isBefore(today)) return true;
+    if (offerDate.isAfter(today)) return false;
+
+    final endMinutes =
+        _parseTimeToMinutes((offer['endTime'] as String? ?? '').trim()) ??
+        _parseTimeToMinutes((offer['startTime'] as String? ?? '').trim());
+    if (endMinutes == null) return false;
+
+    final nowMinutes = now.hour * 60 + now.minute;
+    return nowMinutes >= endMinutes;
+  }
+
+  static int? _parseTimeToMinutes(String value) {
+    final trimmed = value.trim().toLowerCase();
+    if (trimmed.isEmpty) return null;
+
+    String? suffix;
+    if (trimmed.endsWith('am')) {
+      suffix = 'am';
+    } else if (trimmed.endsWith('pm')) {
+      suffix = 'pm';
+    }
+
+    if (suffix != null) {
+      final timePart = trimmed
+          .substring(0, trimmed.length - suffix.length)
+          .trim();
+      final pieces = timePart.split(':');
+      final hour = int.tryParse(pieces.isEmpty ? '' : pieces[0]);
+      final minute = pieces.length > 1 ? int.tryParse(pieces[1]) ?? 0 : 0;
+      if (hour == null) return null;
+      var normalizedHour = hour % 12;
+      if (suffix == 'pm') normalizedHour += 12;
+      return normalizedHour * 60 + minute;
+    }
+
+    final pieces = trimmed.split(':');
+    if (pieces.length != 2) return null;
+    final hour = int.tryParse(pieces[0]);
+    final minute = int.tryParse(pieces[1]);
+    if (hour == null || minute == null) return null;
+    return hour * 60 + minute;
   }
 }

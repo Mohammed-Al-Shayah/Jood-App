@@ -6,6 +6,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/date_utils.dart';
 import 'package:jood/core/utils/guest_pricing_utils.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_input_decoration.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
@@ -155,7 +156,9 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     _dateRangeController = TextEditingController();
     _startTimeController = TextEditingController(text: offer?.startTime ?? '');
     _endTimeController = TextEditingController(text: offer?.endTime ?? '');
-    _currencyController = TextEditingController(text: offer?.currency ?? 'OMR');
+    _currencyController = TextEditingController(
+      text: displayCurrencyLabel(offer?.currency ?? 'OMR'),
+    );
     _priceAdultController = TextEditingController(
       text: offer?.priceAdult.toString() ?? '',
     );
@@ -1374,7 +1377,10 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     final venueId = _venueId ?? '';
     final startTime = _startTimeController.text.trim();
     final endTime = _endTimeController.text.trim();
-    final currency = _currencyController.text.trim();
+    final typedCurrency = _currencyController.text.trim();
+    final currency = isOmaniRialCurrency(typedCurrency)
+        ? 'OMR'
+        : typedCurrency;
     final bookingCategory = _category;
     final bookableType = _isAttraction ? 'attraction' : 'restaurant';
     final guestPricingMode = _isAttraction

@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
@@ -239,7 +241,7 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
                       width: cardWidth,
                       child: AdminWebMetricCard(
                         title: 'Gross revenue',
-                        value: 'OMR ${revenue.toStringAsFixed(1)}',
+                        value: formatCurrency('OMR', revenue),
                         icon: Icons.payments_outlined,
                         iconColor: const Color(0xFF2563EB),
                         caption: 'Excludes cancelled and failed bookings',
@@ -414,8 +416,8 @@ class _BookingsTable extends StatelessWidget {
                   DataCell(Text('${booking.adults + booking.children}')),
                   DataCell(Text('${booking.date}  ${booking.startTime}')),
                   DataCell(
-                    Text(
-                      '${booking.currency} ${booking.total.toStringAsFixed(1)}',
+                    CurrencyAmountInlineText(
+                      text: formatCurrency(booking.currency, booking.total),
                     ),
                   ),
                   DataCell(

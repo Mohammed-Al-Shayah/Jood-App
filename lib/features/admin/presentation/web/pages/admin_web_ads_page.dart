@@ -114,6 +114,10 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
         ad.targetOfferTitle,
         ad.targetCategory,
         ad.targetOfferDate,
+        ad.startDate,
+        ad.startTime,
+        ad.endDate,
+        ad.endTime,
       ].join(' ').toLowerCase();
       return haystack.contains(query);
     }).toList(growable: false);
@@ -142,7 +146,9 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
           }
 
           final filteredAds = _filteredAds(state.ads);
-          final activeCount = state.ads.where((ad) => ad.isActive).length;
+          final activeCount = state.ads
+              .where((ad) => ad.canShowOnHomeSliderAt())
+              .length;
           final uniqueVenues = state.ads
               .map((ad) => ad.targetVenueId)
               .where((id) => id.trim().isNotEmpty)
@@ -184,7 +190,7 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
                           value: '$activeCount',
                           icon: Icons.check_circle_outline,
                           iconColor: const Color(0xFF0E9F6E),
-                          caption: 'Visible on the home slider',
+                          caption: 'Visible on the home slider right now',
                         ),
                       ),
                       SizedBox(
@@ -212,7 +218,7 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
                           controller: _searchController,
                           decoration: InputDecoration(
                             hintText:
-                                'Search by ad title, venue, offer, or date',
+                                'Search by ad title, venue, offer, or schedule',
                             prefixIcon: const Icon(Icons.search_rounded),
                             filled: true,
                             fillColor: const Color(0xFFF6F7FB),
@@ -293,12 +299,13 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
                             DataColumn(label: Text('Category')),
                             DataColumn(label: Text('Venue')),
                             DataColumn(label: Text('Offer')),
-                            DataColumn(label: Text('Date')),
+                            DataColumn(label: Text('Schedule')),
                             DataColumn(label: Text('Duration')),
                             DataColumn(label: Text('Status')),
                             DataColumn(label: Text('Actions')),
                           ],
                           rows: filteredAds.map((ad) {
+                            final status = _statusFor(ad);
                             return DataRow(
                               cells: [
                                 DataCell(
@@ -332,14 +339,21 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
                                     ),
                                   ),
                                 ),
-                                DataCell(Text(ad.targetOfferDate)),
+                                DataCell(
+                                  SizedBox(
+                                    width: 260.w,
+                                    child: Text(
+                                      _scheduleLabel(ad),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
                                 DataCell(Text('${ad.resolvedDisplaySeconds}s')),
                                 DataCell(
                                   _AdsStatusPill(
-                                    label: ad.isActive ? 'Active' : 'Inactive',
-                                    color: ad.isActive
-                                        ? const Color(0xFF0E9F6E)
-                                        : const Color(0xFFF59E0B),
+                                    label: status.label,
+                                    color: status.color,
                                   ),
                                 ),
                                 DataCell(
@@ -390,6 +404,46 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
 }
 
 enum _AdsView { list, create, edit }
+
+_AdStatus _statusFor(AdEntity ad) {
+  final now = DateTime.now();
+  if (!ad.isActive) {
+    return const _AdStatus(label: 'Inactive', color: Color(0xFFF59E0B));
+  }
+
+  final start = ad.scheduleStartAt;
+  final end = ad.scheduleEndAt;
+  if (start != null && now.isBefore(start)) {
+    return const _AdStatus(label: 'Scheduled', color: Color(0xFF2563EB));
+  }
+  if (end != null && now.isAfter(end)) {
+    return const _AdStatus(label: 'Ended', color: Color(0xFF6B7280));
+  }
+  if (ad.canShowOnHomeSliderAt(now)) {
+    return const _AdStatus(label: 'Active', color: Color(0xFF0E9F6E));
+  }
+
+  return const _AdStatus(label: 'Inactive', color: Color(0xFFF59E0B));
+}
+
+String _scheduleLabel(AdEntity ad) {
+  final startDate = ad.startDate.trim().isNotEmpty
+      ? ad.startDate.trim()
+      : ad.targetOfferDate.trim();
+  final endDate = ad.endDate.trim().isNotEmpty
+      ? ad.endDate.trim()
+      : ad.targetOfferDate.trim();
+  final startTime = ad.startTime.trim().isEmpty ? '00:00' : ad.startTime.trim();
+  final endTime = ad.endTime.trim().isEmpty ? '23:59' : ad.endTime.trim();
+  return '$startDate $startTime -> $endDate $endTime';
+}
+
+class _AdStatus {
+  const _AdStatus({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+}
 
 class _AdsStatusPill extends StatelessWidget {
   const _AdsStatusPill({required this.label, required this.color});

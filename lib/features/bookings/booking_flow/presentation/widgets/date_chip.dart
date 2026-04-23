@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'date_utils.dart';
 
 class DateChip extends StatelessWidget {
@@ -72,8 +73,8 @@ class DateChip extends StatelessWidget {
                 ),
                 if (price != null) ...[
                   SizedBox(height: 2.h),
-                  Text(
-                    _formatPrice(price!, currency),
+                  CurrencyAmountInlineText(
+                    text: _formatPrice(price!, currency),
                     style: AppTextStyles.cardMeta.copyWith(
                       color: subColor,
                       fontSize: 11.sp,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import 'package:jood/core/widgets/currency_amount_text.dart';
+
 class BottomCtaBar extends StatelessWidget {
   const BottomCtaBar({
     super.key,
@@ -49,7 +51,13 @@ class BottomCtaBar extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: 14.h),
               elevation: 0,
             ),
-            child: Text(label, style: textStyle),
+            child: CurrencyAmountInlineText(
+              text: label,
+              style: textStyle,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ),
       ),

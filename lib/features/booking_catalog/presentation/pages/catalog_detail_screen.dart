@@ -20,6 +20,9 @@ class CatalogDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final usesRestaurantStructuredSections = _usesRestaurantStructuredSections(
+      item.category,
+    );
     final description = item.description.trim().isNotEmpty
         ? item.description.trim()
         : _fallbackDescription(item.category);
@@ -206,37 +209,42 @@ class CatalogDetailScreen extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: 18.h),
-                  CatalogInfoSection(
-                    title: _highlightsTitle(item.category),
-                    items: item.highlights,
-                    emptyLabel:
-                        AppStrings.highlightsWillAppearHereOnceConfigured,
-                  ),
-                  SizedBox(height: 12.h),
-                  CatalogInfoSection(
-                    title: AppStrings.whatsIncluded,
-                    items: item.inclusions,
-                    emptyLabel: AppStrings.includedDetailsWillAppearHere,
-                  ),
-                  SizedBox(height: 12.h),
-                  if (item.category == CatalogCategoryType.attraction)
+                  if (usesRestaurantStructuredSections)
+                    ..._buildRestaurantCategorySections(item)
+                  else ...[
                     CatalogInfoSection(
-                      title: AppStrings.packagesOverview,
-                      items: item.packageOverview,
-                      emptyLabel: AppStrings
-                          .packagesWillBeLoadedFromAttractionConfiguration,
-                    )
-                  else
-                    CatalogInfoSection(
-                      title: item.category == CatalogCategoryType.combo
-                          ? AppStrings.availableCombos
-                          : AppStrings.availableOptions,
-                      items: item.availableMeals,
-                      emptyLabel: AppStrings
-                          .optionsWillAppearAutomaticallyWhenConfigured,
+                      title: _highlightsTitle(item.category),
+                      items: item.highlights,
+                      emptyLabel:
+                          AppStrings.highlightsWillAppearHereOnceConfigured,
                     ),
-                  if (item.requiresMenuItemSelection ||
-                      item.bookingNotes.isNotEmpty) ...[
+                    SizedBox(height: 12.h),
+                    CatalogInfoSection(
+                      title: AppStrings.whatsIncluded,
+                      items: item.inclusions,
+                      emptyLabel: AppStrings.includedDetailsWillAppearHere,
+                    ),
+                    SizedBox(height: 12.h),
+                    if (item.category == CatalogCategoryType.attraction)
+                      CatalogInfoSection(
+                        title: AppStrings.packagesOverview,
+                        items: item.packageOverview,
+                        emptyLabel: AppStrings
+                            .packagesWillBeLoadedFromAttractionConfiguration,
+                      )
+                    else
+                      CatalogInfoSection(
+                        title: item.category == CatalogCategoryType.combo
+                            ? AppStrings.availableCombos
+                            : AppStrings.availableOptions,
+                        items: item.availableMeals,
+                        emptyLabel: AppStrings
+                            .optionsWillAppearAutomaticallyWhenConfigured,
+                      ),
+                  ],
+                  if (item.category == CatalogCategoryType.attraction &&
+                      (item.requiresMenuItemSelection ||
+                          item.bookingNotes.isNotEmpty)) ...[
                     SizedBox(height: 12.h),
                     Container(
                       padding: EdgeInsets.all(14.r),
@@ -342,4 +350,242 @@ String _highlightsTitle(CatalogCategoryType category) {
   return category == CatalogCategoryType.attraction
       ? AppStrings.highlightsTitle
       : AppStrings.experienceHighlights;
+}
+
+bool _usesRestaurantStructuredSections(CatalogCategoryType category) {
+  return category == CatalogCategoryType.buffet ||
+      category == CatalogCategoryType.setMenu ||
+      category == CatalogCategoryType.combo;
+}
+
+List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
+  final widgets = <Widget>[
+    _BuffetLocationSection(item: item),
+    SizedBox(height: 12.h),
+  ];
+
+  final sections = switch (item.category) {
+    CatalogCategoryType.buffet => [
+      _CatalogSectionConfig(
+        title: AppStrings.whatsIncluded,
+        items: item.inclusions,
+        emptyLabel: AppStrings.includedDetailsWillAppearHere,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.availableOptions,
+        items: item.availableMeals,
+        emptyLabel: AppStrings.optionsWillAppearAutomaticallyWhenConfigured,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.experienceHighlights,
+        items: item.highlights,
+        emptyLabel: AppStrings.highlightsWillAppearHereOnceConfigured,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.whatsExcluded,
+        items: item.exclusions,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.termsAndConditions,
+        items: _termsItemsForCategory(item),
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.cancellationTitle,
+        items: item.cancellationPolicy,
+      ),
+    ],
+    CatalogCategoryType.setMenu => [
+      _CatalogSectionConfig(
+        title: AppStrings.experienceHighlights,
+        items: item.highlights,
+        emptyLabel: AppStrings.highlightsWillAppearHereOnceConfigured,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.termsAndConditions,
+        items: _termsItemsForCategory(item),
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.whatsIncluded,
+        items: item.inclusions,
+        emptyLabel: AppStrings.includedDetailsWillAppearHere,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.cancellationTitle,
+        items: item.cancellationPolicy,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.availableOptions,
+        items: item.availableMeals,
+        emptyLabel: AppStrings.optionsWillAppearAutomaticallyWhenConfigured,
+      ),
+    ],
+    CatalogCategoryType.combo => [
+      _CatalogSectionConfig(
+        title: AppStrings.experienceHighlights,
+        items: item.highlights,
+        emptyLabel: AppStrings.highlightsWillAppearHereOnceConfigured,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.termsAndConditions,
+        items: _termsItemsForCategory(item),
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.whatsIncluded,
+        items: item.inclusions,
+        emptyLabel: AppStrings.includedDetailsWillAppearHere,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.cancellationTitle,
+        items: item.cancellationPolicy,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.availableCombos,
+        items: item.availableMeals,
+        emptyLabel: AppStrings.optionsWillAppearAutomaticallyWhenConfigured,
+      ),
+    ],
+    CatalogCategoryType.attraction => const <_CatalogSectionConfig>[],
+  };
+
+  for (var index = 0; index < sections.length; index++) {
+    final section = sections[index];
+    widgets.add(
+      CatalogInfoSection(
+        title: section.title,
+        items: section.items,
+        emptyLabel: section.emptyLabel,
+        collapsible: true,
+        initiallyExpanded: false,
+      ),
+    );
+    if (index != sections.length - 1) {
+      widgets.add(SizedBox(height: 12.h));
+    }
+  }
+  return widgets;
+}
+
+List<String> _termsItemsForCategory(CatalogItemEntity item) {
+  final items = <String>[];
+  if (item.category == CatalogCategoryType.setMenu &&
+      item.requiresMenuItemSelection) {
+    items.add(AppStrings.bookingFlowSetMenuSelectionNote);
+  }
+  if (item.category == CatalogCategoryType.combo) {
+    items.add(AppStrings.bookingFlowComboSelectionNote);
+  }
+  items.addAll(item.termsAndConditions);
+  return _uniqueNonEmptyItems(items);
+}
+
+List<String> _uniqueNonEmptyItems(List<String> items) {
+  final seen = <String>{};
+  final result = <String>[];
+  for (final item in items) {
+    final normalized = item.trim();
+    if (normalized.isEmpty) continue;
+    if (seen.add(normalized)) {
+      result.add(normalized);
+    }
+  }
+  return result;
+}
+
+class _CatalogSectionConfig {
+  const _CatalogSectionConfig({
+    required this.title,
+    required this.items,
+    this.emptyLabel = 'No details available yet.',
+  });
+
+  final String title;
+  final List<String> items;
+  final String emptyLabel;
+}
+
+class _BuffetLocationSection extends StatelessWidget {
+  const _BuffetLocationSection({required this.item});
+
+  final CatalogItemEntity item;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = _locationSummary(item);
+
+    return Container(
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFFF1FBFA),
+            AppColors.cardBackground,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18.r),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.18),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowColor,
+            blurRadius: 14.r,
+            offset: Offset(0, 6.h),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46.w,
+            height: 46.w,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(15.r),
+            ),
+            child: Icon(
+              Icons.location_on_outlined,
+              color: AppColors.primaryDark,
+              size: 22.sp,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  AppStrings.locationTitle,
+                  style: AppTextStyles.sectionTitle.copyWith(
+                    fontSize: 15.sp,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Text(
+                  summary,
+                  style: AppTextStyles.cardMeta.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 13.sp,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _locationSummary(CatalogItemEntity item) {
+  final location = item.location.trim();
+  if (location.isNotEmpty) return location;
+  final address = item.address.trim();
+  if (address.isNotEmpty) return address;
+  final meta = item.metaLabel.trim();
+  if (meta.isNotEmpty) return meta;
+  return 'No details available yet.';
 }

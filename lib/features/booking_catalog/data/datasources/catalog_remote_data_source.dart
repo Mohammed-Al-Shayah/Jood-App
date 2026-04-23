@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../core/utils/number_utils.dart';
+import '../../../../core/utils/payment_amount_utils.dart';
 import '../../domain/entities/catalog_category_type.dart';
 import '../models/catalog_item_model.dart';
 
@@ -225,6 +226,9 @@ class CatalogRemoteDataSource {
       final status = (offer['status'] as String? ?? 'active')
           .toLowerCase()
           .replaceAll(' ', '');
+      if (_isOfferExpired(offer)) {
+        continue;
+      }
       final priceAdult = NumberUtils.toDouble(offer['priceAdult']);
       final originalAdult = NumberUtils.toDouble(offer['priceAdultOriginal']);
       if (status != 'soldout' && status != 'sold_out') {
@@ -252,6 +256,7 @@ class CatalogRemoteDataSource {
         priceFrom: '',
         discount: '',
         slotsLeft: AppStrings.noOffersTodayExploreOtherDates,
+        overrideStoredValues: true,
       );
     }
 
@@ -264,12 +269,12 @@ class CatalogRemoteDataSource {
         ? minPrice
         : _min(labelPriceFrom, labelDiscount);
 
-    final currencyLabel = currency.isNotEmpty
-        ? currency
-        : _currencyFromLabel(data['priceFrom']);
-    final prefix = currencyLabel == null || currencyLabel.isEmpty
-        ? ''
-        : '$currencyLabel ';
+    final currencyLabel = displayCurrencyLabel(
+      currency.isNotEmpty
+          ? currency
+          : currencyFromFormattedLabel(data['priceFrom']) ?? '',
+    );
+    final prefix = currencyLabel.isEmpty ? '' : '$currencyLabel ';
     final priceFrom = resolvedOriginal > 0
         ? AppStrings.fromPrice('$prefix${resolvedOriginal.toStringAsFixed(1)}')
         : _stringValue(data['priceFrom']).trim();
@@ -370,27 +375,6 @@ class CatalogRemoteDataSource {
         .toList();
   }
 
-  static String? _currencyFromLabel(dynamic value) {
-    if (value == null) return null;
-    final text = value.toString().trim();
-    if (text.isEmpty) return null;
-    final buffer = StringBuffer();
-    for (final rune in text.runes) {
-      final character = String.fromCharCode(rune);
-      final isLetter =
-          (rune >= 65 && rune <= 90) || (rune >= 97 && rune <= 122);
-      if (isLetter) {
-        buffer.write(character);
-        continue;
-      }
-      if (buffer.isNotEmpty) {
-        break;
-      }
-    }
-    final result = buffer.toString();
-    return result.isEmpty ? null : result;
-  }
-
   static String _stringValue(dynamic value) {
     if (value == null) return '';
     return value.toString();
@@ -405,5 +389,55 @@ class CatalogRemoteDataSource {
   static double _max(double a, double b) {
     return a > b ? a : b;
   }
-}
 
+  bool _isOfferExpired(Map<String, dynamic> offer) {
+    final date = DateTime.tryParse((offer['date'] as String? ?? '').trim());
+    if (date == null) return false;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final offerDate = DateTime(date.year, date.month, date.day);
+    if (offerDate.isBefore(today)) return true;
+    if (offerDate.isAfter(today)) return false;
+
+    final endMinutes =
+        _parseTimeToMinutes((offer['endTime'] as String? ?? '').trim()) ??
+        _parseTimeToMinutes((offer['startTime'] as String? ?? '').trim());
+    if (endMinutes == null) return false;
+
+    final nowMinutes = now.hour * 60 + now.minute;
+    return nowMinutes >= endMinutes;
+  }
+
+  int? _parseTimeToMinutes(String value) {
+    final trimmed = value.trim().toLowerCase();
+    if (trimmed.isEmpty) return null;
+
+    String? suffix;
+    if (trimmed.endsWith('am')) {
+      suffix = 'am';
+    } else if (trimmed.endsWith('pm')) {
+      suffix = 'pm';
+    }
+
+    if (suffix != null) {
+      final timePart = trimmed
+          .substring(0, trimmed.length - suffix.length)
+          .trim();
+      final pieces = timePart.split(':');
+      final hour = int.tryParse(pieces.isEmpty ? '' : pieces[0]);
+      final minute = pieces.length > 1 ? int.tryParse(pieces[1]) ?? 0 : 0;
+      if (hour == null) return null;
+      var normalizedHour = hour % 12;
+      if (suffix == 'pm') normalizedHour += 12;
+      return normalizedHour * 60 + minute;
+    }
+
+    final pieces = trimmed.split(':');
+    if (pieces.length != 2) return null;
+    final hour = int.tryParse(pieces[0]);
+    final minute = int.tryParse(pieces[1]);
+    if (hour == null || minute == null) return null;
+    return hour * 60 + minute;
+  }
+}

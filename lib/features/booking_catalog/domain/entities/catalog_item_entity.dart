@@ -18,9 +18,13 @@ class CatalogItemEntity extends Equatable {
     required this.description,
     required this.highlights,
     required this.inclusions,
+    this.exclusions = const [],
+    this.termsAndConditions = const [],
+    this.cancellationPolicy = const [],
     required this.availableMeals,
     required this.packageOverview,
     required this.bookingNotes,
+    this.location = '',
     required this.requiresMenuItemSelection,
     required this.badge,
     required this.priceFrom,
@@ -43,9 +47,13 @@ class CatalogItemEntity extends Equatable {
   final String description;
   final List<String> highlights;
   final List<String> inclusions;
+  final List<String> exclusions;
+  final List<String> termsAndConditions;
+  final List<String> cancellationPolicy;
   final List<String> availableMeals;
   final List<String> packageOverview;
   final List<String> bookingNotes;
+  final String location;
   final bool requiresMenuItemSelection;
   final String badge;
   final String priceFrom;
@@ -84,9 +92,13 @@ class CatalogItemEntity extends Equatable {
     description,
     highlights,
     inclusions,
+    exclusions,
+    termsAndConditions,
+    cancellationPolicy,
     availableMeals,
     packageOverview,
     bookingNotes,
+    location,
     requiresMenuItemSelection,
     badge,
     priceFrom,

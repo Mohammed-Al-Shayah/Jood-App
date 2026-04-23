@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_overview_cubit.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_overview_state.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
@@ -922,8 +924,11 @@ class _RecentBookingsPanel extends StatelessWidget {
                             Text('${booking.adults + booking.children}'),
                           ),
                           DataCell(
-                            Text(
-                              '${booking.currency} ${booking.total.toStringAsFixed(1)}',
+                            CurrencyAmountInlineText(
+                              text: formatCurrency(
+                                booking.currency,
+                                booking.total,
+                              ),
                             ),
                           ),
                           DataCell(_StatusBadge(status: booking.status)),
@@ -982,7 +987,7 @@ class _StatusBadge extends StatelessWidget {
 }
 
 String _formatMoney(double amount) {
-  return 'OMR ${amount.toStringAsFixed(1)}';
+  return formatCurrency('OMR', amount);
 }
 
 String _titleCase(String value) {

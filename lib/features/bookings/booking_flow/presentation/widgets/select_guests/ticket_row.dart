@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'round_icon_button.dart';
 
 class TicketRow extends StatelessWidget {
@@ -9,7 +10,8 @@ class TicketRow extends StatelessWidget {
     super.key,
     required this.label,
     this.ageLabel = '',
-    required this.priceLabel,
+    this.priceLabel = '',
+    this.priceWidget,
     required this.count,
     required this.onAdd,
     required this.onRemove,
@@ -18,6 +20,7 @@ class TicketRow extends StatelessWidget {
   final String label;
   final String ageLabel;
   final String priceLabel;
+  final Widget? priceWidget;
   final int count;
   final VoidCallback? onAdd;
   final VoidCallback? onRemove;
@@ -42,10 +45,11 @@ class TicketRow extends StatelessWidget {
                 ),
               ],
               SizedBox(height: 6.h),
-              Text(
-                priceLabel,
-                style: AppTextStyles.cardPrice.copyWith(fontSize: 14.sp),
-              ),
+              priceWidget ??
+                  CurrencyAmountInlineText(
+                    text: priceLabel,
+                    style: AppTextStyles.cardPrice.copyWith(fontSize: 14.sp),
+                  ),
             ],
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 
 class BookingDetailsCard extends StatelessWidget {
   const BookingDetailsCard({
@@ -66,8 +67,8 @@ class BookingDetailsCard extends StatelessWidget {
             children: [
               _InfoChip(icon: Icons.people, label: guestsLabel),
               const Spacer(),
-              Text(
-                totalPaid,
+              CurrencyAmountInlineText(
+                text: totalPaid,
                 style: AppTextStyles.cardPrice.copyWith(fontSize: 16.sp),
               ),
             ],

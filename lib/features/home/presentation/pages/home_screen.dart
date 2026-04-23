@@ -6,6 +6,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/widgets/app_snackbar.dart';
+import '../../../../core/widgets/currency_amount_text.dart';
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
@@ -560,8 +561,9 @@ class _ShowcaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final price = item.priceFrom.trim();
-    final discount = item.discount.trim();
+    final showNoOffersMessage = _showNoOffersTodayMessage(item);
+    final price = showNoOffersMessage ? '' : item.priceFrom.trim();
+    final discount = showNoOffersMessage ? '' : item.discount.trim();
     final originalPriceValue = _normalizeDisplayedPrice(_stripFromPrice(price));
     final currentPriceValue = _normalizeDisplayedPrice(discount);
     final hasDualPrice = price.isNotEmpty && discount.isNotEmpty;
@@ -679,8 +681,8 @@ class _ShowcaseCard extends StatelessWidget {
                         runSpacing: 4.h,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Text(
-                            currentPriceValue,
+                          CurrencyAmountInlineText(
+                            text: currentPriceValue,
                             style:
                                 (highlightDeal
                                         ? AppTextStyles.cardDiscount
@@ -690,8 +692,8 @@ class _ShowcaseCard extends StatelessWidget {
                                       fontWeight: FontWeight.w700,
                                     ),
                           ),
-                          Text(
-                            originalPriceValue,
+                          CurrencyAmountInlineText(
+                            text: originalPriceValue,
                             style: AppTextStyles.cardMeta.copyWith(
                               color: const Color(0xFF5D6875),
                               fontSize: 13.sp,
@@ -704,8 +706,8 @@ class _ShowcaseCard extends StatelessWidget {
                         ],
                       ),
                     ] else if (price.isNotEmpty) ...[
-                      Text(
-                        originalPriceValue,
+                      CurrencyAmountInlineText(
+                        text: originalPriceValue,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.cardPrice.copyWith(
@@ -713,8 +715,8 @@ class _ShowcaseCard extends StatelessWidget {
                         ),
                       ),
                     ] else if (item.slotsLeft.trim().isNotEmpty) ...[
-                      Text(
-                        item.slotsLeft,
+                      CurrencyAmountInlineText(
+                        text: item.slotsLeft,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.cardMeta.copyWith(
@@ -870,6 +872,8 @@ List<CatalogItemEntity> _nearbyItems(
 }
 
 double _discountScore(CatalogItemEntity item) {
+  if (_showNoOffersTodayMessage(item)) return 0;
+
   final badgePercent = _extractPercent(item.badge);
   if (badgePercent > 0) return badgePercent;
 
@@ -891,6 +895,10 @@ double _extractAmount(String value) {
     r'(\d+(?:\.\d+)?)',
   ).firstMatch(value.replaceAll(',', ''));
   return double.tryParse(match?.group(1) ?? '') ?? 0;
+}
+
+bool _showNoOffersTodayMessage(CatalogItemEntity item) {
+  return item.slotsLeft.trim() == AppStrings.noOffersTodayExploreOtherDates;
 }
 
 String _discoveryMetaLabel(CatalogItemEntity item) {

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 
 import 'admin_web_panel.dart';
 
@@ -73,8 +74,8 @@ class AdminWebMetricCard extends StatelessWidget {
                 ],
               ),
               SizedBox(height: compact ? 16.0 : 20.0),
-              Text(
-                value,
+              CurrencyAmountInlineText(
+                text: value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.cardTitle.copyWith(
@@ -86,8 +87,8 @@ class AdminWebMetricCard extends StatelessWidget {
               Container(height: 1, color: const Color(0xFFE9EEF5)),
               if (caption != null && caption!.trim().isNotEmpty) ...[
                 SizedBox(height: 12.h),
-                Text(
-                  caption!,
+                CurrencyAmountInlineText(
+                  text: caption!,
                   maxLines: compact ? 3 : 2,
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.cardMeta.copyWith(

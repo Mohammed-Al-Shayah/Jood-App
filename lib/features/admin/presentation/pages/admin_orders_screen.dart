@@ -7,6 +7,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/extensions.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_orders_cubit.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_orders_state.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
@@ -384,8 +385,8 @@ class _OrderTile extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                formatCurrency(order.currency, order.total),
+              CurrencyAmountInlineText(
+                text: formatCurrency(order.currency, order.total),
                 style: AppTextStyles.cardPrice,
               ),
               SizedBox(height: 6.h),

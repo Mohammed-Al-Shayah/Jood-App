@@ -5,6 +5,7 @@ import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/offers/domain/entities/offer_entity.dart';
 
 class OfferCard extends StatelessWidget {
@@ -30,7 +31,6 @@ class OfferCard extends StatelessWidget {
     final titleLabel = offer.title.isEmpty
         ? AppStrings.buffetEntry
         : offer.title;
-    final priceLabel = _formatPrice(offer);
     final originalPriceLabel = _formatOriginalPrice(offer);
     final discountPercentLabel = _formatDiscountPercent(offer);
 
@@ -96,8 +96,8 @@ class OfferCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       if (originalPriceLabel.isNotEmpty)
-                        Text(
-                          originalPriceLabel,
+                        CurrencyAmountInlineText(
+                          text: originalPriceLabel,
                           style: AppTextStyles.cardMeta.copyWith(
                             fontSize: 12.sp,
                             color: AppColors.textMuted,
@@ -116,8 +116,9 @@ class OfferCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                      Text(
-                        priceLabel,
+                      CurrencyAmountText(
+                        currency: offer.currency,
+                        amount: offer.priceAdult,
                         style: AppTextStyles.cardPrice.copyWith(
                           fontSize: 18.sp,
                         ),
@@ -168,10 +169,6 @@ class OfferCard extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatPrice(OfferEntity offer) {
-  return formatCurrency(offer.currency, offer.priceAdult);
 }
 
 String _formatOriginalPrice(OfferEntity offer) {
