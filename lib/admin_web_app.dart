@@ -70,12 +70,18 @@ class AdminWebApp extends StatelessWidget {
                 widget = easyLoadingBuilder(context, widget);
                 final mediaQuery = MediaQuery.maybeOf(context);
                 if (mediaQuery == null) {
-                  return AppKeyboardDismissRegion(child: widget);
+                  return Directionality(
+                    textDirection: TextDirection.ltr,
+                    child: AppKeyboardDismissRegion(child: widget),
+                  );
                 }
-                return AppKeyboardDismissRegion(
-                  child: MediaQuery(
-                    data: mediaQuery.copyWith(textScaler: TextScaler.noScaling),
-                    child: widget,
+                return Directionality(
+                  textDirection: TextDirection.ltr,
+                  child: AppKeyboardDismissRegion(
+                    child: MediaQuery(
+                      data: mediaQuery.copyWith(textScaler: TextScaler.noScaling),
+                      child: widget,
+                    ),
                   ),
                 );
               },
