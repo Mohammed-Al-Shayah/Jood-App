@@ -101,7 +101,7 @@ class CatalogRemoteDataSource {
       );
     }
 
-    items.sort((a, b) => a.name.compareTo(b.name));
+    _sortByHighestDiscount(items);
     return items;
   }
 
@@ -126,8 +126,51 @@ class CatalogRemoteDataSource {
         )
         .toList();
 
-    items.sort((a, b) => a.name.compareTo(b.name));
+    _sortByHighestDiscount(items);
     return items;
+  }
+
+  void _sortByHighestDiscount(List<CatalogItemModel> items) {
+    items.sort((left, right) {
+      final discountCompare = _discountScore(
+        right,
+      ).compareTo(_discountScore(left));
+      if (discountCompare != 0) return discountCompare;
+      final ratingCompare = right.rating.compareTo(left.rating);
+      if (ratingCompare != 0) return ratingCompare;
+      return left.name.compareTo(right.name);
+    });
+  }
+
+  double _discountScore(CatalogItemModel item) {
+    if (item.slotsLeft.trim() == AppStrings.noOffersTodayExploreOtherDates) {
+      return 0;
+    }
+
+    final badgePercent = _extractPercent(item.badge);
+    if (badgePercent > 0) return badgePercent;
+
+    final original = NumberUtils.parseNumber(item.priceFrom);
+    final current = NumberUtils.parseNumber(item.discount);
+    if (original > 0 && current > 0 && original >= current) {
+      return ((original - current) / original) * 100;
+    }
+    return 0;
+  }
+
+  double _extractPercent(String value) {
+    final percentIndex = value.indexOf('%');
+    if (percentIndex < 0) return 0;
+
+    final prefix = value.substring(0, percentIndex);
+    final buffer = StringBuffer();
+    for (final rune in prefix.runes) {
+      final isDigit = (rune >= 48 && rune <= 57) || rune == 46;
+      if (isDigit) {
+        buffer.writeCharCode(rune);
+      }
+    }
+    return double.tryParse(buffer.toString()) ?? 0;
   }
 
   Future<Map<String, List<Map<String, dynamic>>>> _loadUpcomingOffers() async {
@@ -217,10 +260,8 @@ class CatalogRemoteDataSource {
         .where((offer) => (offer['date'] as String? ?? '').trim() == today)
         .toList();
 
-    var minPrice = double.infinity;
-    var minOriginalPrice = double.infinity;
     var remainingTotal = 0;
-    var currency = '';
+    final candidates = <_CatalogOfferCandidate>[];
 
     for (final offer in todayOffers) {
       final status = (offer['status'] as String? ?? 'active')
@@ -229,17 +270,6 @@ class CatalogRemoteDataSource {
       if (_isOfferExpired(offer)) {
         continue;
       }
-      final priceAdult = NumberUtils.toDouble(offer['priceAdult']);
-      final originalAdult = NumberUtils.toDouble(offer['priceAdultOriginal']);
-      if (status != 'soldout' && status != 'sold_out') {
-        if (priceAdult > 0 && priceAdult < minPrice) {
-          minPrice = priceAdult;
-          currency = (offer['currency'] as String? ?? '').trim();
-        }
-        if (originalAdult > 0 && originalAdult < minOriginalPrice) {
-          minOriginalPrice = originalAdult;
-        }
-      }
       final remainingAdult =
           NumberUtils.toInt(offer['capacityAdult']) -
           NumberUtils.toInt(offer['bookedAdult']);
@@ -247,9 +277,34 @@ class CatalogRemoteDataSource {
           NumberUtils.toInt(offer['capacityChild']) -
           NumberUtils.toInt(offer['bookedChild']);
       remainingTotal += (remainingAdult + remainingChild).clamp(0, 1000000);
+
+      if (status == 'soldout' || status == 'sold_out') {
+        continue;
+      }
+
+      final currentPrice = NumberUtils.toDouble(offer['priceAdult']);
+      if (currentPrice <= 0) continue;
+
+      final originalRaw = NumberUtils.toDouble(offer['priceAdultOriginal']);
+      final originalPrice = originalRaw > currentPrice
+          ? originalRaw
+          : currentPrice;
+      final discountPercent = originalPrice > currentPrice
+          ? ((originalPrice - currentPrice) / originalPrice) * 100
+          : 0.0;
+      final currency = (offer['currency'] as String? ?? '').trim();
+
+      candidates.add(
+        _CatalogOfferCandidate(
+          currentPrice: currentPrice,
+          originalPrice: originalPrice,
+          discountPercent: discountPercent,
+          currency: currency,
+        ),
+      );
     }
 
-    final hasAvailableTodayOffers = minPrice.isFinite;
+    final hasAvailableTodayOffers = candidates.isNotEmpty;
     if (!hasAvailableTodayOffers) {
       return CatalogListLabels(
         badge: '',
@@ -260,41 +315,45 @@ class CatalogRemoteDataSource {
       );
     }
 
-    final labelPriceFrom = NumberUtils.parseNumber(data['priceFrom']);
-    final labelDiscount = NumberUtils.parseNumber(data['discount']);
-    final resolvedOriginal = minOriginalPrice.isFinite
-        ? minOriginalPrice
-        : _max(labelPriceFrom, labelDiscount);
-    final resolvedCurrent = minPrice.isFinite
-        ? minPrice
-        : _min(labelPriceFrom, labelDiscount);
+    candidates.sort((left, right) {
+      final discountCompare = right.discountPercent.compareTo(
+        left.discountPercent,
+      );
+      if (discountCompare != 0) return discountCompare;
+      final currentCompare = left.currentPrice.compareTo(right.currentPrice);
+      if (currentCompare != 0) return currentCompare;
+      return left.originalPrice.compareTo(right.originalPrice);
+    });
+    final selected = candidates.first;
 
     final currencyLabel = displayCurrencyLabel(
-      currency.isNotEmpty
-          ? currency
-          : currencyFromFormattedLabel(data['priceFrom']) ?? '',
+      selected.currency.isNotEmpty
+          ? selected.currency
+          : currencyFromFormattedLabel(data['priceFrom']) ??
+                currencyFromFormattedLabel(data['discount']) ??
+                '',
     );
     final prefix = currencyLabel.isEmpty ? '' : '$currencyLabel ';
-    final priceFrom = resolvedOriginal > 0
-        ? AppStrings.fromPrice('$prefix${resolvedOriginal.toStringAsFixed(1)}')
-        : _stringValue(data['priceFrom']).trim();
-    final discount = resolvedCurrent > 0 && resolvedCurrent < resolvedOriginal
-        ? '$prefix${resolvedCurrent.toStringAsFixed(1)}'
-        : _stringValue(data['discount']).trim();
-    final badge = _resolveBadge(
-      data: data,
-      originalPrice: resolvedOriginal,
-      currentPrice: resolvedCurrent,
-    );
+    final hasDiscount = selected.discountPercent > 0;
+    final priceFrom = hasDiscount
+        ? AppStrings.fromPrice('$prefix${selected.originalPrice.toStringAsFixed(1)}')
+        : AppStrings.fromPrice('$prefix${selected.currentPrice.toStringAsFixed(1)}');
+    final discount = hasDiscount
+        ? '$prefix${selected.currentPrice.toStringAsFixed(1)}'
+        : '';
+    final badge = hasDiscount
+        ? AppStrings.percentOff(selected.discountPercent.round())
+        : '';
     final slotsLeft = remainingTotal > 0
         ? AppStrings.slotsLeftCount(remainingTotal)
-        : _stringValue(data['slotsLeft']).trim();
+        : '';
 
     return CatalogListLabels(
       badge: badge,
       priceFrom: priceFrom,
       discount: discount,
       slotsLeft: slotsLeft,
+      overrideStoredValues: true,
     );
   }
 
@@ -319,44 +378,6 @@ class CatalogRemoteDataSource {
     return raw == 'attraction' || type == 'attraction';
   }
 
-  String _resolveBadge({
-    required Map<String, dynamic> data,
-    required double originalPrice,
-    required double currentPrice,
-  }) {
-    if (originalPrice > 0 && currentPrice > 0 && originalPrice > currentPrice) {
-      final percent = ((originalPrice - currentPrice) / originalPrice) * 100;
-      return AppStrings.percentOff(percent.round());
-    }
-    final existing = _stringValue(data['badge']).trim();
-    if (existing.isNotEmpty) return _localizedBadge(existing);
-    final rating = NumberUtils.toDouble(data['rating']);
-    if (rating >= 4.5) return AppStrings.topRated;
-    if (rating >= 4.0) return AppStrings.popular;
-    return '';
-  }
-
-  String _localizedBadge(String badge) {
-    final trimmed = badge.trim();
-    if (trimmed.isEmpty) return trimmed;
-    final percentIndex = trimmed.indexOf('%');
-    if (percentIndex > 0) {
-      final percent = int.tryParse(trimmed.substring(0, percentIndex).trim());
-      if (percent != null) {
-        return AppStrings.percentOff(percent);
-      }
-    }
-
-    switch (trimmed.toLowerCase()) {
-      case 'top rated':
-        return AppStrings.topRated;
-      case 'popular':
-        return AppStrings.popular;
-      default:
-        return trimmed;
-    }
-  }
-
   static Map<String, dynamic> _asMap(dynamic value) {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) {
@@ -375,38 +396,29 @@ class CatalogRemoteDataSource {
         .toList();
   }
 
-  static String _stringValue(dynamic value) {
-    if (value == null) return '';
-    return value.toString();
-  }
-
-  static double _min(double a, double b) {
-    if (a <= 0) return b;
-    if (b <= 0) return a;
-    return a < b ? a : b;
-  }
-
-  static double _max(double a, double b) {
-    return a > b ? a : b;
-  }
-
   bool _isOfferExpired(Map<String, dynamic> offer) {
     final date = DateTime.tryParse((offer['date'] as String? ?? '').trim());
     if (date == null) return false;
 
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
     final offerDate = DateTime(date.year, date.month, date.day);
-    if (offerDate.isBefore(today)) return true;
-    if (offerDate.isAfter(today)) return false;
-
+    final startMinutes = _parseTimeToMinutes(
+      (offer['startTime'] as String? ?? '').trim(),
+    );
     final endMinutes =
         _parseTimeToMinutes((offer['endTime'] as String? ?? '').trim()) ??
-        _parseTimeToMinutes((offer['startTime'] as String? ?? '').trim());
-    if (endMinutes == null) return false;
+        startMinutes;
 
-    final nowMinutes = now.hour * 60 + now.minute;
-    return nowMinutes >= endMinutes;
+    if (endMinutes != null) {
+      var endDateTime = offerDate.add(Duration(minutes: endMinutes));
+      if (startMinutes != null && endMinutes <= startMinutes) {
+        endDateTime = endDateTime.add(const Duration(days: 1));
+      }
+      return !now.isBefore(endDateTime);
+    }
+
+    final today = DateTime(now.year, now.month, now.day);
+    return offerDate.isBefore(today);
   }
 
   int? _parseTimeToMinutes(String value) {
@@ -440,4 +452,18 @@ class CatalogRemoteDataSource {
     if (hour == null || minute == null) return null;
     return hour * 60 + minute;
   }
+}
+
+class _CatalogOfferCandidate {
+  const _CatalogOfferCandidate({
+    required this.currentPrice,
+    required this.originalPrice,
+    required this.discountPercent,
+    required this.currency,
+  });
+
+  final double currentPrice;
+  final double originalPrice;
+  final double discountPercent;
+  final String currency;
 }

@@ -209,7 +209,7 @@ class HomeCubit extends Cubit<HomeState> {
     }).toList();
 
     final scopedItems = selectedCategory == null
-        ? _deduplicateVenueItems(filtered, shuffleResults: false)
+        ? _deduplicateVenueItems(filtered)
         : filtered;
 
     return _sortItems(scopedItems, sortField, sortOrder);
@@ -306,20 +306,12 @@ class HomeCubit extends Cubit<HomeState> {
     }
   }
 
-  List<CatalogItemEntity> _deduplicateVenueItems(
-    List<CatalogItemEntity> items, {
-    required bool shuffleResults,
-  }) {
+  List<CatalogItemEntity> _deduplicateVenueItems(List<CatalogItemEntity> items) {
     final grouped = <String, List<CatalogItemEntity>>{};
     for (final item in items) {
       final key = '${item.sourceCollection}:${item.id}';
       grouped.putIfAbsent(key, () => <CatalogItemEntity>[]).add(item);
     }
-
-    final previousSelections = <String, CatalogItemEntity>{
-      for (final item in state.items)
-        '${item.sourceCollection}:${item.id}': item,
-    };
 
     final uniqueItems = <CatalogItemEntity>[];
     for (final entry in grouped.entries) {
@@ -329,32 +321,23 @@ class HomeCubit extends Cubit<HomeState> {
         continue;
       }
 
-      final previous = previousSelections[entry.key];
-      if (!shuffleResults && previous != null) {
-        final retained = _findMatchingCategory(group, previous.category);
-        if (retained != null) {
-          uniqueItems.add(retained);
-          continue;
-        }
-      }
-
-      if (shuffleResults) {
-        group.shuffle();
-      }
+      group.sort((left, right) {
+        final discountCompare = _discountValue(right).compareTo(
+          _discountValue(left),
+        );
+        if (discountCompare != 0) return discountCompare;
+        final ratingCompare = right.rating.compareTo(left.rating);
+        if (ratingCompare != 0) return ratingCompare;
+        final categoryCompare = left.category.index.compareTo(
+          right.category.index,
+        );
+        if (categoryCompare != 0) return categoryCompare;
+        return left.name.compareTo(right.name);
+      });
       uniqueItems.add(group.first);
     }
 
     return uniqueItems;
-  }
-
-  CatalogItemEntity? _findMatchingCategory(
-    List<CatalogItemEntity> items,
-    CatalogCategoryType category,
-  ) {
-    for (final item in items) {
-      if (item.category == category) return item;
-    }
-    return null;
   }
 
   @override

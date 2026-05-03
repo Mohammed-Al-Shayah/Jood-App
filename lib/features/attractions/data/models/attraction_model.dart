@@ -16,6 +16,8 @@ class AttractionModel extends AttractionEntity {
     required super.about,
     required super.phone,
     required super.address,
+    super.geoLat,
+    super.geoLng,
     required super.highlights,
     required super.inclusions,
     required super.catalogDescription,
@@ -53,6 +55,21 @@ class AttractionModel extends AttractionEntity {
     super.packageOverviewAr,
     super.bookingNotesEn,
     super.bookingNotesAr,
+    super.catalogExcluded,
+    super.catalogTermsAndConditions,
+    super.catalogCancellationPolicy,
+    super.catalogAvailableOptions,
+    super.catalogLocation,
+    super.catalogExcludedEn,
+    super.catalogExcludedAr,
+    super.catalogTermsAndConditionsEn,
+    super.catalogTermsAndConditionsAr,
+    super.catalogCancellationPolicyEn,
+    super.catalogCancellationPolicyAr,
+    super.catalogAvailableOptionsEn,
+    super.catalogAvailableOptionsAr,
+    super.catalogLocationEn,
+    super.catalogLocationAr,
   });
 
   factory AttractionModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -65,6 +82,7 @@ class AttractionModel extends AttractionEntity {
     required Map<String, dynamic> data,
   }) {
     final bookingCatalog = _asMap(data['bookingCatalog']);
+    final geo = _asMap(data['geo']);
 
     final nameEn = _stringValue(data['name']);
     final nameAr = _stringValue(data['nameAr']);
@@ -105,22 +123,62 @@ class AttractionModel extends AttractionEntity {
       _stringList(bookingCatalog['includedAr']),
       inclusionsAr,
     );
-    final packageOverviewEn = _firstNonEmptyList(
+    final legacyPackageOverviewEn = _firstNonEmptyList(
       _stringList(bookingCatalog['packageOverview']),
       _firstNonEmptyList(
         _stringList(data['packageOverview']),
         _stringList(data['packagesOverview']),
       ),
     );
-    final packageOverviewAr = _firstNonEmptyList(
+    final legacyPackageOverviewAr = _firstNonEmptyList(
       _stringList(bookingCatalog['packageOverviewAr']),
       _firstNonEmptyList(
         _stringList(data['packageOverviewAr']),
         _stringList(data['packagesOverviewAr']),
       ),
     );
+    final catalogAvailableOptionsEn = _firstNonEmptyList(
+      _stringList(bookingCatalog['availableOptions']),
+      legacyPackageOverviewEn,
+    );
+    final catalogAvailableOptionsAr = _firstNonEmptyList(
+      _stringList(bookingCatalog['availableOptionsAr']),
+      legacyPackageOverviewAr,
+    );
+    final packageOverviewEn = _firstNonEmptyList(
+      legacyPackageOverviewEn,
+      catalogAvailableOptionsEn,
+    );
+    final packageOverviewAr = _firstNonEmptyList(
+      legacyPackageOverviewAr,
+      catalogAvailableOptionsAr,
+    );
     final bookingNotesEn = _stringList(bookingCatalog['notes']);
     final bookingNotesAr = _stringList(bookingCatalog['notesAr']);
+    final catalogExcludedEn = _stringList(bookingCatalog['excluded']);
+    final catalogExcludedAr = _stringList(bookingCatalog['excludedAr']);
+    final catalogTermsAndConditionsEn = _firstNonEmptyList(
+      _stringList(bookingCatalog['terms']),
+      bookingNotesEn,
+    );
+    final catalogTermsAndConditionsAr = _firstNonEmptyList(
+      _stringList(bookingCatalog['termsAr']),
+      bookingNotesAr,
+    );
+    final catalogCancellationPolicyEn = _stringList(
+      bookingCatalog['cancellationPolicy'],
+    );
+    final catalogCancellationPolicyAr = _stringList(
+      bookingCatalog['cancellationPolicyAr'],
+    );
+    final catalogLocationEn = _firstNonEmptyString(
+      _stringValue(bookingCatalog['location']),
+      addressEn,
+    );
+    final catalogLocationAr = _firstNonEmptyString(
+      _stringValue(bookingCatalog['locationAr']),
+      addressAr,
+    );
 
     return AttractionModel(
       id: id,
@@ -133,6 +191,8 @@ class AttractionModel extends AttractionEntity {
       about: resolveLocalizedText(english: aboutEn, arabic: aboutAr),
       phone: _stringValue(data['phone']),
       address: resolveLocalizedText(english: addressEn, arabic: addressAr),
+      geoLat: NumberUtils.toDouble(geo['lat']),
+      geoLng: NumberUtils.toDouble(geo['lng']),
       highlights: resolveLocalizedList(
         english: highlightsEn,
         arabic: highlightsAr,
@@ -160,6 +220,26 @@ class AttractionModel extends AttractionEntity {
       bookingNotes: resolveLocalizedList(
         english: bookingNotesEn,
         arabic: bookingNotesAr,
+      ),
+      catalogExcluded: resolveLocalizedList(
+        english: catalogExcludedEn,
+        arabic: catalogExcludedAr,
+      ),
+      catalogTermsAndConditions: resolveLocalizedList(
+        english: catalogTermsAndConditionsEn,
+        arabic: catalogTermsAndConditionsAr,
+      ),
+      catalogCancellationPolicy: resolveLocalizedList(
+        english: catalogCancellationPolicyEn,
+        arabic: catalogCancellationPolicyAr,
+      ),
+      catalogAvailableOptions: resolveLocalizedList(
+        english: catalogAvailableOptionsEn,
+        arabic: catalogAvailableOptionsAr,
+      ),
+      catalogLocation: resolveLocalizedText(
+        english: catalogLocationEn,
+        arabic: catalogLocationAr,
       ),
       isActive: data['isActive'] as bool? ?? true,
       createdAt: _toDateTime(data['createdAt']),
@@ -207,10 +287,52 @@ class AttractionModel extends AttractionEntity {
       packageOverviewAr: packageOverviewAr,
       bookingNotesEn: bookingNotesEn,
       bookingNotesAr: bookingNotesAr,
+      catalogExcludedEn: catalogExcludedEn,
+      catalogExcludedAr: catalogExcludedAr,
+      catalogTermsAndConditionsEn: catalogTermsAndConditionsEn,
+      catalogTermsAndConditionsAr: catalogTermsAndConditionsAr,
+      catalogCancellationPolicyEn: catalogCancellationPolicyEn,
+      catalogCancellationPolicyAr: catalogCancellationPolicyAr,
+      catalogAvailableOptionsEn: catalogAvailableOptionsEn,
+      catalogAvailableOptionsAr: catalogAvailableOptionsAr,
+      catalogLocationEn: catalogLocationEn,
+      catalogLocationAr: catalogLocationAr,
     );
   }
 
   Map<String, dynamic> toMap() {
+    final resolvedPackageOverview = _baseList(
+      packageOverviewEn,
+      packageOverview,
+    );
+    final resolvedPackageOverviewAr = _cleanList(packageOverviewAr);
+    final resolvedBookingNotes = _baseList(bookingNotesEn, bookingNotes);
+    final resolvedBookingNotesAr = _cleanList(bookingNotesAr);
+    final resolvedCatalogOptions = _firstNonEmptyList(
+      _baseList(catalogAvailableOptionsEn, catalogAvailableOptions),
+      resolvedPackageOverview,
+    );
+    final resolvedCatalogOptionsAr = _firstNonEmptyList(
+      _cleanList(catalogAvailableOptionsAr),
+      resolvedPackageOverviewAr,
+    );
+    final resolvedCatalogTerms = _firstNonEmptyList(
+      _baseList(catalogTermsAndConditionsEn, catalogTermsAndConditions),
+      resolvedBookingNotes,
+    );
+    final resolvedCatalogTermsAr = _firstNonEmptyList(
+      _cleanList(catalogTermsAndConditionsAr),
+      resolvedBookingNotesAr,
+    );
+    final resolvedCatalogLocation = _firstNonEmptyString(
+      _baseText(catalogLocationEn, catalogLocation),
+      _baseText(addressEn, address),
+    );
+    final resolvedCatalogLocationAr = _firstNonEmptyString(
+      catalogLocationAr.trim(),
+      addressAr.trim(),
+    );
+
     return {
       'name': _baseText(nameEn, name),
       'nameAr': nameAr.trim(),
@@ -226,6 +348,7 @@ class AttractionModel extends AttractionEntity {
       'phone': phone,
       'address': _baseText(addressEn, address),
       'addressAr': addressAr.trim(),
+      'geo': {'lat': geoLat, 'lng': geoLng},
       'highlights': _baseList(highlightsEn, highlights),
       'highlightsAr': _cleanList(highlightsAr),
       'inclusions': _baseList(inclusionsEn, inclusions),
@@ -242,10 +365,23 @@ class AttractionModel extends AttractionEntity {
         'highlightsAr': _cleanList(catalogHighlightsAr),
         'included': _baseList(catalogIncludedEn, catalogIncluded),
         'includedAr': _cleanList(catalogIncludedAr),
-        'packageOverview': _baseList(packageOverviewEn, packageOverview),
-        'packageOverviewAr': _cleanList(packageOverviewAr),
-        'notes': _baseList(bookingNotesEn, bookingNotes),
-        'notesAr': _cleanList(bookingNotesAr),
+        'excluded': _baseList(catalogExcludedEn, catalogExcluded),
+        'excludedAr': _cleanList(catalogExcludedAr),
+        'terms': resolvedCatalogTerms,
+        'termsAr': resolvedCatalogTermsAr,
+        'cancellationPolicy': _baseList(
+          catalogCancellationPolicyEn,
+          catalogCancellationPolicy,
+        ),
+        'cancellationPolicyAr': _cleanList(catalogCancellationPolicyAr),
+        'availableOptions': resolvedCatalogOptions,
+        'availableOptionsAr': resolvedCatalogOptionsAr,
+        'location': resolvedCatalogLocation,
+        'locationAr': resolvedCatalogLocationAr,
+        'packageOverview': resolvedPackageOverview,
+        'packageOverviewAr': resolvedPackageOverviewAr,
+        'notes': resolvedBookingNotes,
+        'notesAr': resolvedBookingNotesAr,
         'badge': badge,
         'priceFrom': priceFrom,
         'discount': discount,

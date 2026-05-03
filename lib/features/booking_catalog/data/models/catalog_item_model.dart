@@ -267,19 +267,35 @@ class CatalogItemModel extends CatalogItemEntity {
       _stringList(bookingCatalog['excludedAr']),
       const <String>[],
     );
-    final packageOverviewEn = _firstNonEmptyList(
+    final legacyPackageOverviewEn = _firstNonEmptyList(
       _stringList(bookingCatalog['packageOverview']),
       _firstNonEmptyList(
         _stringList(data['packageOverview']),
         _stringList(data['packagesOverview']),
       ),
     );
-    final packageOverviewAr = _firstNonEmptyList(
+    final legacyPackageOverviewAr = _firstNonEmptyList(
       _stringList(bookingCatalog['packageOverviewAr']),
       _firstNonEmptyList(
         _stringList(data['packageOverviewAr']),
         _stringList(data['packagesOverviewAr']),
       ),
+    );
+    final availableOptionsEn = _firstNonEmptyList(
+      _stringList(bookingCatalog['availableOptions']),
+      legacyPackageOverviewEn,
+    );
+    final availableOptionsAr = _firstNonEmptyList(
+      _stringList(bookingCatalog['availableOptionsAr']),
+      legacyPackageOverviewAr,
+    );
+    final packageOverviewEn = _firstNonEmptyList(
+      legacyPackageOverviewEn,
+      availableOptionsEn,
+    );
+    final packageOverviewAr = _firstNonEmptyList(
+      legacyPackageOverviewAr,
+      availableOptionsAr,
     );
     final bookingNotesEn = _stringList(bookingCatalog['notes']);
     final bookingNotesAr = _stringList(bookingCatalog['notesAr']);
@@ -344,7 +360,10 @@ class CatalogItemModel extends CatalogItemEntity {
         english: cancellationPolicyEn,
         arabic: cancellationPolicyAr,
       ),
-      availableMeals: const [],
+      availableMeals: resolveLocalizedList(
+        english: availableOptionsEn,
+        arabic: availableOptionsAr,
+      ),
       packageOverview: resolveLocalizedList(
         english: packageOverviewEn,
         arabic: packageOverviewAr,

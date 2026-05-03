@@ -12,6 +12,8 @@ class AttractionEntity extends Equatable {
     required this.about,
     required this.phone,
     required this.address,
+    this.geoLat = 23.588,
+    this.geoLng = 58.3829,
     required this.highlights,
     required this.inclusions,
     required this.catalogDescription,
@@ -49,6 +51,21 @@ class AttractionEntity extends Equatable {
     this.packageOverviewAr = const [],
     this.bookingNotesEn = const [],
     this.bookingNotesAr = const [],
+    this.catalogExcluded = const [],
+    this.catalogTermsAndConditions = const [],
+    this.catalogCancellationPolicy = const [],
+    this.catalogAvailableOptions = const [],
+    this.catalogLocation = '',
+    this.catalogExcludedEn = const [],
+    this.catalogExcludedAr = const [],
+    this.catalogTermsAndConditionsEn = const [],
+    this.catalogTermsAndConditionsAr = const [],
+    this.catalogCancellationPolicyEn = const [],
+    this.catalogCancellationPolicyAr = const [],
+    this.catalogAvailableOptionsEn = const [],
+    this.catalogAvailableOptionsAr = const [],
+    this.catalogLocationEn = '',
+    this.catalogLocationAr = '',
   });
 
   final String id;
@@ -61,6 +78,8 @@ class AttractionEntity extends Equatable {
   final String about;
   final String phone;
   final String address;
+  final double geoLat;
+  final double geoLng;
   final List<String> highlights;
   final List<String> inclusions;
   final String catalogDescription;
@@ -98,6 +117,21 @@ class AttractionEntity extends Equatable {
   final List<String> packageOverviewAr;
   final List<String> bookingNotesEn;
   final List<String> bookingNotesAr;
+  final List<String> catalogExcluded;
+  final List<String> catalogTermsAndConditions;
+  final List<String> catalogCancellationPolicy;
+  final List<String> catalogAvailableOptions;
+  final String catalogLocation;
+  final List<String> catalogExcludedEn;
+  final List<String> catalogExcludedAr;
+  final List<String> catalogTermsAndConditionsEn;
+  final List<String> catalogTermsAndConditionsAr;
+  final List<String> catalogCancellationPolicyEn;
+  final List<String> catalogCancellationPolicyAr;
+  final List<String> catalogAvailableOptionsEn;
+  final List<String> catalogAvailableOptionsAr;
+  final String catalogLocationEn;
+  final String catalogLocationAr;
 
   @override
   List<Object?> get props => [
@@ -111,6 +145,8 @@ class AttractionEntity extends Equatable {
     about,
     phone,
     address,
+    geoLat,
+    geoLng,
     highlights,
     inclusions,
     catalogDescription,
@@ -148,5 +184,20 @@ class AttractionEntity extends Equatable {
     packageOverviewAr,
     bookingNotesEn,
     bookingNotesAr,
+    catalogExcluded,
+    catalogTermsAndConditions,
+    catalogCancellationPolicy,
+    catalogAvailableOptions,
+    catalogLocation,
+    catalogExcludedEn,
+    catalogExcludedAr,
+    catalogTermsAndConditionsEn,
+    catalogTermsAndConditionsAr,
+    catalogCancellationPolicyEn,
+    catalogCancellationPolicyAr,
+    catalogAvailableOptionsEn,
+    catalogAvailableOptionsAr,
+    catalogLocationEn,
+    catalogLocationAr,
   ];
 }

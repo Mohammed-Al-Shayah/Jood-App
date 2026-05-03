@@ -213,18 +213,24 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
     if (date == null) return false;
 
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
     final offerDate = DateTime(date.year, date.month, date.day);
-    if (offerDate.isBefore(today)) return true;
-    if (offerDate.isAfter(today)) return false;
-
+    final startMinutes = _parseTimeToMinutes(
+      (offer['startTime'] as String? ?? '').trim(),
+    );
     final endMinutes =
         _parseTimeToMinutes((offer['endTime'] as String? ?? '').trim()) ??
-        _parseTimeToMinutes((offer['startTime'] as String? ?? '').trim());
-    if (endMinutes == null) return false;
+        startMinutes;
 
-    final nowMinutes = now.hour * 60 + now.minute;
-    return nowMinutes >= endMinutes;
+    if (endMinutes != null) {
+      var endDateTime = offerDate.add(Duration(minutes: endMinutes));
+      if (startMinutes != null && endMinutes <= startMinutes) {
+        endDateTime = endDateTime.add(const Duration(days: 1));
+      }
+      return !now.isBefore(endDateTime);
+    }
+
+    final today = DateTime(now.year, now.month, now.day);
+    return offerDate.isBefore(today);
   }
 
   static int? _parseTimeToMinutes(String value) {

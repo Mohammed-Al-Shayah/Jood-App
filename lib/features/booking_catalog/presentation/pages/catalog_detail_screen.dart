@@ -243,7 +243,8 @@ class CatalogDetailScreen extends StatelessWidget {
                             .optionsWillAppearAutomaticallyWhenConfigured,
                       ),
                   ],
-                  if (item.category == CatalogCategoryType.attraction &&
+                  if (!usesRestaurantStructuredSections &&
+                      item.category == CatalogCategoryType.attraction &&
                       (item.requiresMenuItemSelection ||
                           item.bookingNotes.isNotEmpty)) ...[
                     SizedBox(height: 12.h),
@@ -356,7 +357,8 @@ String _highlightsTitle(CatalogCategoryType category) {
 bool _usesRestaurantStructuredSections(CatalogCategoryType category) {
   return category == CatalogCategoryType.buffet ||
       category == CatalogCategoryType.setMenu ||
-      category == CatalogCategoryType.combo;
+      category == CatalogCategoryType.combo ||
+      category == CatalogCategoryType.attraction;
 }
 
 List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
@@ -445,7 +447,35 @@ List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
         emptyLabel: AppStrings.optionsWillAppearAutomaticallyWhenConfigured,
       ),
     ],
-    CatalogCategoryType.attraction => const <_CatalogSectionConfig>[],
+    CatalogCategoryType.attraction => [
+      _CatalogSectionConfig(
+        title: AppStrings.experienceHighlights,
+        items: item.highlights,
+        emptyLabel: AppStrings.highlightsWillAppearHereOnceConfigured,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.termsAndConditions,
+        items: _termsItemsForCategory(item),
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.whatsIncluded,
+        items: item.inclusions,
+        emptyLabel: AppStrings.includedDetailsWillAppearHere,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.whatsExcluded,
+        items: item.exclusions,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.cancellationTitle,
+        items: item.cancellationPolicy,
+      ),
+      _CatalogSectionConfig(
+        title: AppStrings.availableOptions,
+        items: item.availableMeals,
+        emptyLabel: AppStrings.optionsWillAppearAutomaticallyWhenConfigured,
+      ),
+    ],
   };
 
   for (var index = 0; index < sections.length; index++) {
@@ -518,17 +548,16 @@ class _BuffetLocationSection extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(18.r),
-        onTap: hasMapLocation ? () => _openCatalogLocationMap(context, item) : null,
+        onTap: hasMapLocation
+            ? () => _openCatalogLocationMap(context, item)
+            : null,
         child: Container(
           padding: EdgeInsets.all(16.r),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFFF1FBFA),
-                AppColors.cardBackground,
-              ],
+              colors: [const Color(0xFFF1FBFA), AppColors.cardBackground],
             ),
             borderRadius: BorderRadius.circular(18.r),
             border: Border.all(

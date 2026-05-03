@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
+import 'package:jood/core/utils/osm_geocoding_service.dart';
 import 'package:jood/features/admin/domain/usecases/delete_storage_file_usecase.dart';
 import 'package:jood/features/admin/domain/usecases/upload_restaurant_image_usecase.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_input_decoration.dart';
@@ -54,6 +55,7 @@ class _AdminRestaurantFormContentState
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
   late final TextEditingController _addressArController;
+  late final TextEditingController _locationSearchController;
   late final TextEditingController _geoLatController;
   late final TextEditingController _geoLngController;
   late final TextEditingController _openFromController;
@@ -122,14 +124,19 @@ class _AdminRestaurantFormContentState
   bool _isActive = true;
   bool _isUploadingImage = false;
   bool _isSubmitting = false;
+  bool _isSearchingLocation = false;
+  bool _isResolvingAddress = false;
   _LocationInputMode _locationInputMode = _LocationInputMode.manual;
   LatLng? _selectedMapLocation;
   String? _imageError;
+  String? _locationSearchError;
+  List<OsmPlaceResult> _locationSearchResults = const [];
 
   @override
   void initState() {
     super.initState();
     final restaurant = widget.restaurant;
+    final initialGeoPoint = _resolveInitialGeoPoint(restaurant);
     _nameController = TextEditingController(
       text: _preferredText(restaurant?.nameEn, restaurant?.name),
     );
@@ -140,10 +147,14 @@ class _AdminRestaurantFormContentState
     _cityIdArController = TextEditingController(
       text: restaurant?.cityIdAr ?? '',
     );
+    final initialAreaEn = _preferredText(restaurant?.areaEn, restaurant?.area);
     _areaController = TextEditingController(
-      text: _preferredText(restaurant?.areaEn, restaurant?.area),
+      text: initialAreaEn.isEmpty ? 'Oman' : initialAreaEn,
     );
-    _areaArController = TextEditingController(text: restaurant?.areaAr ?? '');
+    final initialAreaAr = restaurant?.areaAr.trim() ?? '';
+    _areaArController = TextEditingController(
+      text: initialAreaAr.isEmpty ? '\u0639\u0645\u0627\u0646' : initialAreaAr,
+    );
     _ratingController = TextEditingController(
       text: restaurant?.rating.toString() ?? '',
     );
@@ -164,11 +175,12 @@ class _AdminRestaurantFormContentState
     _addressArController = TextEditingController(
       text: restaurant?.addressAr ?? '',
     );
+    _locationSearchController = TextEditingController();
     _geoLatController = TextEditingController(
-      text: restaurant?.geoLat.toString() ?? '',
+      text: initialGeoPoint.latitude.toStringAsFixed(6),
     );
     _geoLngController = TextEditingController(
-      text: restaurant?.geoLng.toString() ?? '',
+      text: initialGeoPoint.longitude.toStringAsFixed(6),
     );
     _openFromController = TextEditingController(
       text: restaurant?.openFrom ?? '',
@@ -485,6 +497,7 @@ class _AdminRestaurantFormContentState
     _phoneController.dispose();
     _addressController.dispose();
     _addressArController.dispose();
+    _locationSearchController.dispose();
     _geoLatController.dispose();
     _geoLngController.dispose();
     _openFromController.dispose();
@@ -557,6 +570,19 @@ class _AdminRestaurantFormContentState
     setState(() {});
   }
 
+  LatLng _resolveInitialGeoPoint(RestaurantEntity? restaurant) {
+    if (restaurant == null) return const LatLng(23.588, 58.3829);
+    final latitude = restaurant.geoLat;
+    final longitude = restaurant.geoLng;
+    if (!_isValidGeoCoordinate(latitude, longitude)) {
+      return const LatLng(23.588, 58.3829);
+    }
+    if (latitude == 0 && longitude == 0) {
+      return const LatLng(23.588, 58.3829);
+    }
+    return LatLng(latitude, longitude);
+  }
+
   LatLng? _parseCoordinates() {
     final latitude = double.tryParse(_geoLatController.text.trim());
     final longitude = double.tryParse(_geoLngController.text.trim());
@@ -578,6 +604,105 @@ class _AdminRestaurantFormContentState
     _selectedMapLocation = point;
   }
 
+  String _languageCode() {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return code == 'ar' ? 'ar' : 'en';
+  }
+
+  Future<void> _searchLocation() async {
+    final query = _locationSearchController.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _locationSearchError = 'Type a place to search.';
+        _locationSearchResults = const [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearchingLocation = true;
+      _locationSearchError = null;
+    });
+
+    try {
+      final results = await OsmGeocodingService.searchPlaces(
+        query,
+        languageCode: _languageCode(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _locationSearchResults = results;
+        if (results.isEmpty) {
+          _locationSearchError = 'No places found. Try another keyword.';
+        }
+      });
+    } on OsmGeocodingException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _locationSearchResults = const [];
+        _locationSearchError = error.message;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSearchingLocation = false);
+      }
+    }
+  }
+
+  Future<void> _onMapPointPicked(LatLng point) async {
+    if (!mounted) return;
+    setState(() => _updateCoordinatesFromMap(point));
+    await _resolveAddressFromCoordinates(point);
+  }
+
+  Future<void> _resolveAddressFromCoordinates(LatLng point) async {
+    if (!mounted) return;
+    setState(() => _isResolvingAddress = true);
+    try {
+      final result = await OsmGeocodingService.reverseGeocode(
+        point,
+        languageCode: _languageCode(),
+      );
+      if (!mounted || result == null) return;
+      _applyResolvedLocation(result);
+    } on OsmGeocodingException {
+      if (!mounted) return;
+      // Keep current values if reverse lookup fails.
+    } finally {
+      if (mounted) {
+        setState(() => _isResolvingAddress = false);
+      }
+    }
+  }
+
+  void _selectSearchResult(OsmPlaceResult result) {
+    setState(() {
+      _updateCoordinatesFromMap(result.point);
+      _locationSearchError = null;
+      _locationSearchResults = const [];
+      _locationSearchController.text = result.displayName;
+    });
+    _applyResolvedLocation(result);
+  }
+
+  void _applyResolvedLocation(OsmPlaceResult result) {
+    final address = result.displayName.trim();
+    if (address.isNotEmpty) {
+      _addressController.text = address;
+      if (_addressArController.text.trim().isEmpty) {
+        _addressArController.text = address;
+      }
+    }
+
+    final country = result.country.trim();
+    if (country.isNotEmpty) {
+      _areaController.text = country;
+      if (_areaArController.text.trim().isEmpty) {
+        _areaArController.text = country;
+      }
+    }
+  }
+
   Widget _locationMapPicker() {
     final center =
         _selectedMapLocation ??
@@ -589,6 +714,65 @@ class _AdminRestaurantFormContentState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          TextFormField(
+            controller: _locationSearchController,
+            textInputAction: TextInputAction.search,
+            decoration: adminInputDecoration('Search place in Oman').copyWith(
+              suffixIcon: IconButton(
+                onPressed: _isSearchingLocation ? null : _searchLocation,
+                icon: _isSearchingLocation
+                    ? SizedBox(
+                        width: 18.w,
+                        height: 18.w,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.search),
+              ),
+            ),
+            onFieldSubmitted: (_) {
+              if (_isSearchingLocation) return;
+              _searchLocation();
+            },
+          ),
+          if (_locationSearchError != null) ...[
+            SizedBox(height: 8.h),
+            Text(
+              _locationSearchError!,
+              style: AppTextStyles.cardMeta.copyWith(color: Colors.redAccent),
+            ),
+          ],
+          if (_locationSearchResults.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Container(
+              constraints: BoxConstraints(maxHeight: 180.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: const Color(0xFFE3E7EF)),
+              ),
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: _locationSearchResults.length,
+                separatorBuilder: (_, _) =>
+                    const Divider(height: 1, color: Color(0xFFE3E7EF)),
+                itemBuilder: (context, index) {
+                  final result = _locationSearchResults[index];
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.place_outlined),
+                    title: Text(
+                      result.displayName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () => _selectSearchResult(result),
+                  );
+                },
+              ),
+            ),
+          ],
+          SizedBox(height: 10.h),
           SizedBox(
             height: 250.h,
             child: ClipRRect(
@@ -597,9 +781,7 @@ class _AdminRestaurantFormContentState
                 options: MapOptions(
                   initialCenter: center,
                   initialZoom: 14,
-                  onTap: (_, point) {
-                    setState(() => _updateCoordinatesFromMap(point));
-                  },
+                  onTap: (_, point) => _onMapPointPicked(point),
                 ),
                 children: [
                   TileLayer(
@@ -631,9 +813,23 @@ class _AdminRestaurantFormContentState
             ),
           ),
           SizedBox(height: 8.h),
-          Text(
-            'Tap on the map to pick the restaurant location',
-            style: AppTextStyles.cardMeta.copyWith(color: AppColors.textMuted),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Tap on the map to pick the restaurant location',
+                  style: AppTextStyles.cardMeta.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+              if (_isResolvingAddress)
+                SizedBox(
+                  width: 14.w,
+                  height: 14.w,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
           ),
         ],
       ),

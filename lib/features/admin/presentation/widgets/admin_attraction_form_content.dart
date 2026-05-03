@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
+import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/osm_geocoding_service.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/domain/usecases/delete_storage_file_usecase.dart';
 import 'package:jood/features/admin/domain/usecases/upload_attraction_image_usecase.dart';
@@ -11,6 +15,8 @@ import 'package:jood/features/admin/presentation/widgets/admin_input_decoration.
 import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
 import 'package:jood/features/attractions/data/models/attraction_model.dart';
 import 'package:jood/features/attractions/domain/entities/attraction_entity.dart';
+
+enum _LocationInputMode { manual, map }
 
 class AdminAttractionFormContent extends StatefulWidget {
   const AdminAttractionFormContent({
@@ -31,6 +37,10 @@ class AdminAttractionFormContent extends StatefulWidget {
 
 class _AdminAttractionFormContentState
     extends State<AdminAttractionFormContent> {
+  static const LatLng _omanMapCenter = LatLng(23.588, 58.3829);
+  static const String _defaultAreaEn = 'Oman';
+  static const String _defaultAreaAr = '\u0639\u0645\u0627\u0646';
+
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nameController;
@@ -47,6 +57,9 @@ class _AdminAttractionFormContentState
   late final TextEditingController _phoneController;
   late final TextEditingController _addressController;
   late final TextEditingController _addressArController;
+  late final TextEditingController _locationSearchController;
+  late final TextEditingController _geoLatController;
+  late final TextEditingController _geoLngController;
   late final TextEditingController _highlightsController;
   late final TextEditingController _highlightsArController;
   late final TextEditingController _inclusionsController;
@@ -57,10 +70,16 @@ class _AdminAttractionFormContentState
   late final TextEditingController _catalogHighlightsArController;
   late final TextEditingController _catalogIncludedController;
   late final TextEditingController _catalogIncludedArController;
-  late final TextEditingController _packageOverviewController;
-  late final TextEditingController _packageOverviewArController;
-  late final TextEditingController _bookingNotesController;
-  late final TextEditingController _bookingNotesArController;
+  late final TextEditingController _catalogExcludedController;
+  late final TextEditingController _catalogExcludedArController;
+  late final TextEditingController _catalogTermsController;
+  late final TextEditingController _catalogTermsArController;
+  late final TextEditingController _catalogCancellationController;
+  late final TextEditingController _catalogCancellationArController;
+  late final TextEditingController _catalogOptionsController;
+  late final TextEditingController _catalogOptionsArController;
+  late final TextEditingController _catalogLocationController;
+  late final TextEditingController _catalogLocationArController;
   late final TextEditingController _badgeController;
   late final TextEditingController _priceFromController;
   late final TextEditingController _discountController;
@@ -69,12 +88,19 @@ class _AdminAttractionFormContentState
   bool _isActive = true;
   bool _isUploadingImage = false;
   bool _isSubmitting = false;
+  bool _isSearchingLocation = false;
+  bool _isResolvingAddress = false;
+  _LocationInputMode _locationInputMode = _LocationInputMode.manual;
+  LatLng? _selectedMapLocation;
   String? _imageError;
+  String? _locationSearchError;
+  List<OsmPlaceResult> _locationSearchResults = const [];
 
   @override
   void initState() {
     super.initState();
     final attraction = widget.attraction;
+    final initialPoint = _resolveInitialGeoPoint(attraction);
     _nameController = TextEditingController(
       text: _preferredText(attraction?.nameEn, attraction?.name),
     );
@@ -85,10 +111,14 @@ class _AdminAttractionFormContentState
     _cityIdArController = TextEditingController(
       text: attraction?.cityIdAr ?? '',
     );
+    final initialAreaEn = _preferredText(attraction?.areaEn, attraction?.area);
     _areaController = TextEditingController(
-      text: _preferredText(attraction?.areaEn, attraction?.area),
+      text: initialAreaEn.isEmpty ? _defaultAreaEn : initialAreaEn,
     );
-    _areaArController = TextEditingController(text: attraction?.areaAr ?? '');
+    final initialAreaAr = attraction?.areaAr.trim() ?? '';
+    _areaArController = TextEditingController(
+      text: initialAreaAr.isEmpty ? _defaultAreaAr : initialAreaAr,
+    );
     _ratingController = TextEditingController(
       text: attraction?.rating.toString() ?? '',
     );
@@ -108,6 +138,13 @@ class _AdminAttractionFormContentState
     );
     _addressArController = TextEditingController(
       text: attraction?.addressAr ?? '',
+    );
+    _locationSearchController = TextEditingController();
+    _geoLatController = TextEditingController(
+      text: initialPoint.latitude.toStringAsFixed(6),
+    );
+    _geoLngController = TextEditingController(
+      text: initialPoint.longitude.toStringAsFixed(6),
     );
     _highlightsController = TextEditingController(
       text: _joinCsv(
@@ -156,24 +193,83 @@ class _AdminAttractionFormContentState
     _catalogIncludedArController = TextEditingController(
       text: _joinLines(attraction?.catalogIncludedAr),
     );
-    _packageOverviewController = TextEditingController(
+    _catalogExcludedController = TextEditingController(
       text: _joinLines(
         _preferredList(
-          attraction?.packageOverviewEn,
-          attraction?.packageOverview,
+          attraction?.catalogExcludedEn,
+          attraction?.catalogExcluded,
         ),
       ),
     );
-    _packageOverviewArController = TextEditingController(
-      text: _joinLines(attraction?.packageOverviewAr),
+    _catalogExcludedArController = TextEditingController(
+      text: _joinLines(attraction?.catalogExcludedAr),
     );
-    _bookingNotesController = TextEditingController(
+    _catalogTermsController = TextEditingController(
       text: _joinLines(
-        _preferredList(attraction?.bookingNotesEn, attraction?.bookingNotes),
+        _preferredListWithFallback(
+          primaryEnglish: attraction?.catalogTermsAndConditionsEn,
+          primaryLocalized: attraction?.catalogTermsAndConditions,
+          fallbackEnglish: attraction?.bookingNotesEn,
+          fallbackLocalized: attraction?.bookingNotes,
+        ),
       ),
     );
-    _bookingNotesArController = TextEditingController(
-      text: _joinLines(attraction?.bookingNotesAr),
+    _catalogTermsArController = TextEditingController(
+      text: _joinLines(
+        _preferredListWithFallback(
+          primaryEnglish: attraction?.catalogTermsAndConditionsAr,
+          primaryLocalized: attraction?.catalogTermsAndConditionsAr,
+          fallbackEnglish: attraction?.bookingNotesAr,
+          fallbackLocalized: attraction?.bookingNotesAr,
+        ),
+      ),
+    );
+    _catalogCancellationController = TextEditingController(
+      text: _joinLines(
+        _preferredList(
+          attraction?.catalogCancellationPolicyEn,
+          attraction?.catalogCancellationPolicy,
+        ),
+      ),
+    );
+    _catalogCancellationArController = TextEditingController(
+      text: _joinLines(attraction?.catalogCancellationPolicyAr),
+    );
+    _catalogOptionsController = TextEditingController(
+      text: _joinLines(
+        _preferredListWithFallback(
+          primaryEnglish: attraction?.catalogAvailableOptionsEn,
+          primaryLocalized: attraction?.catalogAvailableOptions,
+          fallbackEnglish: attraction?.packageOverviewEn,
+          fallbackLocalized: attraction?.packageOverview,
+        ),
+      ),
+    );
+    _catalogOptionsArController = TextEditingController(
+      text: _joinLines(
+        _preferredListWithFallback(
+          primaryEnglish: attraction?.catalogAvailableOptionsAr,
+          primaryLocalized: attraction?.catalogAvailableOptionsAr,
+          fallbackEnglish: attraction?.packageOverviewAr,
+          fallbackLocalized: attraction?.packageOverviewAr,
+        ),
+      ),
+    );
+    _catalogLocationController = TextEditingController(
+      text: _preferredTextWithFallback(
+        primaryEnglish: attraction?.catalogLocationEn,
+        primaryLocalized: attraction?.catalogLocation,
+        fallbackEnglish: attraction?.addressEn,
+        fallbackLocalized: attraction?.address,
+      ),
+    );
+    _catalogLocationArController = TextEditingController(
+      text: _preferredTextWithFallback(
+        primaryEnglish: attraction?.catalogLocationAr,
+        primaryLocalized: attraction?.catalogLocationAr,
+        fallbackEnglish: attraction?.addressAr,
+        fallbackLocalized: attraction?.addressAr,
+      ),
     );
     _badgeController = TextEditingController(text: attraction?.badge ?? '');
     _priceFromController = TextEditingController(
@@ -186,6 +282,7 @@ class _AdminAttractionFormContentState
       text: attraction?.slotsLeft ?? '',
     );
     _isActive = attraction?.isActive ?? true;
+    _selectedMapLocation = _parseCoordinates();
   }
 
   @override
@@ -206,6 +303,9 @@ class _AdminAttractionFormContentState
     _phoneController.dispose();
     _addressController.dispose();
     _addressArController.dispose();
+    _locationSearchController.dispose();
+    _geoLatController.dispose();
+    _geoLngController.dispose();
     _highlightsController.dispose();
     _highlightsArController.dispose();
     _inclusionsController.dispose();
@@ -216,10 +316,16 @@ class _AdminAttractionFormContentState
     _catalogHighlightsArController.dispose();
     _catalogIncludedController.dispose();
     _catalogIncludedArController.dispose();
-    _packageOverviewController.dispose();
-    _packageOverviewArController.dispose();
-    _bookingNotesController.dispose();
-    _bookingNotesArController.dispose();
+    _catalogExcludedController.dispose();
+    _catalogExcludedArController.dispose();
+    _catalogTermsController.dispose();
+    _catalogTermsArController.dispose();
+    _catalogCancellationController.dispose();
+    _catalogCancellationArController.dispose();
+    _catalogOptionsController.dispose();
+    _catalogOptionsArController.dispose();
+    _catalogLocationController.dispose();
+    _catalogLocationArController.dispose();
     _badgeController.dispose();
     _priceFromController.dispose();
     _discountController.dispose();
@@ -230,6 +336,266 @@ class _AdminAttractionFormContentState
   void _handleCoverImageChanged() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  LatLng _resolveInitialGeoPoint(AttractionEntity? attraction) {
+    if (attraction == null) return _omanMapCenter;
+    final latitude = attraction.geoLat;
+    final longitude = attraction.geoLng;
+    if (!_isValidGeoCoordinate(latitude, longitude)) return _omanMapCenter;
+    if (latitude == 0 && longitude == 0) return _omanMapCenter;
+    return LatLng(latitude, longitude);
+  }
+
+  LatLng? _parseCoordinates() {
+    final latitude = double.tryParse(_geoLatController.text.trim());
+    final longitude = double.tryParse(_geoLngController.text.trim());
+    if (latitude == null || longitude == null) return null;
+    if (!_isValidGeoCoordinate(latitude, longitude)) return null;
+    return LatLng(latitude, longitude);
+  }
+
+  bool _isValidGeoCoordinate(double latitude, double longitude) {
+    return latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180;
+  }
+
+  void _updateCoordinatesFromMap(LatLng point) {
+    _geoLatController.text = point.latitude.toStringAsFixed(6);
+    _geoLngController.text = point.longitude.toStringAsFixed(6);
+    _selectedMapLocation = point;
+  }
+
+  String _languageCode() {
+    final code = Localizations.localeOf(context).languageCode.toLowerCase();
+    return code == 'ar' ? 'ar' : 'en';
+  }
+
+  Future<void> _searchLocation() async {
+    final query = _locationSearchController.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _locationSearchError = 'Type a place to search.';
+        _locationSearchResults = const [];
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearchingLocation = true;
+      _locationSearchError = null;
+    });
+
+    try {
+      final results = await OsmGeocodingService.searchPlaces(
+        query,
+        languageCode: _languageCode(),
+      );
+      if (!mounted) return;
+      setState(() {
+        _locationSearchResults = results;
+        if (results.isEmpty) {
+          _locationSearchError = 'No places found. Try another keyword.';
+        }
+      });
+    } on OsmGeocodingException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _locationSearchResults = const [];
+        _locationSearchError = error.message;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSearchingLocation = false);
+      }
+    }
+  }
+
+  Future<void> _onMapPointPicked(LatLng point) async {
+    if (!mounted) return;
+    setState(() => _updateCoordinatesFromMap(point));
+    await _resolveAddressFromCoordinates(point);
+  }
+
+  Future<void> _resolveAddressFromCoordinates(LatLng point) async {
+    if (!mounted) return;
+    setState(() => _isResolvingAddress = true);
+    try {
+      final result = await OsmGeocodingService.reverseGeocode(
+        point,
+        languageCode: _languageCode(),
+      );
+      if (!mounted || result == null) return;
+      _applyResolvedLocation(result);
+    } on OsmGeocodingException {
+      if (!mounted) return;
+      // Keep current values if reverse lookup fails.
+    } finally {
+      if (mounted) {
+        setState(() => _isResolvingAddress = false);
+      }
+    }
+  }
+
+  void _selectSearchResult(OsmPlaceResult result) {
+    setState(() {
+      _updateCoordinatesFromMap(result.point);
+      _locationSearchError = null;
+      _locationSearchResults = const [];
+      _locationSearchController.text = result.displayName;
+    });
+    _applyResolvedLocation(result);
+  }
+
+  void _applyResolvedLocation(OsmPlaceResult result) {
+    final address = result.displayName.trim();
+    if (address.isNotEmpty) {
+      _addressController.text = address;
+      if (_addressArController.text.trim().isEmpty) {
+        _addressArController.text = address;
+      }
+    }
+
+    final country = result.country.trim();
+    if (country.isNotEmpty) {
+      _areaController.text = country;
+      if (_areaArController.text.trim().isEmpty) {
+        _areaArController.text = country;
+      }
+    }
+  }
+
+  Widget _locationMapPicker() {
+    final center =
+        _selectedMapLocation ?? _parseCoordinates() ?? _omanMapCenter;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 18.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextFormField(
+            controller: _locationSearchController,
+            textInputAction: TextInputAction.search,
+            decoration: adminInputDecoration('Search place in Oman').copyWith(
+              suffixIcon: IconButton(
+                onPressed: _isSearchingLocation ? null : _searchLocation,
+                icon: _isSearchingLocation
+                    ? SizedBox(
+                        width: 18.w,
+                        height: 18.w,
+                        child: const CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.search),
+              ),
+            ),
+            onFieldSubmitted: (_) {
+              if (_isSearchingLocation) return;
+              _searchLocation();
+            },
+          ),
+          if (_locationSearchError != null) ...[
+            SizedBox(height: 8.h),
+            Text(
+              _locationSearchError!,
+              style: AppTextStyles.cardMeta.copyWith(color: Colors.redAccent),
+            ),
+          ],
+          if (_locationSearchResults.isNotEmpty) ...[
+            SizedBox(height: 8.h),
+            Container(
+              constraints: BoxConstraints(maxHeight: 180.h),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: const Color(0xFFE3E7EF)),
+              ),
+              child: ListView.separated(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: _locationSearchResults.length,
+                separatorBuilder: (_, _) =>
+                    const Divider(height: 1, color: Color(0xFFE3E7EF)),
+                itemBuilder: (context, index) {
+                  final result = _locationSearchResults[index];
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.place_outlined),
+                    title: Text(
+                      result.displayName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () => _selectSearchResult(result),
+                  );
+                },
+              ),
+            ),
+          ],
+          SizedBox(height: 10.h),
+          SizedBox(
+            height: 250.h,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14.r),
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: center,
+                  initialZoom: 14,
+                  onTap: (_, point) => _onMapPointPicked(point),
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.jood.offers',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _selectedMapLocation ?? center,
+                        width: 44.w,
+                        height: 44.w,
+                        child: const Icon(
+                          Icons.location_pin,
+                          color: AppColors.primary,
+                          size: 44,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const RichAttributionWidget(
+                    attributions: [
+                      TextSourceAttribution('OpenStreetMap contributors'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Tap on the map to pick the attraction location',
+                  style: AppTextStyles.cardMeta.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ),
+              if (_isResolvingAddress)
+                SizedBox(
+                  width: 14.w,
+                  height: 14.w,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -267,7 +633,7 @@ class _AdminAttractionFormContentState
           ),
           SizedBox(height: 14.h),
           AdminSectionCard(
-            title: 'Contact',
+            title: 'Contact & Location',
             child: Column(
               children: [
                 _textField(_phoneController, 'Phone'),
@@ -276,6 +642,49 @@ class _AdminAttractionFormContentState
                   arabicController: _addressArController,
                   label: 'Address',
                   maxLines: 2,
+                ),
+                Padding(
+                  padding: EdgeInsets.only(bottom: 14.h),
+                  child: Wrap(
+                    spacing: 10.w,
+                    runSpacing: 8.h,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Manual'),
+                        selected:
+                            _locationInputMode == _LocationInputMode.manual,
+                        onSelected: (_) {
+                          setState(() {
+                            _locationInputMode = _LocationInputMode.manual;
+                          });
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('Pick from map'),
+                        selected: _locationInputMode == _LocationInputMode.map,
+                        onSelected: (_) {
+                          setState(() {
+                            _locationInputMode = _LocationInputMode.map;
+                            _selectedMapLocation ??= _parseCoordinates();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                if (_locationInputMode == _LocationInputMode.map)
+                  _locationMapPicker(),
+                _geoNumberField(
+                  _geoLatController,
+                  'Geo Lat',
+                  min: -90,
+                  max: 90,
+                ),
+                _geoNumberField(
+                  _geoLngController,
+                  'Geo Lng',
+                  min: -180,
+                  max: 180,
                 ),
               ],
             ),
@@ -308,38 +717,63 @@ class _AdminAttractionFormContentState
           ),
           SizedBox(height: 14.h),
           AdminSectionCard(
-            title: 'Booking Catalog',
+            title: 'Attractions',
             child: Column(
               children: [
                 ..._localizedTextFields(
                   englishController: _catalogDescriptionController,
                   arabicController: _catalogDescriptionArController,
-                  label: 'Catalog Description',
+                  label: 'Description',
                   maxLines: 4,
+                  englishRequired: false,
                 ),
                 ..._localizedTextFields(
                   englishController: _catalogHighlightsController,
                   arabicController: _catalogHighlightsArController,
-                  label: 'Catalog Highlights (one per line)',
+                  label: 'Experience Highlights (one per line)',
                   maxLines: 4,
+                  englishRequired: false,
+                ),
+                ..._localizedTextFields(
+                  englishController: _catalogTermsController,
+                  arabicController: _catalogTermsArController,
+                  label: 'Terms & Conditions (one per line)',
+                  maxLines: 4,
+                  englishRequired: false,
                 ),
                 ..._localizedTextFields(
                   englishController: _catalogIncludedController,
                   arabicController: _catalogIncludedArController,
-                  label: 'Included Items (one per line)',
+                  label: 'What\'s Included (one per line)',
                   maxLines: 4,
+                  englishRequired: false,
                 ),
                 ..._localizedTextFields(
-                  englishController: _packageOverviewController,
-                  arabicController: _packageOverviewArController,
-                  label: 'Package Overview (one per line)',
+                  englishController: _catalogExcludedController,
+                  arabicController: _catalogExcludedArController,
+                  label: 'What\'s Excluded (one per line)',
                   maxLines: 4,
+                  englishRequired: false,
                 ),
                 ..._localizedTextFields(
-                  englishController: _bookingNotesController,
-                  arabicController: _bookingNotesArController,
-                  label: 'Booking Notes (one per line)',
+                  englishController: _catalogCancellationController,
+                  arabicController: _catalogCancellationArController,
+                  label: 'Cancellation Policy (one per line)',
                   maxLines: 4,
+                  englishRequired: false,
+                ),
+                ..._localizedTextFields(
+                  englishController: _catalogOptionsController,
+                  arabicController: _catalogOptionsArController,
+                  label: 'Available Options (one per line)',
+                  maxLines: 4,
+                  englishRequired: false,
+                ),
+                ..._localizedTextFields(
+                  englishController: _catalogLocationController,
+                  arabicController: _catalogLocationArController,
+                  label: 'Location',
+                  maxLines: 2,
                   englishRequired: false,
                 ),
               ],
@@ -525,6 +959,37 @@ class _AdminAttractionFormContentState
     );
   }
 
+  Widget _geoNumberField(
+    TextEditingController controller,
+    String label, {
+    required double min,
+    required double max,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 18.h),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: adminInputDecoration(label),
+        onChanged: (_) {
+          final parsed = _parseCoordinates();
+          if (parsed == null) return;
+          if (!mounted) return;
+          setState(() => _selectedMapLocation = parsed);
+        },
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) return 'Required';
+          final parsed = double.tryParse(value.trim());
+          if (parsed == null) return 'Invalid number';
+          if (parsed < min || parsed > max) {
+            return 'Value must be between $min and $max';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
   List<String> _splitCsv(String value) {
     return value
         .split(',')
@@ -557,10 +1022,32 @@ class _AdminAttractionFormContentState
     return _cleanList(fallback);
   }
 
+  List<String> _preferredListWithFallback({
+    required List<String>? primaryEnglish,
+    required List<String>? primaryLocalized,
+    required List<String>? fallbackEnglish,
+    required List<String>? fallbackLocalized,
+  }) {
+    final primary = _preferredList(primaryEnglish, primaryLocalized);
+    if (primary.isNotEmpty) return primary;
+    return _preferredList(fallbackEnglish, fallbackLocalized);
+  }
+
   String _preferredText(String? english, String? fallback) {
     final normalizedEnglish = english?.trim() ?? '';
     if (normalizedEnglish.isNotEmpty) return normalizedEnglish;
     return fallback?.trim() ?? '';
+  }
+
+  String _preferredTextWithFallback({
+    required String? primaryEnglish,
+    required String? primaryLocalized,
+    required String? fallbackEnglish,
+    required String? fallbackLocalized,
+  }) {
+    final primary = _preferredText(primaryEnglish, primaryLocalized);
+    if (primary.isNotEmpty) return primary;
+    return _preferredText(fallbackEnglish, fallbackLocalized);
   }
 
   List<String> _cleanList(List<String>? values) {
@@ -579,14 +1066,31 @@ class _AdminAttractionFormContentState
     final areaEn = _areaController.text.trim();
     final aboutEn = _aboutController.text.trim();
     final addressEn = _addressController.text.trim();
+    final geoLat = double.parse(_geoLatController.text.trim());
+    final geoLng = double.parse(_geoLngController.text.trim());
     final existingAttraction = widget.attraction;
     final highlightsEn = _splitCsv(_highlightsController.text);
     final inclusionsEn = _splitCsv(_inclusionsController.text);
     final catalogDescriptionEn = _catalogDescriptionController.text.trim();
     final catalogHighlightsEn = _splitLines(_catalogHighlightsController.text);
     final catalogIncludedEn = _splitLines(_catalogIncludedController.text);
-    final packageOverviewEn = _splitLines(_packageOverviewController.text);
-    final bookingNotesEn = _splitLines(_bookingNotesController.text);
+    final catalogExcludedEn = _splitLines(_catalogExcludedController.text);
+    final catalogTermsEn = _splitLines(_catalogTermsController.text);
+    final catalogTermsAr = _splitLines(_catalogTermsArController.text);
+    final catalogCancellationEn = _splitLines(
+      _catalogCancellationController.text,
+    );
+    final catalogCancellationAr = _splitLines(
+      _catalogCancellationArController.text,
+    );
+    final catalogOptionsEn = _splitLines(_catalogOptionsController.text);
+    final catalogOptionsAr = _splitLines(_catalogOptionsArController.text);
+    final catalogLocationEn = _catalogLocationController.text.trim();
+    final catalogLocationAr = _catalogLocationArController.text.trim();
+    final packageOverviewEn = catalogOptionsEn;
+    final packageOverviewAr = catalogOptionsAr;
+    final bookingNotesEn = catalogTermsEn;
+    final bookingNotesAr = catalogTermsAr;
 
     final attraction = AttractionModel(
       id: widget.attraction?.id ?? '',
@@ -602,11 +1106,18 @@ class _AdminAttractionFormContentState
       about: aboutEn,
       phone: _phoneController.text.trim(),
       address: addressEn,
+      geoLat: geoLat,
+      geoLng: geoLng,
       highlights: highlightsEn,
       inclusions: inclusionsEn,
       catalogDescription: catalogDescriptionEn,
       catalogHighlights: catalogHighlightsEn,
       catalogIncluded: catalogIncludedEn,
+      catalogExcluded: catalogExcludedEn,
+      catalogTermsAndConditions: catalogTermsEn,
+      catalogCancellationPolicy: catalogCancellationEn,
+      catalogAvailableOptions: catalogOptionsEn,
+      catalogLocation: catalogLocationEn,
       packageOverview: packageOverviewEn,
       bookingNotes: bookingNotesEn,
       isActive: _isActive,
@@ -637,10 +1148,20 @@ class _AdminAttractionFormContentState
       catalogHighlightsAr: _splitLines(_catalogHighlightsArController.text),
       catalogIncludedEn: catalogIncludedEn,
       catalogIncludedAr: _splitLines(_catalogIncludedArController.text),
+      catalogExcludedEn: catalogExcludedEn,
+      catalogExcludedAr: _splitLines(_catalogExcludedArController.text),
+      catalogTermsAndConditionsEn: catalogTermsEn,
+      catalogTermsAndConditionsAr: catalogTermsAr,
+      catalogCancellationPolicyEn: catalogCancellationEn,
+      catalogCancellationPolicyAr: catalogCancellationAr,
+      catalogAvailableOptionsEn: catalogOptionsEn,
+      catalogAvailableOptionsAr: catalogOptionsAr,
+      catalogLocationEn: catalogLocationEn,
+      catalogLocationAr: catalogLocationAr,
       packageOverviewEn: packageOverviewEn,
-      packageOverviewAr: _splitLines(_packageOverviewArController.text),
+      packageOverviewAr: packageOverviewAr,
       bookingNotesEn: bookingNotesEn,
-      bookingNotesAr: _splitLines(_bookingNotesArController.text),
+      bookingNotesAr: bookingNotesAr,
     );
 
     setState(() => _isSubmitting = true);

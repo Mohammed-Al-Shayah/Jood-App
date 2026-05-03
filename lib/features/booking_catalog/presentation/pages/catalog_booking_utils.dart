@@ -327,15 +327,20 @@ bool isOfferExpired(OfferEntity offer) {
   final date = DateTime.tryParse(offer.date);
   if (date == null) return false;
   final now = DateTime.now();
+  final offerDate = DateTime(date.year, date.month, date.day);
+  final startMinutes = parseTimeToMinutes(offer.startTime);
+  final endMinutes = parseTimeToMinutes(offer.endTime) ?? startMinutes;
+
+  if (endMinutes != null) {
+    var endDateTime = offerDate.add(Duration(minutes: endMinutes));
+    if (startMinutes != null && endMinutes <= startMinutes) {
+      endDateTime = endDateTime.add(const Duration(days: 1));
+    }
+    return !now.isBefore(endDateTime);
+  }
+
   final today = DateTime(now.year, now.month, now.day);
-  final parsedDate = DateTime(date.year, date.month, date.day);
-  if (parsedDate.isBefore(today)) return true;
-  if (parsedDate.isAfter(today)) return false;
-  final endMinutes =
-      parseTimeToMinutes(offer.endTime) ?? parseTimeToMinutes(offer.startTime);
-  if (endMinutes == null) return false;
-  final nowMinutes = now.hour * 60 + now.minute;
-  return nowMinutes >= endMinutes;
+  return offerDate.isBefore(today);
 }
 
 int? parseTimeToMinutes(String value) {

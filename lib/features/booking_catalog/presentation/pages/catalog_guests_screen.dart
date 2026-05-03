@@ -546,7 +546,9 @@ class _SummarySection extends StatelessWidget {
               style: AppTextStyles.cardMeta.copyWith(
                 fontSize: 13.sp,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                color: amounts.discountTotal > 0
+                    ? Colors.red
+                    : AppColors.textSecondary,
               ),
             ),
           ),
