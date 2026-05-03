@@ -1,8 +1,11 @@
 import 'dart:convert';
 
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:latlong2/latlong.dart';
 
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
@@ -13,6 +16,8 @@ import 'package:jood/features/admin/presentation/widgets/admin_input_decoration.
 import 'package:jood/features/admin/presentation/widgets/admin_section_card.dart';
 import 'package:jood/features/restaurants/data/models/restaurant_model.dart';
 import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
+
+enum _LocationInputMode { manual, map }
 
 class AdminRestaurantFormContent extends StatefulWidget {
   const AdminRestaurantFormContent({
@@ -117,6 +122,8 @@ class _AdminRestaurantFormContentState
   bool _isActive = true;
   bool _isUploadingImage = false;
   bool _isSubmitting = false;
+  _LocationInputMode _locationInputMode = _LocationInputMode.manual;
+  LatLng? _selectedMapLocation;
   String? _imageError;
 
   @override
@@ -457,6 +464,7 @@ class _AdminRestaurantFormContentState
       text: restaurant?.comboLocationAr ?? '',
     );
     _isActive = restaurant?.isActive ?? true;
+    _selectedMapLocation = _parseCoordinates();
   }
 
   @override
@@ -549,6 +557,89 @@ class _AdminRestaurantFormContentState
     setState(() {});
   }
 
+  LatLng? _parseCoordinates() {
+    final latitude = double.tryParse(_geoLatController.text.trim());
+    final longitude = double.tryParse(_geoLngController.text.trim());
+    if (latitude == null || longitude == null) return null;
+    if (!_isValidGeoCoordinate(latitude, longitude)) return null;
+    return LatLng(latitude, longitude);
+  }
+
+  bool _isValidGeoCoordinate(double latitude, double longitude) {
+    return latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180;
+  }
+
+  void _updateCoordinatesFromMap(LatLng point) {
+    _geoLatController.text = point.latitude.toStringAsFixed(6);
+    _geoLngController.text = point.longitude.toStringAsFixed(6);
+    _selectedMapLocation = point;
+  }
+
+  Widget _locationMapPicker() {
+    final center =
+        _selectedMapLocation ??
+        _parseCoordinates() ??
+        const LatLng(23.588, 58.3829);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 18.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 250.h,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14.r),
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: center,
+                  initialZoom: 14,
+                  onTap: (_, point) {
+                    setState(() => _updateCoordinatesFromMap(point));
+                  },
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.jood.offers',
+                  ),
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: _selectedMapLocation ?? center,
+                        width: 44.w,
+                        height: 44.w,
+                        child: const Icon(
+                          Icons.location_pin,
+                          color: AppColors.primary,
+                          size: 44,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const RichAttributionWidget(
+                    attributions: [
+                      TextSourceAttribution('OpenStreetMap contributors'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            'Tap on the map to pick the restaurant location',
+            style: AppTextStyles.cardMeta.copyWith(color: AppColors.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.restaurant != null;
@@ -594,8 +685,49 @@ class _AdminRestaurantFormContentState
                   label: 'Address',
                   maxLines: 2,
                 ),
-                _numberField(_geoLatController, 'Geo Lat'),
-                _numberField(_geoLngController, 'Geo Lng'),
+                Padding(
+                  padding: EdgeInsets.only(bottom: 14.h),
+                  child: Wrap(
+                    spacing: 10.w,
+                    runSpacing: 8.h,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Manual'),
+                        selected:
+                            _locationInputMode == _LocationInputMode.manual,
+                        onSelected: (_) {
+                          setState(() {
+                            _locationInputMode = _LocationInputMode.manual;
+                          });
+                        },
+                      ),
+                      ChoiceChip(
+                        label: const Text('Pick from map'),
+                        selected: _locationInputMode == _LocationInputMode.map,
+                        onSelected: (_) {
+                          setState(() {
+                            _locationInputMode = _LocationInputMode.map;
+                            _selectedMapLocation ??= _parseCoordinates();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                if (_locationInputMode == _LocationInputMode.map)
+                  _locationMapPicker(),
+                _geoNumberField(
+                  _geoLatController,
+                  'Geo Lat',
+                  min: -90,
+                  max: 90,
+                ),
+                _geoNumberField(
+                  _geoLngController,
+                  'Geo Lng',
+                  min: -180,
+                  max: 180,
+                ),
               ],
             ),
           ),
@@ -977,6 +1109,37 @@ class _AdminRestaurantFormContentState
           if (value == null || value.trim().isEmpty) return 'Required';
           final parsed = double.tryParse(value);
           if (parsed == null) return 'Invalid number';
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _geoNumberField(
+    TextEditingController controller,
+    String label, {
+    required double min,
+    required double max,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 18.h),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: adminInputDecoration(label),
+        onChanged: (_) {
+          final parsed = _parseCoordinates();
+          if (parsed == null) return;
+          if (!mounted) return;
+          setState(() => _selectedMapLocation = parsed);
+        },
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) return 'Required';
+          final parsed = double.tryParse(value.trim());
+          if (parsed == null) return 'Invalid number';
+          if (parsed < min || parsed > max) {
+            return 'Value must be between $min and $max';
+          }
           return null;
         },
       ),

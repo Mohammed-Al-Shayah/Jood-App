@@ -64,6 +64,10 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>We use the camera to scan order QR codes at the restaurant.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location to show nearby places and map features.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We use your location to show nearby places and map features.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need permission to save images to your photo library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

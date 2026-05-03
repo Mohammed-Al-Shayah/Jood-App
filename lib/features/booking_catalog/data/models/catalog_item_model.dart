@@ -29,6 +29,8 @@ class CatalogItemModel extends CatalogItemEntity {
     required super.packageOverview,
     required super.bookingNotes,
     super.location,
+    super.geoLat,
+    super.geoLng,
     required super.requiresMenuItemSelection,
     required super.badge,
     required super.priceFrom,
@@ -44,6 +46,7 @@ class CatalogItemModel extends CatalogItemEntity {
   }) {
     final data = doc.data() ?? const <String, dynamic>{};
     final bookingCatalog = _asMap(data['bookingCatalog']);
+    final geo = _asMap(data['geo']);
     final categoryData = category == CatalogCategoryType.buffet
         ? _asMap(bookingCatalog['buffet'])
         : category == CatalogCategoryType.setMenu
@@ -179,6 +182,8 @@ class CatalogItemModel extends CatalogItemEntity {
         arabic: bookingNotesAr,
       ),
       location: resolveLocalizedText(english: locationEn, arabic: locationAr),
+      geoLat: NumberUtils.toDouble(geo['lat']),
+      geoLng: NumberUtils.toDouble(geo['lng']),
       requiresMenuItemSelection:
           category == CatalogCategoryType.setMenu &&
           (categoryData['requiresItemSelection'] as bool? ?? true),
@@ -220,6 +225,7 @@ class CatalogItemModel extends CatalogItemEntity {
   }) {
     final data = doc.data() ?? const <String, dynamic>{};
     final bookingCatalog = _asMap(data['bookingCatalog']);
+    final geo = _asMap(data['geo']);
 
     final nameEn = _stringValue(data['name']);
     final nameAr = _stringValue(data['nameAr']);
@@ -348,6 +354,8 @@ class CatalogItemModel extends CatalogItemEntity {
         arabic: bookingNotesAr,
       ),
       location: resolveLocalizedText(english: locationEn, arabic: locationAr),
+      geoLat: NumberUtils.toDouble(geo['lat']),
+      geoLng: NumberUtils.toDouble(geo['lng']),
       requiresMenuItemSelection: false,
       badge: _catalogLabel(
         primary: bookingCatalog,

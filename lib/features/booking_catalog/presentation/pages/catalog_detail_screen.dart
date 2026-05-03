@@ -10,6 +10,7 @@ import '../../../../core/utils/extensions.dart';
 import '../../../../core/widgets/bottom_cta_bar.dart';
 import '../../domain/entities/catalog_category_type.dart';
 import '../../domain/entities/catalog_item_entity.dart';
+import '../../../restaurants/presentation/pages/restaurant_map_screen.dart';
 import '../widgets/catalog_image.dart';
 import '../widgets/catalog_info_section.dart';
 
@@ -511,73 +512,117 @@ class _BuffetLocationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final summary = _locationSummary(item);
+    final hasMapLocation = _hasUsableCoordinates(item.geoLat, item.geoLng);
 
-    return Container(
-      padding: EdgeInsets.all(16.r),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFF1FBFA),
-            AppColors.cardBackground,
-          ],
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.18),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowColor,
-            blurRadius: 14.r,
-            offset: Offset(0, 6.h),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 46.w,
-            height: 46.w,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(15.r),
-            ),
-            child: Icon(
-              Icons.location_on_outlined,
-              color: AppColors.primaryDark,
-              size: 22.sp,
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppStrings.locationTitle,
-                  style: AppTextStyles.sectionTitle.copyWith(
-                    fontSize: 15.sp,
-                  ),
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  summary,
-                  style: AppTextStyles.cardMeta.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 13.sp,
-                    height: 1.45,
-                  ),
-                ),
+        onTap: hasMapLocation ? () => _openCatalogLocationMap(context, item) : null,
+        child: Container(
+          padding: EdgeInsets.all(16.r),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFFF1FBFA),
+                AppColors.cardBackground,
               ],
             ),
+            borderRadius: BorderRadius.circular(18.r),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.18),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowColor,
+                blurRadius: 14.r,
+                offset: Offset(0, 6.h),
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 46.w,
+                height: 46.w,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(15.r),
+                ),
+                child: Icon(
+                  Icons.location_on_outlined,
+                  color: AppColors.primaryDark,
+                  size: 22.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            AppStrings.locationTitle,
+                            style: AppTextStyles.sectionTitle.copyWith(
+                              fontSize: 15.sp,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          AppStrings.map,
+                          style: AppTextStyles.cardPrice.copyWith(
+                            fontSize: 12.sp,
+                            color: hasMapLocation
+                                ? AppColors.primary
+                                : AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 6.h),
+                    Text(
+                      summary,
+                      style: AppTextStyles.cardMeta.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 13.sp,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
+}
+
+void _openCatalogLocationMap(BuildContext context, CatalogItemEntity item) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => RestaurantMapScreen(
+        restaurantName: item.name,
+        latitude: item.geoLat,
+        longitude: item.geoLng,
+      ),
+    ),
+  );
+}
+
+bool _hasUsableCoordinates(double latitude, double longitude) {
+  if (!latitude.isFinite || !longitude.isFinite) return false;
+  if (latitude == 0 && longitude == 0) return false;
+  return latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180;
 }
 
 String _locationSummary(CatalogItemEntity item) {

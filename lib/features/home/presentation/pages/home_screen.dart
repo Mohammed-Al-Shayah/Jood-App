@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../../../core/di/service_locator.dart';
@@ -44,11 +47,51 @@ class HomeTab extends StatefulWidget {
 class _HomeTabState extends State<HomeTab> {
   late final ScrollController _scrollController;
   bool _showScrollToTopButton = false;
+  double? _userLatitude;
+  double? _userLongitude;
+  bool _isResolvingLocation = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController()..addListener(_handleScroll);
+    unawaited(_resolveUserLocation());
+  }
+
+  Future<void> _resolveUserLocation() async {
+    if (_isResolvingLocation) return;
+    _isResolvingLocation = true;
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled || !mounted) return;
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever ||
+          !mounted) {
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _userLatitude = position.latitude;
+        _userLongitude = position.longitude;
+      });
+    } catch (_) {
+      // Keep fallback nearby logic when device location is unavailable.
+    } finally {
+      _isResolvingLocation = false;
+    }
   }
 
   void _handleScroll() {
@@ -120,6 +163,8 @@ class _HomeTabState extends State<HomeTab> {
                     items,
                     userCity: state.userCity,
                     userCountry: state.userCountry,
+                    userLatitude: _userLatitude,
+                    userLongitude: _userLongitude,
                   );
             final categorySpacing = 12.w;
             const visibleCategoryCards = 3.25;
@@ -849,7 +894,35 @@ List<CatalogItemEntity> _nearbyItems(
   List<CatalogItemEntity> items, {
   String? userCity,
   String? userCountry,
+  double? userLatitude,
+  double? userLongitude,
 }) {
+  if (userLatitude != null && userLongitude != null) {
+    final withCoordinates = items
+        .where(_hasUsableCoordinates)
+        .toList(growable: false);
+    if (withCoordinates.isNotEmpty) {
+      final ranked = List<CatalogItemEntity>.from(withCoordinates)
+        ..sort(
+          (left, right) =>
+              Geolocator.distanceBetween(
+                userLatitude,
+                userLongitude,
+                left.geoLat,
+                left.geoLng,
+              ).compareTo(
+                Geolocator.distanceBetween(
+                  userLatitude,
+                  userLongitude,
+                  right.geoLat,
+                  right.geoLng,
+                ),
+              ),
+        );
+      return ranked.take(6).toList(growable: false);
+    }
+  }
+
   final normalizedCity = (userCity ?? '').trim().toLowerCase();
   final normalizedCountry = (userCountry ?? '').trim().toLowerCase();
 
@@ -869,6 +942,13 @@ List<CatalogItemEntity> _nearbyItems(
       matched.isNotEmpty ? matched : List<CatalogItemEntity>.from(items)
         ..sort((left, right) => right.rating.compareTo(left.rating));
   return source.take(6).toList(growable: false);
+}
+
+bool _hasUsableCoordinates(CatalogItemEntity item) {
+  final lat = item.geoLat;
+  final lng = item.geoLng;
+  if (lat == 0 && lng == 0) return false;
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 }
 
 double _discountScore(CatalogItemEntity item) {

@@ -25,6 +25,8 @@ class CatalogItemEntity extends Equatable {
     required this.packageOverview,
     required this.bookingNotes,
     this.location = '',
+    this.geoLat = 0,
+    this.geoLng = 0,
     required this.requiresMenuItemSelection,
     required this.badge,
     required this.priceFrom,
@@ -54,6 +56,8 @@ class CatalogItemEntity extends Equatable {
   final List<String> packageOverview;
   final List<String> bookingNotes;
   final String location;
+  final double geoLat;
+  final double geoLng;
   final bool requiresMenuItemSelection;
   final String badge;
   final String priceFrom;
@@ -99,6 +103,8 @@ class CatalogItemEntity extends Equatable {
     packageOverview,
     bookingNotes,
     location,
+    geoLat,
+    geoLng,
     requiresMenuItemSelection,
     badge,
     priceFrom,

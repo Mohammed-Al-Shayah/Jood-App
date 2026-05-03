@@ -14,6 +14,7 @@ import '../../../../core/widgets/bottom_cta_bar.dart';
 import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
 import '../cubit/restaurant_detail_cubit.dart';
 import '../cubit/restaurant_detail_state.dart';
+import 'restaurant_map_screen.dart';
 import '../widgets/detail_header.dart';
 
 class DetailScreen extends StatelessWidget {
@@ -51,6 +52,10 @@ class DetailScreen extends StatelessWidget {
           final addressLabel = details?.address.isNotEmpty == true
               ? details!.address
               : AppStrings.detailsAddressValue;
+          final hasMapLocation = _hasUsableCoordinates(
+            details?.geoLat,
+            details?.geoLng,
+          );
           final highlights = _listOrFallback(
             details?.highlights,
             AppStrings.highlightsItems,
@@ -144,6 +149,17 @@ class DetailScreen extends StatelessWidget {
                               title: AppStrings.detailsAddressLabel,
                               subtitle: addressLabel,
                               trailingLabel: AppStrings.map,
+                              onTap: hasMapLocation
+                                  ? () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => RestaurantMapScreen(
+                                          restaurantName: details?.name ?? name,
+                                          latitude: details!.geoLat,
+                                          longitude: details.geoLng,
+                                        ),
+                                      ),
+                                    )
+                                  : null,
                             ),
                             SizedBox(height: 18.h),
                             _DetailAccordion(
@@ -213,71 +229,94 @@ class _InfoRow extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.trailingLabel,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final String? trailingLabel;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(12.w),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+    final content = Row(
+      children: [
+        Container(
+          width: 36.w,
+          height: 36.w,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 18.sp),
+        ),
+        SizedBox(width: 12.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.cardMeta.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                subtitle,
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 13.sp,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (trailingLabel != null)
+          Text(
+            trailingLabel!,
+            style: AppTextStyles.cardPrice.copyWith(
+              fontSize: 12.sp,
+              color: onTap == null ? AppColors.textMuted : AppColors.primary,
+            ),
+          ),
+      ],
+    );
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14.r),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowColor,
-            blurRadius: 10.r,
-            offset: Offset(0, 4.h),
+        child: Container(
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(14.r),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowColor,
+                blurRadius: 10.r,
+                offset: Offset(0, 4.h),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 36.w,
-            height: 36.w,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 18.sp),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.cardMeta.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  subtitle,
-                  style: AppTextStyles.cardMeta.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 13.sp,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (trailingLabel != null)
-            Text(
-              trailingLabel!,
-              style: AppTextStyles.cardPrice.copyWith(fontSize: 12.sp),
-            ),
-        ],
+          child: content,
+        ),
       ),
     );
   }
+}
+
+bool _hasUsableCoordinates(double? latitude, double? longitude) {
+  if (latitude == null || longitude == null) return false;
+  if (latitude == 0 && longitude == 0) return false;
+  return latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180;
 }
 
 class _DetailAccordion extends StatelessWidget {
