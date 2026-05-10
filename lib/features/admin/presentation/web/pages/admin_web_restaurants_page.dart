@@ -6,6 +6,7 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/utils/search_text_utils.dart';
 import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_restaurants_cubit.dart';
@@ -113,7 +114,7 @@ class _AdminWebRestaurantsPageState extends State<AdminWebRestaurantsPage> {
   }
 
   List<RestaurantEntity> _applyFilters(List<RestaurantEntity> items) {
-    final query = _searchController.text.trim().toLowerCase();
+    final query = normalizeSearchText(_searchController.text);
     final filtered = items
         .where((restaurant) {
           final matchesStatus = switch (_statusFilter) {
@@ -123,18 +124,28 @@ class _AdminWebRestaurantsPageState extends State<AdminWebRestaurantsPage> {
           };
           if (!matchesStatus) return false;
           if (_cityFilter != 'all' &&
-              restaurant.cityId.trim().toLowerCase() !=
-                  _cityFilter.toLowerCase()) {
+              normalizeSearchText(restaurant.cityId) !=
+                  normalizeSearchText(_cityFilter)) {
             return false;
           }
           if (query.isEmpty) return true;
-          final haystack = [
+          return matchesSearchQuery(query, [
             restaurant.name,
+            restaurant.nameEn,
+            restaurant.nameAr,
             restaurant.cityId,
+            restaurant.cityIdEn,
+            restaurant.cityIdAr,
             restaurant.area,
+            restaurant.areaEn,
+            restaurant.areaAr,
             restaurant.address,
-          ].join(' ').toLowerCase();
-          return haystack.contains(query);
+            restaurant.addressEn,
+            restaurant.addressAr,
+            restaurant.about,
+            restaurant.aboutEn,
+            restaurant.aboutAr,
+          ]);
         })
         .toList(growable: false);
 

@@ -9,13 +9,23 @@ class CatalogItemEntity extends Equatable {
     required this.bookingMode,
     required this.sourceCollection,
     required this.name,
+    this.nameEn = '',
+    this.nameAr = '',
     required this.cityId,
+    this.cityIdEn = '',
+    this.cityIdAr = '',
     required this.area,
+    this.areaEn = '',
+    this.areaAr = '',
     required this.address,
+    this.addressEn = '',
+    this.addressAr = '',
     required this.rating,
     required this.reviewsCount,
     required this.coverImageUrl,
     required this.description,
+    this.descriptionEn = '',
+    this.descriptionAr = '',
     required this.highlights,
     required this.inclusions,
     this.exclusions = const [],
@@ -25,6 +35,8 @@ class CatalogItemEntity extends Equatable {
     required this.packageOverview,
     required this.bookingNotes,
     this.location = '',
+    this.locationEn = '',
+    this.locationAr = '',
     this.geoLat = 0,
     this.geoLng = 0,
     required this.requiresMenuItemSelection,
@@ -40,13 +52,23 @@ class CatalogItemEntity extends Equatable {
   final CatalogBookingMode bookingMode;
   final String sourceCollection;
   final String name;
+  final String nameEn;
+  final String nameAr;
   final String cityId;
+  final String cityIdEn;
+  final String cityIdAr;
   final String area;
+  final String areaEn;
+  final String areaAr;
   final String address;
+  final String addressEn;
+  final String addressAr;
   final double rating;
   final int reviewsCount;
   final String coverImageUrl;
   final String description;
+  final String descriptionEn;
+  final String descriptionAr;
   final List<String> highlights;
   final List<String> inclusions;
   final List<String> exclusions;
@@ -56,6 +78,8 @@ class CatalogItemEntity extends Equatable {
   final List<String> packageOverview;
   final List<String> bookingNotes;
   final String location;
+  final String locationEn;
+  final String locationAr;
   final double geoLat;
   final double geoLng;
   final bool requiresMenuItemSelection;
@@ -87,13 +111,23 @@ class CatalogItemEntity extends Equatable {
     bookingMode,
     sourceCollection,
     name,
+    nameEn,
+    nameAr,
     cityId,
+    cityIdEn,
+    cityIdAr,
     area,
+    areaEn,
+    areaAr,
     address,
+    addressEn,
+    addressAr,
     rating,
     reviewsCount,
     coverImageUrl,
     description,
+    descriptionEn,
+    descriptionAr,
     highlights,
     inclusions,
     exclusions,
@@ -103,6 +137,8 @@ class CatalogItemEntity extends Equatable {
     packageOverview,
     bookingNotes,
     location,
+    locationEn,
+    locationAr,
     geoLat,
     geoLng,
     requiresMenuItemSelection,

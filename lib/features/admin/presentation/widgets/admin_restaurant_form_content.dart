@@ -126,7 +126,11 @@ class _AdminRestaurantFormContentState
   bool _isSubmitting = false;
   bool _isSearchingLocation = false;
   bool _isResolvingAddress = false;
+  bool _supportsBuffet = true;
+  bool _supportsSetMenu = false;
+  bool _supportsCombo = false;
   _LocationInputMode _locationInputMode = _LocationInputMode.manual;
+  final MapController _locationMapController = MapController();
   LatLng? _selectedMapLocation;
   String? _imageError;
   String? _locationSearchError;
@@ -148,13 +152,9 @@ class _AdminRestaurantFormContentState
       text: restaurant?.cityIdAr ?? '',
     );
     final initialAreaEn = _preferredText(restaurant?.areaEn, restaurant?.area);
-    _areaController = TextEditingController(
-      text: initialAreaEn.isEmpty ? 'Oman' : initialAreaEn,
-    );
+    _areaController = TextEditingController(text: initialAreaEn);
     final initialAreaAr = restaurant?.areaAr.trim() ?? '';
-    _areaArController = TextEditingController(
-      text: initialAreaAr.isEmpty ? '\u0639\u0645\u0627\u0646' : initialAreaAr,
-    );
+    _areaArController = TextEditingController(text: initialAreaAr);
     _ratingController = TextEditingController(
       text: restaurant?.rating.toString() ?? '',
     );
@@ -475,6 +475,9 @@ class _AdminRestaurantFormContentState
     _comboLocationArController = TextEditingController(
       text: restaurant?.comboLocationAr ?? '',
     );
+    _supportsBuffet = restaurant?.supportsBuffet ?? true;
+    _supportsSetMenu = restaurant?.supportsSetMenu ?? false;
+    _supportsCombo = restaurant?.supportsCombo ?? false;
     _isActive = restaurant?.isActive ?? true;
     _selectedMapLocation = _parseCoordinates();
   }
@@ -604,6 +607,14 @@ class _AdminRestaurantFormContentState
     _selectedMapLocation = point;
   }
 
+  void _moveLocationMapTo(LatLng point) {
+    if (_locationInputMode != _LocationInputMode.map) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _locationInputMode != _LocationInputMode.map) return;
+      _locationMapController.move(point, 14);
+    });
+  }
+
   String _languageCode() {
     final code = Localizations.localeOf(context).languageCode.toLowerCase();
     return code == 'ar' ? 'ar' : 'en';
@@ -652,21 +663,36 @@ class _AdminRestaurantFormContentState
   Future<void> _onMapPointPicked(LatLng point) async {
     if (!mounted) return;
     setState(() => _updateCoordinatesFromMap(point));
-    await _resolveAddressFromCoordinates(point);
+    _moveLocationMapTo(point);
+    await _resolveLocalizedAddressFromCoordinates(point);
   }
 
-  Future<void> _resolveAddressFromCoordinates(LatLng point) async {
+  Future<void> _resolveLocalizedAddressFromCoordinates(
+    LatLng point, {
+    OsmPlaceResult? fallback,
+  }) async {
     if (!mounted) return;
     setState(() => _isResolvingAddress = true);
     try {
-      final result = await OsmGeocodingService.reverseGeocode(
+      final english = await OsmGeocodingService.reverseGeocode(
         point,
-        languageCode: _languageCode(),
+        languageCode: 'en',
       );
-      if (!mounted || result == null) return;
-      _applyResolvedLocation(result);
+      final arabic = await OsmGeocodingService.reverseGeocode(
+        point,
+        languageCode: 'ar',
+      );
+      if (!mounted) return;
+      if (english == null && arabic == null && fallback == null) return;
+      _applyResolvedLocation(
+        english: english ?? fallback ?? arabic,
+        arabic: arabic ?? fallback ?? english,
+      );
     } on OsmGeocodingException {
       if (!mounted) return;
+      if (fallback != null) {
+        _applyResolvedLocation(english: fallback, arabic: fallback);
+      }
       // Keep current values if reverse lookup fails.
     } finally {
       if (mounted) {
@@ -682,25 +708,65 @@ class _AdminRestaurantFormContentState
       _locationSearchResults = const [];
       _locationSearchController.text = result.displayName;
     });
-    _applyResolvedLocation(result);
+    _moveLocationMapTo(result.point);
+    _resolveLocalizedAddressFromCoordinates(result.point, fallback: result);
   }
 
-  void _applyResolvedLocation(OsmPlaceResult result) {
-    final address = result.displayName.trim();
-    if (address.isNotEmpty) {
-      _addressController.text = address;
-      if (_addressArController.text.trim().isEmpty) {
-        _addressArController.text = address;
-      }
+  void _applyResolvedLocation({
+    OsmPlaceResult? english,
+    OsmPlaceResult? arabic,
+  }) {
+    final englishAddress = english?.displayName.trim() ?? '';
+    if (englishAddress.isNotEmpty) {
+      _addressController.text = englishAddress;
+    }
+    final arabicAddress = arabic?.displayName.trim() ?? '';
+    if (arabicAddress.isNotEmpty) {
+      _addressArController.text = arabicAddress;
     }
 
-    final country = result.country.trim();
-    if (country.isNotEmpty) {
-      _areaController.text = country;
-      if (_areaArController.text.trim().isEmpty) {
-        _areaArController.text = country;
-      }
+    final englishCity = english?.city.trim() ?? '';
+    if (englishCity.isNotEmpty) {
+      _cityIdController.text = englishCity;
     }
+    final arabicCity = arabic?.city.trim() ?? '';
+    if (arabicCity.isNotEmpty) {
+      _cityIdArController.text = arabicCity;
+    }
+
+    final englishArea = english == null ? '' : _areaFromPlaceResult(english);
+    if (englishArea.isNotEmpty) {
+      _areaController.text = englishArea;
+    } else {
+      final country = english?.country.trim() ?? '';
+      if (country.isNotEmpty) _areaController.text = country;
+    }
+
+    final arabicArea = arabic == null ? '' : _areaFromPlaceResult(arabic);
+    if (arabicArea.isNotEmpty) {
+      _areaArController.text = arabicArea;
+    } else {
+      final country = arabic?.country.trim() ?? '';
+      if (country.isNotEmpty) _areaArController.text = country;
+    }
+  }
+
+  String _areaFromPlaceResult(OsmPlaceResult result) {
+    for (final key in [
+      'suburb',
+      'neighbourhood',
+      'quarter',
+      'city_district',
+      'district',
+      'town',
+      'village',
+      'state',
+      'region',
+    ]) {
+      final value = result.addressParts[key]?.trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return '';
   }
 
   Widget _locationMapPicker() {
@@ -778,6 +844,7 @@ class _AdminRestaurantFormContentState
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14.r),
               child: FlutterMap(
+                mapController: _locationMapController,
                 options: MapOptions(
                   initialCenter: center,
                   initialZoom: 14,
@@ -855,16 +922,6 @@ class _AdminRestaurantFormContentState
                   arabicController: _nameArController,
                   label: 'Name',
                 ),
-                ..._localizedFields(
-                  englishController: _cityIdController,
-                  arabicController: _cityIdArController,
-                  label: 'City ID',
-                ),
-                ..._localizedFields(
-                  englishController: _areaController,
-                  arabicController: _areaArController,
-                  label: 'Area',
-                ),
                 _numberField(_ratingController, 'Rating (double)'),
               ],
             ),
@@ -901,10 +958,15 @@ class _AdminRestaurantFormContentState
                         label: const Text('Pick from map'),
                         selected: _locationInputMode == _LocationInputMode.map,
                         onSelected: (_) {
+                          final parsed = _parseCoordinates();
                           setState(() {
                             _locationInputMode = _LocationInputMode.map;
-                            _selectedMapLocation ??= _parseCoordinates();
+                            _selectedMapLocation ??= parsed;
                           });
+                          final point = _selectedMapLocation ?? parsed;
+                          if (point != null) {
+                            _moveLocationMapTo(point);
+                          }
                         },
                       ),
                     ],
@@ -944,102 +1006,66 @@ class _AdminRestaurantFormContentState
             ),
           ),
           SizedBox(height: 14.h),
-          AdminSectionCard(
-            title: 'Lists (comma separated)',
-            child: Column(
-              children: [
-                ..._localizedFields(
-                  englishController: _highlightsController,
-                  arabicController: _highlightsArController,
-                  label: 'Highlights',
-                  maxLines: 2,
-                ),
-                ..._localizedFields(
-                  englishController: _inclusionsController,
-                  arabicController: _inclusionsArController,
-                  label: 'Inclusions',
-                  maxLines: 2,
-                ),
-                ..._localizedFields(
-                  englishController: _exclusionsController,
-                  arabicController: _exclusionsArController,
-                  label: 'Exclusions',
-                  maxLines: 2,
-                ),
-                ..._localizedFields(
-                  englishController: _cancellationController,
-                  arabicController: _cancellationArController,
-                  label: 'Cancellation Policy',
-                  maxLines: 2,
-                ),
-                ..._localizedFields(
-                  englishController: _knowBeforeController,
-                  arabicController: _knowBeforeArController,
-                  label: 'Know Before You Go',
-                  maxLines: 2,
-                ),
-              ],
+          _bookingTypesSection(),
+          if (_supportsBuffet) ...[
+            SizedBox(height: 14.h),
+            _buildCatalogContentSection(
+              title: 'Buffet Booking Content',
+              descriptionController: _buffetDescriptionController,
+              descriptionArController: _buffetDescriptionArController,
+              highlightsController: _buffetHighlightsController,
+              highlightsArController: _buffetHighlightsArController,
+              includedController: _buffetIncludedController,
+              includedArController: _buffetIncludedArController,
+              termsController: _buffetTermsController,
+              termsArController: _buffetTermsArController,
+              cancellationController: _buffetCancellationController,
+              cancellationArController: _buffetCancellationArController,
+              optionsController: _buffetOptionsController,
+              optionsArController: _buffetOptionsArController,
+              optionsLabel: 'Available Options',
+              excludedController: _buffetExcludedController,
+              excludedArController: _buffetExcludedArController,
             ),
-          ),
-          SizedBox(height: 14.h),
-          _buildCatalogContentSection(
-            title: 'Buffet Booking Content',
-            descriptionController: _buffetDescriptionController,
-            descriptionArController: _buffetDescriptionArController,
-            highlightsController: _buffetHighlightsController,
-            highlightsArController: _buffetHighlightsArController,
-            includedController: _buffetIncludedController,
-            includedArController: _buffetIncludedArController,
-            termsController: _buffetTermsController,
-            termsArController: _buffetTermsArController,
-            cancellationController: _buffetCancellationController,
-            cancellationArController: _buffetCancellationArController,
-            optionsController: _buffetOptionsController,
-            optionsArController: _buffetOptionsArController,
-            locationController: _buffetLocationController,
-            locationArController: _buffetLocationArController,
-            optionsLabel: 'Available Options',
-            excludedController: _buffetExcludedController,
-            excludedArController: _buffetExcludedArController,
-          ),
-          SizedBox(height: 14.h),
-          _buildCatalogContentSection(
-            title: 'Set Menu Booking Content',
-            descriptionController: _setMenuDescriptionController,
-            descriptionArController: _setMenuDescriptionArController,
-            highlightsController: _setMenuHighlightsController,
-            highlightsArController: _setMenuHighlightsArController,
-            includedController: _setMenuIncludedController,
-            includedArController: _setMenuIncludedArController,
-            termsController: _setMenuTermsController,
-            termsArController: _setMenuTermsArController,
-            cancellationController: _setMenuCancellationController,
-            cancellationArController: _setMenuCancellationArController,
-            optionsController: _setMenuOptionsController,
-            optionsArController: _setMenuOptionsArController,
-            locationController: _setMenuLocationController,
-            locationArController: _setMenuLocationArController,
-            optionsLabel: 'Available Options',
-          ),
-          SizedBox(height: 14.h),
-          _buildCatalogContentSection(
-            title: 'Combo Booking Content',
-            descriptionController: _comboDescriptionController,
-            descriptionArController: _comboDescriptionArController,
-            highlightsController: _comboHighlightsController,
-            highlightsArController: _comboHighlightsArController,
-            includedController: _comboIncludedController,
-            includedArController: _comboIncludedArController,
-            termsController: _comboTermsController,
-            termsArController: _comboTermsArController,
-            cancellationController: _comboCancellationController,
-            cancellationArController: _comboCancellationArController,
-            optionsController: _comboOptionsController,
-            optionsArController: _comboOptionsArController,
-            locationController: _comboLocationController,
-            locationArController: _comboLocationArController,
-            optionsLabel: 'Combo Options',
-          ),
+          ],
+          if (_supportsSetMenu) ...[
+            SizedBox(height: 14.h),
+            _buildCatalogContentSection(
+              title: 'Set Menu Booking Content',
+              descriptionController: _setMenuDescriptionController,
+              descriptionArController: _setMenuDescriptionArController,
+              highlightsController: _setMenuHighlightsController,
+              highlightsArController: _setMenuHighlightsArController,
+              includedController: _setMenuIncludedController,
+              includedArController: _setMenuIncludedArController,
+              termsController: _setMenuTermsController,
+              termsArController: _setMenuTermsArController,
+              cancellationController: _setMenuCancellationController,
+              cancellationArController: _setMenuCancellationArController,
+              optionsController: _setMenuOptionsController,
+              optionsArController: _setMenuOptionsArController,
+              optionsLabel: 'Available Options',
+            ),
+          ],
+          if (_supportsCombo) ...[
+            SizedBox(height: 14.h),
+            _buildCatalogContentSection(
+              title: 'Combo Booking Content',
+              descriptionController: _comboDescriptionController,
+              descriptionArController: _comboDescriptionArController,
+              highlightsController: _comboHighlightsController,
+              highlightsArController: _comboHighlightsArController,
+              includedController: _comboIncludedController,
+              includedArController: _comboIncludedArController,
+              termsController: _comboTermsController,
+              termsArController: _comboTermsArController,
+              cancellationController: _comboCancellationController,
+              cancellationArController: _comboCancellationArController,
+              optionsController: _comboOptionsController,
+              optionsArController: _comboOptionsArController,
+              optionsLabel: 'Combo Options',
+            ),
+          ],
           SizedBox(height: 14.h),
           AdminSectionCard(
             title: 'Cover Image',
@@ -1166,8 +1192,6 @@ class _AdminRestaurantFormContentState
     required TextEditingController cancellationArController,
     required TextEditingController optionsController,
     required TextEditingController optionsArController,
-    required TextEditingController locationController,
-    required TextEditingController locationArController,
     required String optionsLabel,
     TextEditingController? excludedController,
     TextEditingController? excludedArController,
@@ -1180,6 +1204,13 @@ class _AdminRestaurantFormContentState
             englishController: descriptionController,
             arabicController: descriptionArController,
             label: 'Description',
+            maxLines: 4,
+            englishRequired: false,
+          ),
+          ..._localizedFields(
+            englishController: optionsController,
+            arabicController: optionsArController,
+            label: '$optionsLabel (one per line)',
             maxLines: 4,
             englishRequired: false,
           ),
@@ -1219,19 +1250,48 @@ class _AdminRestaurantFormContentState
             maxLines: 4,
             englishRequired: false,
           ),
-          ..._localizedFields(
-            englishController: optionsController,
-            arabicController: optionsArController,
-            label: '$optionsLabel (one per line)',
-            maxLines: 4,
-            englishRequired: false,
+        ],
+      ),
+    );
+  }
+
+  Widget _bookingTypesSection() {
+    return AdminSectionCard(
+      title: 'Booking Types',
+      child: Column(
+        children: [
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _supportsBuffet,
+            onChanged: _isSubmitting
+                ? null
+                : (value) {
+                    setState(() => _supportsBuffet = value ?? false);
+                  },
+            activeColor: AppColors.primary,
+            title: const Text('Buffet'),
           ),
-          ..._localizedFields(
-            englishController: locationController,
-            arabicController: locationArController,
-            label: 'Location',
-            maxLines: 2,
-            englishRequired: false,
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _supportsSetMenu,
+            onChanged: _isSubmitting
+                ? null
+                : (value) {
+                    setState(() => _supportsSetMenu = value ?? false);
+                  },
+            activeColor: AppColors.primary,
+            title: const Text('Set Menu'),
+          ),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _supportsCombo,
+            onChanged: _isSubmitting
+                ? null
+                : (value) {
+                    setState(() => _supportsCombo = value ?? false);
+                  },
+            activeColor: AppColors.primary,
+            title: const Text('Combo'),
           ),
         ],
       ),
@@ -1328,6 +1388,7 @@ class _AdminRestaurantFormContentState
           if (parsed == null) return;
           if (!mounted) return;
           setState(() => _selectedMapLocation = parsed);
+          _moveLocationMapTo(parsed);
         },
         validator: (value) {
           if (value == null || value.trim().isEmpty) return 'Required';
@@ -1403,7 +1464,24 @@ class _AdminRestaurantFormContentState
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      showAppSnackBar(
+        context,
+        'Please fill all required fields.',
+        type: SnackBarType.error,
+        fromTop: true,
+      );
+      return;
+    }
+    if (!_supportsBuffet && !_supportsSetMenu && !_supportsCombo) {
+      showAppSnackBar(
+        context,
+        'Please select at least one booking type.',
+        type: SnackBarType.error,
+        fromTop: true,
+      );
+      return;
+    }
     final now = DateTime.now();
     final nameEn = _nameController.text.trim();
     final cityIdEn = _cityIdController.text.trim();
@@ -1480,6 +1558,9 @@ class _AdminRestaurantFormContentState
           double.tryParse(_discountValueController.text.trim()) ??
           existingRestaurant?.discountValue ??
           0,
+      supportsBuffet: _supportsBuffet,
+      supportsSetMenu: _supportsSetMenu,
+      supportsCombo: _supportsCombo,
       nameEn: nameEn,
       nameAr: _nameArController.text.trim(),
       cityIdEn: cityIdEn,
@@ -1583,6 +1664,7 @@ class _AdminRestaurantFormContentState
         context,
         'Failed to save restaurant.',
         type: SnackBarType.error,
+        fromTop: true,
       );
     } finally {
       if (mounted) {

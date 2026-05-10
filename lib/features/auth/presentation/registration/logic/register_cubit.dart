@@ -2,11 +2,13 @@ import 'package:flutter/rendering.dart';
 import 'package:jood/features/auth/domain/usecases/check_email_in_use_usecase.dart';
 
 import '../../../../../core/bloc/safe_cubit.dart';
+import '../../../../../core/config/turnstile_config.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
 import '../../../../../features/users/domain/usecases/get_user_by_email_usecase.dart';
 import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
+import '../../../domain/entities/otp_mode.dart';
 import '../../../domain/usecases/send_phone_otp_usecase.dart';
 import 'register_state.dart';
 
@@ -79,7 +81,15 @@ class RegisterCubit extends SafeCubit<RegisterState> {
     emitSafe(state.copyWith(showConfirmPassword: !state.showConfirmPassword));
   }
 
-  Future<void> submit() async {
+  void setTurnstileToken(String token) {
+    emitSafe(state.copyWith(turnstileToken: token.trim()));
+  }
+
+  void clearTurnstileToken() {
+    emitSafe(state.copyWith(turnstileToken: ''));
+  }
+
+  Future<void> submit({String? turnstileToken}) async {
     debugPrint('[RegisterCubit] submit() called');
 
     if (state.status == RegisterStatus.loading) {
@@ -93,10 +103,36 @@ class RegisterCubit extends SafeCubit<RegisterState> {
       return;
     }
 
+    if (!TurnstileConfig.isConfigured) {
+      emitSafe(
+        state.copyWith(
+          status: RegisterStatus.failure,
+          errorMessage: AppStrings.securityCheckNotConfigured,
+        ),
+      );
+      return;
+    }
+
+    final effectiveTurnstileToken = turnstileToken?.trim().isNotEmpty == true
+        ? turnstileToken!.trim()
+        : state.turnstileToken.trim();
+
+    if (effectiveTurnstileToken.isEmpty) {
+      emitSafe(
+        state.copyWith(
+          status: RegisterStatus.failure,
+          errorMessage: AppStrings.completeSecurityCheckBeforeSendingOtp,
+        ),
+      );
+      return;
+    }
+
     debugPrint('[RegisterCubit] Form is valid, starting registration process');
     emitSafe(
       state.copyWith(status: RegisterStatus.loading, errorMessage: null),
     );
+
+    var otpSendAttempted = false;
 
     try {
       final providedEmail = state.email.trim();
@@ -148,7 +184,12 @@ class RegisterCubit extends SafeCubit<RegisterState> {
       debugPrint(
         '[RegisterCubit] Step 6: Sending OTP to phone - ${state.phone.trim()}',
       );
-      final verificationId = await _sendPhoneOtp(phoneNumber: normalizedPhone);
+      otpSendAttempted = true;
+      final verificationId = await _sendPhoneOtp(
+        phoneNumber: normalizedPhone,
+        mode: OtpMode.register,
+        turnstileToken: effectiveTurnstileToken,
+      );
       debugPrint('[RegisterCubit] Step 7: OTP code sent successfully');
       emitSafe(
         state.copyWith(
@@ -163,6 +204,7 @@ class RegisterCubit extends SafeCubit<RegisterState> {
       debugPrint('[RegisterCubit] ERROR TYPE: ${e.runtimeType}');
       emitSafe(
         state.copyWith(
+          turnstileToken: otpSendAttempted ? '' : state.turnstileToken,
           status: RegisterStatus.failure,
           errorMessage: isAuthError(e)
               ? mapAuthError(

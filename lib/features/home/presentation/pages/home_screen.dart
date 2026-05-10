@@ -16,6 +16,7 @@ import '../../../../core/utils/app_strings.dart';
 import '../../../../core/routing/catalog_route_args.dart';
 import '../../../../core/routing/routes.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../core/utils/search_text_utils.dart';
 import '../../../ads/domain/entities/ad_entity.dart';
 import '../cubit/home_cubit.dart';
 import '../cubit/home_state.dart';
@@ -866,10 +867,10 @@ String _normalizeDisplayedPrice(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) return trimmed;
 
-  final match = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(trimmed);
+  final match = _findNumberSpan(trimmed);
   if (match == null) return trimmed;
 
-  final parsed = double.tryParse(match.group(1)?.replaceAll(',', '') ?? '');
+  final parsed = double.tryParse(match.value.replaceAll(',', ''));
   if (parsed == null) return trimmed;
 
   return trimmed.replaceRange(
@@ -898,50 +899,182 @@ List<CatalogItemEntity> _nearbyItems(
   double? userLongitude,
 }) {
   if (userLatitude != null && userLongitude != null) {
-    final withCoordinates = items
-        .where(_hasUsableCoordinates)
-        .toList(growable: false);
-    if (withCoordinates.isNotEmpty) {
-      final ranked = List<CatalogItemEntity>.from(withCoordinates)
-        ..sort(
-          (left, right) =>
-              Geolocator.distanceBetween(
-                userLatitude,
-                userLongitude,
-                left.geoLat,
-                left.geoLng,
-              ).compareTo(
-                Geolocator.distanceBetween(
-                  userLatitude,
-                  userLongitude,
-                  right.geoLat,
-                  right.geoLng,
-                ),
-              ),
-        );
-      return ranked.take(6).toList(growable: false);
-    }
+    final ranked = _rankByDistance(
+      items,
+      latitude: userLatitude,
+      longitude: userLongitude,
+    );
+    if (ranked.isNotEmpty) return ranked.take(6).toList(growable: false);
   }
 
-  final normalizedCity = (userCity ?? '').trim().toLowerCase();
-  final normalizedCountry = (userCountry ?? '').trim().toLowerCase();
+  final normalizedCity = normalizeSearchText(userCity ?? '');
+  final normalizedCountry = normalizeSearchText(userCountry ?? '');
+  final matched = _nearbyTextMatchedItems(
+    items,
+    normalizedCity: normalizedCity,
+    normalizedCountry: normalizedCountry,
+  );
 
-  final matched = items.where((item) {
-    final city = item.cityId.trim().toLowerCase();
-    final address = item.address.trim().toLowerCase();
-    final area = item.area.trim().toLowerCase();
-    final cityMatch = normalizedCity.isNotEmpty && city == normalizedCity;
-    final countryMatch =
-        normalizedCountry.isNotEmpty && address.contains(normalizedCountry);
-    final areaMatch =
-        normalizedCity.isNotEmpty && area.contains(normalizedCity);
-    return cityMatch || countryMatch || areaMatch;
-  }).toList();
+  final inferredOrigin = _inferOriginFromMatches(matched);
+  if (inferredOrigin != null) {
+    final ranked = _rankByDistance(
+      items,
+      latitude: inferredOrigin.latitude,
+      longitude: inferredOrigin.longitude,
+    );
+    if (ranked.isNotEmpty) return ranked.take(6).toList(growable: false);
+  }
 
   final source =
       matched.isNotEmpty ? matched : List<CatalogItemEntity>.from(items)
         ..sort((left, right) => right.rating.compareTo(left.rating));
   return source.take(6).toList(growable: false);
+}
+
+List<CatalogItemEntity> _rankByDistance(
+  List<CatalogItemEntity> items, {
+  required double latitude,
+  required double longitude,
+}) {
+  final ranked = items.where(_hasUsableCoordinates).toList(growable: false)
+    ..sort(
+      (left, right) =>
+          Geolocator.distanceBetween(
+            latitude,
+            longitude,
+            left.geoLat,
+            left.geoLng,
+          ).compareTo(
+            Geolocator.distanceBetween(
+              latitude,
+              longitude,
+              right.geoLat,
+              right.geoLng,
+            ),
+          ),
+    );
+  return ranked;
+}
+
+List<CatalogItemEntity> _nearbyTextMatchedItems(
+  List<CatalogItemEntity> items, {
+  required String normalizedCity,
+  required String normalizedCountry,
+}) {
+  return items.where((item) {
+    final fields = [
+      item.cityId,
+      item.cityIdEn,
+      item.cityIdAr,
+      item.area,
+      item.areaEn,
+      item.areaAr,
+      item.address,
+      item.addressEn,
+      item.addressAr,
+      item.location,
+      item.locationEn,
+      item.locationAr,
+    ];
+    final cityMatch =
+        normalizedCity.isNotEmpty &&
+        fields.any((field) => normalizeSearchText(field) == normalizedCity);
+    final areaMatch =
+        normalizedCity.isNotEmpty &&
+        fields.any(
+          (field) => normalizeSearchText(field).contains(normalizedCity),
+        );
+    final countryMatch =
+        normalizedCountry.isNotEmpty &&
+        fields.any(
+          (field) => normalizeSearchText(field).contains(normalizedCountry),
+        );
+    return cityMatch || countryMatch || areaMatch;
+  }).toList()..sort((left, right) {
+    final leftScore = _nearbyTextScore(
+      left,
+      normalizedCity: normalizedCity,
+      normalizedCountry: normalizedCountry,
+    );
+    final rightScore = _nearbyTextScore(
+      right,
+      normalizedCity: normalizedCity,
+      normalizedCountry: normalizedCountry,
+    );
+    final scoreCompare = rightScore.compareTo(leftScore);
+    if (scoreCompare != 0) return scoreCompare;
+    return right.rating.compareTo(left.rating);
+  });
+}
+
+_GeoPoint? _inferOriginFromMatches(List<CatalogItemEntity> matched) {
+  final withCoordinates = matched
+      .where(_hasUsableCoordinates)
+      .toList(growable: false);
+  if (withCoordinates.isEmpty) return null;
+
+  var latitudeSum = 0.0;
+  var longitudeSum = 0.0;
+  for (final item in withCoordinates) {
+    latitudeSum += item.geoLat;
+    longitudeSum += item.geoLng;
+  }
+  return _GeoPoint(
+    latitudeSum / withCoordinates.length,
+    longitudeSum / withCoordinates.length,
+  );
+}
+
+class _GeoPoint {
+  const _GeoPoint(this.latitude, this.longitude);
+
+  final double latitude;
+  final double longitude;
+}
+
+int _nearbyTextScore(
+  CatalogItemEntity item, {
+  required String normalizedCity,
+  required String normalizedCountry,
+}) {
+  final cityFields = [item.cityId, item.cityIdEn, item.cityIdAr]
+      .map(normalizeSearchText)
+      .where((value) => value.isNotEmpty)
+      .toList(growable: false);
+  final areaFields = [item.area, item.areaEn, item.areaAr]
+      .map(normalizeSearchText)
+      .where((value) => value.isNotEmpty)
+      .toList(growable: false);
+  final addressFields =
+      [
+            item.address,
+            item.addressEn,
+            item.addressAr,
+            item.location,
+            item.locationEn,
+            item.locationAr,
+          ]
+          .map(normalizeSearchText)
+          .where((value) => value.isNotEmpty)
+          .toList(growable: false);
+
+  var score = 0;
+  if (normalizedCity.isNotEmpty) {
+    if (cityFields.any((field) => field == normalizedCity)) {
+      score += 100;
+    }
+    if (areaFields.any((field) => field.contains(normalizedCity))) {
+      score += 50;
+    }
+    if (addressFields.any((field) => field.contains(normalizedCity))) {
+      score += 25;
+    }
+  }
+  if (normalizedCountry.isNotEmpty &&
+      addressFields.any((field) => field.contains(normalizedCountry))) {
+    score += 10;
+  }
+  return score;
 }
 
 bool _hasUsableCoordinates(CatalogItemEntity item) {
@@ -966,15 +1099,41 @@ double _discountScore(CatalogItemEntity item) {
 }
 
 double _extractPercent(String value) {
-  final match = RegExp(r'(\d+(?:\.\d+)?)\s*%').firstMatch(value);
-  return double.tryParse(match?.group(1) ?? '') ?? 0;
+  final percentIndex = value.indexOf('%');
+  if (percentIndex < 0) return 0;
+  final match = _findNumberSpan(value.substring(0, percentIndex));
+  return double.tryParse(match?.value ?? '') ?? 0;
 }
 
 double _extractAmount(String value) {
-  final match = RegExp(
-    r'(\d+(?:\.\d+)?)',
-  ).firstMatch(value.replaceAll(',', ''));
-  return double.tryParse(match?.group(1) ?? '') ?? 0;
+  final match = _findNumberSpan(value, allowComma: true);
+  return double.tryParse(match?.value.replaceAll(',', '') ?? '') ?? 0;
+}
+
+_NumberSpan? _findNumberSpan(String value, {bool allowComma = false}) {
+  int? start;
+  for (var index = 0; index < value.length; index += 1) {
+    final code = value.codeUnitAt(index);
+    final isDigit = code >= 48 && code <= 57;
+    final isSeparator = code == 46 || (allowComma && code == 44);
+    if (isDigit || (start != null && isSeparator)) {
+      start ??= index;
+      continue;
+    }
+    if (start != null) {
+      return _NumberSpan(start, index, value.substring(start, index));
+    }
+  }
+  if (start == null) return null;
+  return _NumberSpan(start, value.length, value.substring(start));
+}
+
+class _NumberSpan {
+  const _NumberSpan(this.start, this.end, this.value);
+
+  final int start;
+  final int end;
+  final String value;
 }
 
 bool _showNoOffersTodayMessage(CatalogItemEntity item) {

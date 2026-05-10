@@ -31,6 +31,7 @@ class RestaurantEntity extends Equatable {
     this.discountValue = 0,
     this.supportsBuffet = true,
     this.supportsSetMenu = false,
+    this.supportsCombo = false,
     this.nameEn = '',
     this.nameAr = '',
     this.cityIdEn = '',
@@ -148,6 +149,7 @@ class RestaurantEntity extends Equatable {
   final double discountValue;
   final bool supportsBuffet;
   final bool supportsSetMenu;
+  final bool supportsCombo;
   final String nameEn;
   final String nameAr;
   final String cityIdEn;
@@ -266,6 +268,7 @@ class RestaurantEntity extends Equatable {
     discountValue,
     supportsBuffet,
     supportsSetMenu,
+    supportsCombo,
     nameEn,
     nameAr,
     cityIdEn,

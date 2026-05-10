@@ -14,6 +14,7 @@ Future<void> initializeFirebase() async {
   // App Check, auth test settings, and background messaging are configured
   // only for mobile targets to avoid web startup crashes.
   if (kIsWeb) {
+    await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
     return;
   }
 

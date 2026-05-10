@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -9,12 +10,14 @@ import 'core/firebase/firebase_initializer.dart';
 import 'core/firebase/firebase_messaging_service.dart';
 import 'core/localization/app_localization_controller.dart';
 import 'core/routing/app_router.dart';
+import 'core/routing/routes.dart';
 import 'core/utils/seed_firestore.dart';
 import 'features/users/domain/usecases/sync_auth_user_usecase.dart';
 import 'jood_app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   EasyLoading.instance
     ..userInteractions = false
     ..maskType = EasyLoadingMaskType.black
@@ -36,12 +39,21 @@ void main() async {
     await AppLocalizationController.instance.initialize();
     await setupServiceLocator();
 
-    final authUser = getIt<FirebaseAuth>().currentUser;
+    final firebaseAuth = getIt<FirebaseAuth>();
+    final authUser = await firebaseAuth.authStateChanges().first.timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => firebaseAuth.currentUser,
+    );
     if (authUser != null) {
       await getIt<SyncAuthUserUseCase>()(authUser);
     }
 
-    runApp(JoodApp(appRouter: AppRouter()));
+    runApp(
+      JoodApp(
+        appRouter: AppRouter(),
+        initialRoute: authUser == null ? Routes.loginScreen : Routes.homeScreen,
+      ),
+    );
 
     // Initialize FCM after the first frame to avoid blocking app startup.
     WidgetsBinding.instance.addPostFrameCallback((_) {

@@ -931,6 +931,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
                     : restaurant.name,
                 supportsBuffet: restaurant.supportsBuffet,
                 supportsSetMenu: restaurant.supportsSetMenu,
+                supportsCombo: restaurant.supportsCombo,
               ),
             );
           }),
@@ -1152,7 +1153,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
   }
 
   String? get _restaurantCategoryWarning {
-    if (!(_isBuffet || _isSetMenu)) return null;
+    if (!(_isBuffet || _isSetMenu || _isCombo)) return null;
     final venueId = _venueId;
     if (venueId == null || venueId.trim().isEmpty) return null;
     final support = _restaurantSupportById[venueId];
@@ -1164,6 +1165,10 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
     if (_isBuffet && !support.supportsBuffet) {
       return '${support.name} is not enabled for Buffet in booking catalog. Enable Buffet support for the restaurant before creating new buffet offers.';
+    }
+
+    if (_isCombo && !support.supportsCombo) {
+      return '${support.name} is not enabled for Combo in booking catalog. Enable Combo support for the restaurant before creating new combo offers.';
     }
 
     return null;
@@ -1378,9 +1383,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     final startTime = _startTimeController.text.trim();
     final endTime = _endTimeController.text.trim();
     final typedCurrency = _currencyController.text.trim();
-    final currency = isOmaniRialCurrency(typedCurrency)
-        ? 'OMR'
-        : typedCurrency;
+    final currency = isOmaniRialCurrency(typedCurrency) ? 'OMR' : typedCurrency;
     final bookingCategory = _category;
     final bookableType = _isAttraction ? 'attraction' : 'restaurant';
     final guestPricingMode = _isAttraction
@@ -1818,9 +1821,11 @@ class _RestaurantCategorySupport {
     required this.name,
     required this.supportsBuffet,
     required this.supportsSetMenu,
+    required this.supportsCombo,
   });
 
   final String name;
   final bool supportsBuffet;
   final bool supportsSetMenu;
+  final bool supportsCombo;
 }

@@ -521,6 +521,8 @@ async function assertOtpSendAllowed({
   ].filter((entry) => entry.key && entry.limit > 0 && entry.windowSeconds > 0);
 
   await admin.firestore().runTransaction(async (transaction) => {
+    const checks = [];
+
     for (const entry of scopes) {
       const windowMs = entry.windowSeconds * 1000;
       const ref = getRateLimitDocRef(entry.scope, entry.key);
@@ -531,30 +533,43 @@ async function assertOtpSendAllowed({
         windowMs
       );
 
-      if (attempts.length >= entry.limit) {
-        const earliestActiveAttempt = attempts[0];
+      checks.push({
+        entry,
+        ref,
+        attempts,
+        windowMs,
+      });
+    }
+
+    for (const check of checks) {
+      if (check.attempts.length >= check.entry.limit) {
+        const earliestActiveAttempt = check.attempts[0];
         const retryAfterSeconds = Math.max(
           1,
-          Math.ceil((earliestActiveAttempt + windowMs - nowMs) / 1000)
+          Math.ceil((earliestActiveAttempt + check.windowMs - nowMs) / 1000)
         );
 
-        throw new functions.https.HttpsError('resource-exhausted', entry.message, {
-          reason: entry.reason,
-          scope: entry.scope,
+        throw new functions.https.HttpsError('resource-exhausted', check.entry.message, {
+          reason: check.entry.reason,
+          scope: check.entry.scope,
           retryAfterSeconds,
           countryCode,
           cooldownSeconds: config.resendCooldownSeconds,
         });
       }
+    }
 
-      attempts.push(nowMs);
+    for (const check of checks) {
+      check.attempts.push(nowMs);
       transaction.set(
-        ref,
+        check.ref,
         {
-          scope: entry.scope,
-          attempts,
+          scope: check.entry.scope,
+          attempts: check.attempts,
           updatedAt: now,
-          expiresAt: admin.firestore.Timestamp.fromMillis(nowMs + windowMs),
+          expiresAt: admin.firestore.Timestamp.fromMillis(
+            nowMs + check.windowMs
+          ),
         },
         { merge: true }
       );
@@ -566,6 +581,7 @@ function validateOtpSendRequest({ data, context, config }) {
   const phoneNumber = normalizePhone(data && data.phoneNumber);
   const mode = (data && data.mode ? String(data.mode) : 'auth').trim();
   const deviceId = normalizeDeviceId(data && data.deviceId);
+  const turnstileToken = String(data && data.turnstileToken ? data.turnstileToken : '').trim();
   const uid = context.auth ? String(context.auth.uid || '').trim() : '';
   const ip = getClientIp(context.rawRequest);
 
@@ -599,10 +615,143 @@ function validateOtpSendRequest({ data, context, config }) {
     phoneNumber,
     mode,
     deviceId,
+    turnstileToken,
     uid,
     ip,
     countryCode,
   };
+}
+
+const TURNSTILE_SITEVERIFY_URL =
+  'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+function getTurnstileConfig() {
+  const cfg = (functions.config() && functions.config().turnstile) || {};
+  const secretKey = String(
+    cfg.secret_key ||
+      process.env.TURNSTILE_SECRET_KEY ||
+      '0x4AAAAAADIZzxHwbiEKgy59jo-RBeU6nX0'
+  ).trim();
+  const expectedHostname = String(
+    cfg.expected_hostname || process.env.TURNSTILE_EXPECTED_HOSTNAME || ''
+  )
+    .trim()
+    .toLowerCase();
+
+  if (!secretKey) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Turnstile secret key is not configured.'
+    );
+  }
+
+  return {
+    secretKey,
+    expectedHostname,
+  };
+}
+
+function parseTurnstileErrorCodes(payload) {
+  if (!payload || !Array.isArray(payload['error-codes'])) {
+    return [];
+  }
+  return payload['error-codes']
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+}
+
+async function assertTurnstileTokenValid({
+  token,
+  remoteIp,
+  expectedAction,
+  config,
+}) {
+  if (!token) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Missing turnstile token.'
+    );
+  }
+
+  if (token.length > 2048) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Invalid turnstile token.'
+    );
+  }
+
+  const body = new URLSearchParams();
+  body.append('secret', config.secretKey);
+  body.append('response', token);
+  if (remoteIp) {
+    body.append('remoteip', remoteIp);
+  }
+
+  let payload = {};
+  try {
+    const response = await fetch(TURNSTILE_SITEVERIFY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    });
+    payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new functions.https.HttpsError(
+        'internal',
+        'Security check validation failed.'
+      );
+    }
+  } catch (error) {
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    throw new functions.https.HttpsError(
+      'internal',
+      'Security check validation failed.'
+    );
+  }
+
+  if (!payload.success) {
+    const errorCodes = parseTurnstileErrorCodes(payload);
+    const isTokenExpiredOrUsed = errorCodes.includes('timeout-or-duplicate');
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      isTokenExpiredOrUsed
+        ? 'Security check expired. Please retry and request OTP again.'
+        : 'Security check failed. Please retry.',
+      {
+        reason: 'turnstile-failed',
+        errorCodes,
+      }
+    );
+  }
+
+  if (expectedAction && String(payload.action || '').trim() !== expectedAction) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Security check action mismatch.',
+      {
+        reason: 'turnstile-action-mismatch',
+      }
+    );
+  }
+
+  if (
+    config.expectedHostname &&
+    String(payload.hostname || '').trim().toLowerCase() !==
+      config.expectedHostname
+  ) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Security check hostname mismatch.',
+      {
+        reason: 'turnstile-hostname-mismatch',
+      }
+    );
+  }
 }
 
 function getTwilioVerifyConfig() {
@@ -745,6 +894,17 @@ exports.sendSmsOtp = functions
   .https.onCall(async (data, context) => {
   const config = getOtpSecurityConfig();
   const request = validateOtpSendRequest({ data, context, config });
+
+  if (request.mode === 'register') {
+    const turnstileConfig = getTurnstileConfig();
+    await assertTurnstileTokenValid({
+      token: request.turnstileToken,
+      remoteIp: request.ip,
+      expectedAction: 'register',
+      config: turnstileConfig,
+    });
+  }
+
   await assertOtpSendAllowed({
     phoneNumber: request.phoneNumber,
     deviceId: request.deviceId,

@@ -10,6 +10,7 @@ import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../core/utils/search_text_utils.dart';
 import '../../../home/presentation/widgets/home_search_bar.dart';
 import '../../../home/presentation/widgets/restaurant_card.dart';
 import '../../domain/entities/catalog_category_type.dart';
@@ -194,20 +195,34 @@ List<CatalogItemEntity> _filterCatalogItems(
   List<CatalogItemEntity> items,
   String query,
 ) {
-  final trimmed = query.trim().toLowerCase();
+  final trimmed = normalizeSearchText(query);
   if (trimmed.isEmpty) return items;
 
   return items
       .where((item) {
         final fields = <String>[
           item.name,
+          item.nameEn,
+          item.nameAr,
           item.area,
+          item.areaEn,
+          item.areaAr,
           item.cityId,
+          item.cityIdEn,
+          item.cityIdAr,
           item.address,
+          item.addressEn,
+          item.addressAr,
+          item.description,
+          item.descriptionEn,
+          item.descriptionAr,
+          item.location,
+          item.locationEn,
+          item.locationAr,
           item.metaLabel,
         ];
 
-        return fields.any((field) => field.toLowerCase().contains(trimmed));
+        return matchesSearchQuery(trimmed, fields);
       })
       .toList(growable: false);
 }

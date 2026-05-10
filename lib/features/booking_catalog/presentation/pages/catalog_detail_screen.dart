@@ -7,6 +7,8 @@ import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
 import '../../../../core/utils/app_strings.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../core/utils/osm_geocoding_service.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/bottom_cta_bar.dart';
 import '../../domain/entities/catalog_category_type.dart';
 import '../../domain/entities/catalog_item_entity.dart';
@@ -372,17 +374,16 @@ List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
       _CatalogSectionConfig(
         title: AppStrings.whatsIncluded,
         items: item.inclusions,
-        emptyLabel: AppStrings.includedDetailsWillAppearHere,
       ),
       _CatalogSectionConfig(
         title: AppStrings.availableOptions,
         items: item.availableMeals,
         emptyLabel: AppStrings.optionsWillAppearAutomaticallyWhenConfigured,
+        showWhenEmpty: true,
       ),
       _CatalogSectionConfig(
         title: AppStrings.experienceHighlights,
         items: item.highlights,
-        emptyLabel: AppStrings.highlightsWillAppearHereOnceConfigured,
       ),
       _CatalogSectionConfig(
         title: AppStrings.whatsExcluded,
@@ -401,7 +402,6 @@ List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
       _CatalogSectionConfig(
         title: AppStrings.experienceHighlights,
         items: item.highlights,
-        emptyLabel: AppStrings.highlightsWillAppearHereOnceConfigured,
       ),
       _CatalogSectionConfig(
         title: AppStrings.termsAndConditions,
@@ -410,7 +410,6 @@ List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
       _CatalogSectionConfig(
         title: AppStrings.whatsIncluded,
         items: item.inclusions,
-        emptyLabel: AppStrings.includedDetailsWillAppearHere,
       ),
       _CatalogSectionConfig(
         title: AppStrings.cancellationTitle,
@@ -420,13 +419,13 @@ List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
         title: AppStrings.availableOptions,
         items: item.availableMeals,
         emptyLabel: AppStrings.optionsWillAppearAutomaticallyWhenConfigured,
+        showWhenEmpty: true,
       ),
     ],
     CatalogCategoryType.combo => [
       _CatalogSectionConfig(
         title: AppStrings.experienceHighlights,
         items: item.highlights,
-        emptyLabel: AppStrings.highlightsWillAppearHereOnceConfigured,
       ),
       _CatalogSectionConfig(
         title: AppStrings.termsAndConditions,
@@ -435,7 +434,6 @@ List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
       _CatalogSectionConfig(
         title: AppStrings.whatsIncluded,
         items: item.inclusions,
-        emptyLabel: AppStrings.includedDetailsWillAppearHere,
       ),
       _CatalogSectionConfig(
         title: AppStrings.cancellationTitle,
@@ -445,6 +443,7 @@ List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
         title: AppStrings.availableCombos,
         items: item.availableMeals,
         emptyLabel: AppStrings.optionsWillAppearAutomaticallyWhenConfigured,
+        showWhenEmpty: true,
       ),
     ],
     CatalogCategoryType.attraction => [
@@ -478,8 +477,12 @@ List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
     ],
   };
 
-  for (var index = 0; index < sections.length; index++) {
-    final section = sections[index];
+  final visibleSections = sections
+      .where((section) => section.items.isNotEmpty || section.showWhenEmpty)
+      .toList(growable: false);
+
+  for (var index = 0; index < visibleSections.length; index++) {
+    final section = visibleSections[index];
     widgets.add(
       CatalogInfoSection(
         title: section.title,
@@ -489,7 +492,7 @@ List<Widget> _buildRestaurantCategorySections(CatalogItemEntity item) {
         initiallyExpanded: false,
       ),
     );
-    if (index != sections.length - 1) {
+    if (index != visibleSections.length - 1) {
       widgets.add(SizedBox(height: 12.h));
     }
   }
@@ -526,12 +529,14 @@ class _CatalogSectionConfig {
   const _CatalogSectionConfig({
     required this.title,
     required this.items,
-    this.emptyLabel = 'No details available yet.',
+    this.emptyLabel,
+    this.showWhenEmpty = false,
   });
 
   final String title;
   final List<String> items;
-  final String emptyLabel;
+  final String? emptyLabel;
+  final bool showWhenEmpty;
 }
 
 class _BuffetLocationSection extends StatelessWidget {
@@ -543,12 +548,13 @@ class _BuffetLocationSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final summary = _locationSummary(item);
     final hasMapLocation = _hasUsableCoordinates(item.geoLat, item.geoLng);
+    final canOpenMap = hasMapLocation || _locationLookupQuery(item).isNotEmpty;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(18.r),
-        onTap: hasMapLocation
+        onTap: canOpenMap
             ? () => _openCatalogLocationMap(context, item)
             : null,
         child: Container(
@@ -606,7 +612,7 @@ class _BuffetLocationSection extends StatelessWidget {
                           AppStrings.map,
                           style: AppTextStyles.cardPrice.copyWith(
                             fontSize: 12.sp,
-                            color: hasMapLocation
+                            color: canOpenMap
                                 ? AppColors.primary
                                 : AppColors.textMuted,
                           ),
@@ -633,7 +639,58 @@ class _BuffetLocationSection extends StatelessWidget {
   }
 }
 
-void _openCatalogLocationMap(BuildContext context, CatalogItemEntity item) {
+Future<void> _openCatalogLocationMap(
+  BuildContext context,
+  CatalogItemEntity item,
+) async {
+  if (!_hasUsableCoordinates(item.geoLat, item.geoLng)) {
+    final query = _locationLookupQuery(item);
+    if (query.isEmpty) {
+      showAppSnackBar(
+        context,
+        AppStrings.unableToOpenMapForLocation,
+        type: SnackBarType.error,
+      );
+      return;
+    }
+
+    try {
+      final results = await OsmGeocodingService.searchPlaces(
+        query,
+        limit: 1,
+        languageCode: Localizations.localeOf(context).languageCode,
+      );
+      if (!context.mounted) return;
+      if (results.isEmpty) {
+        showAppSnackBar(
+          context,
+          AppStrings.unableToOpenMapForLocation,
+          type: SnackBarType.error,
+        );
+        return;
+      }
+      final point = results.first.point;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RestaurantMapScreen(
+            restaurantName: item.name,
+            latitude: point.latitude,
+            longitude: point.longitude,
+          ),
+        ),
+      );
+      return;
+    } on OsmGeocodingException {
+      if (!context.mounted) return;
+      showAppSnackBar(
+        context,
+        AppStrings.unableToOpenMapForLocation,
+        type: SnackBarType.error,
+      );
+      return;
+    }
+  }
+
   Navigator.of(context).push(
     MaterialPageRoute(
       builder: (_) => RestaurantMapScreen(
@@ -661,5 +718,18 @@ String _locationSummary(CatalogItemEntity item) {
   if (address.isNotEmpty) return address;
   final meta = item.metaLabel.trim();
   if (meta.isNotEmpty) return meta;
-  return 'No details available yet.';
+  return AppStrings.noDetailsAvailableYet;
+}
+
+String _locationLookupQuery(CatalogItemEntity item) {
+  final parts = <String>[];
+  final location = item.location.trim();
+  final address = item.address.trim();
+  final area = item.area.trim();
+  final city = item.cityId.trim();
+  if (location.isNotEmpty) parts.add(location);
+  if (address.isNotEmpty && address != location) parts.add(address);
+  if (area.isNotEmpty) parts.add(area);
+  if (city.isNotEmpty && city != area) parts.add(city);
+  return parts.join(', ');
 }

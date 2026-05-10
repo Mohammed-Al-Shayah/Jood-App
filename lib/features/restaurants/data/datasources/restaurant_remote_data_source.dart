@@ -48,6 +48,15 @@ class RestaurantRemoteDataSource {
       ...restaurant.toMap(),
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+    final disabledCatalogFields = <String, Object?>{
+      if (!restaurant.supportsBuffet) 'bookingCatalog.buffet': FieldValue.delete(),
+      if (!restaurant.supportsSetMenu)
+        'bookingCatalog.setMenu': FieldValue.delete(),
+      if (!restaurant.supportsCombo) 'bookingCatalog.combo': FieldValue.delete(),
+    };
+    if (disabledCatalogFields.isNotEmpty) {
+      await docRef.update(disabledCatalogFields);
+    }
     final updated = await docRef.get();
     return RestaurantModel.fromDoc(updated);
   }

@@ -44,6 +44,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /lib/core/config/thawani_config.dart
+/lib/core/config/turnstile_config.dart
 
 # FVM Version Cache
 .fvm/

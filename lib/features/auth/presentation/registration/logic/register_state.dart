@@ -34,6 +34,7 @@ class RegisterState {
     required this.termsError,
     required this.verificationId,
     required this.resendToken,
+    required this.turnstileToken,
     this.errorMessage,
   });
 
@@ -69,6 +70,7 @@ class RegisterState {
   final String? termsError;
   final String? verificationId;
   final int? resendToken;
+  final String turnstileToken;
   final String? errorMessage;
 
   RegisterState copyWith({
@@ -104,6 +106,7 @@ class RegisterState {
     String? termsError,
     String? verificationId,
     int? resendToken,
+    String? turnstileToken,
     String? errorMessage,
   }) {
     return RegisterState(
@@ -140,6 +143,7 @@ class RegisterState {
       termsError: termsError,
       verificationId: verificationId ?? this.verificationId,
       resendToken: resendToken ?? this.resendToken,
+      turnstileToken: turnstileToken ?? this.turnstileToken,
       errorMessage: errorMessage,
     );
   }
@@ -178,6 +182,7 @@ class RegisterState {
       termsError: null,
       verificationId: null,
       resendToken: null,
+      turnstileToken: '',
       errorMessage: null,
     );
   }

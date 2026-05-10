@@ -130,6 +130,9 @@ class AppStrings {
   static String get experienceHighlights => _tr('experience_highlights');
   static String get termsAndConditions => _tr('terms_and_conditions');
   static String get locationTitle => _tr('location_title');
+  static String get noDetailsAvailableYet => _tr('no_details_available_yet');
+  static String get unableToOpenMapForLocation =>
+      _tr('unable_to_open_map_for_location');
   static String get bookingFlowSetMenuSelectionNote =>
       _tr('booking_flow_set_menu_selection_note');
   static String get bookingFlowComboSelectionNote =>
@@ -215,6 +218,18 @@ class AppStrings {
   static String get agreeToTermsAndPrivacyPolicy =>
       _tr('agree_to_terms_and_privacy_policy');
   static String get sendOtp => _tr('send_otp');
+  static String get completeSecurityCheckBeforeSendingOtp => _tr(
+    'complete_security_check_before_sending_otp',
+    fallback: 'Complete the security check before sending OTP.',
+  );
+  static String get securityCheckFailedPleaseTryAgain => _tr(
+    'security_check_failed_please_try_again',
+    fallback: 'Security check failed. Please try again.',
+  );
+  static String get securityCheckNotConfigured => _tr(
+    'security_check_not_configured',
+    fallback: 'Security check is not configured. Please contact support.',
+  );
   static String get verifyYourEmail => _tr('verify_your_email');
   static String get resendActivationLink => _tr('resend_activation_link');
   static String get loginWithPhone => _tr('login_with_phone');

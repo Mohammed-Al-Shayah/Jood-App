@@ -12,6 +12,7 @@ import 'package:jood/features/admin/presentation/cubit/admin_restaurants_state.d
 import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_list_tile.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/restaurants/domain/entities/restaurant_entity.dart';
 
 class AdminRestaurantsScreen extends StatelessWidget {
@@ -32,7 +33,7 @@ class AdminRestaurantsScreen extends StatelessWidget {
                   arguments: const AdminRestaurantFormArgs(),
                 );
                 if (result is RestaurantEntity && context.mounted) {
-                  context.read<AdminRestaurantsCubit>().create(result);
+                  await _saveRestaurant(context, result, isEdit: false);
                 }
               },
               backgroundColor: AppColors.primary,
@@ -101,9 +102,11 @@ class AdminRestaurantsScreen extends StatelessWidget {
                                 );
                                 if (result is RestaurantEntity &&
                                     context.mounted) {
-                                  context
-                                      .read<AdminRestaurantsCubit>()
-                                      .update(result);
+                                  await _saveRestaurant(
+                                    context,
+                                    result,
+                                    isEdit: true,
+                                  );
                                 }
                               },
                         onDelete: isLoading
@@ -121,6 +124,46 @@ class AdminRestaurantsScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _saveRestaurant(
+    BuildContext context,
+    RestaurantEntity restaurant, {
+    required bool isEdit,
+  }) async {
+    final cubit = context.read<AdminRestaurantsCubit>();
+    if (isEdit) {
+      await cubit.update(restaurant);
+    } else {
+      await cubit.create(restaurant);
+    }
+    if (!context.mounted) return;
+    if (cubit.state.status == AdminRestaurantsStatus.failure) {
+      _showResultSnackBar(
+        context,
+        cubit.state.errorMessage ?? 'Failed to save restaurant.',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+    _showResultSnackBar(
+      context,
+      isEdit
+          ? 'Restaurant updated successfully.'
+          : 'Restaurant created successfully.',
+      type: SnackBarType.success,
+    );
+  }
+
+  void _showResultSnackBar(
+    BuildContext context,
+    String message, {
+    required SnackBarType type,
+  }) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      showAppSnackBar(context, message, type: type, fromTop: true);
+    });
   }
 
   Future<void> _confirmDelete(
@@ -149,7 +192,7 @@ class _RestaurantThumb extends StatelessWidget {
       width: 44.w,
       height: 44.w,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.12),
+        color: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14.r),
       ),
       child: Icon(Icons.restaurant, color: AppColors.primary),

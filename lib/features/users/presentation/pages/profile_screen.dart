@@ -211,8 +211,9 @@ class ProfileTab extends StatelessWidget {
                           : AppStrings.currentLanguageEnglish,
                     ),
                     tint: AppColors.primary,
-                    onTap: () {
-                      context.toggleAppLocale();
+                    onTap: () async {
+                      context.pushNamedAndRemoveAll(Routes.homeScreen);
+                      await context.toggleAppLocale();
                     },
                   ),
                   SizedBox(height: 12.h),

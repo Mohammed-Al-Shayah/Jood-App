@@ -38,8 +38,6 @@ class AdminAttractionFormContent extends StatefulWidget {
 class _AdminAttractionFormContentState
     extends State<AdminAttractionFormContent> {
   static const LatLng _omanMapCenter = LatLng(23.588, 58.3829);
-  static const String _defaultAreaEn = 'Oman';
-  static const String _defaultAreaAr = '\u0639\u0645\u0627\u0646';
 
   final _formKey = GlobalKey<FormState>();
 
@@ -91,6 +89,7 @@ class _AdminAttractionFormContentState
   bool _isSearchingLocation = false;
   bool _isResolvingAddress = false;
   _LocationInputMode _locationInputMode = _LocationInputMode.manual;
+  final MapController _locationMapController = MapController();
   LatLng? _selectedMapLocation;
   String? _imageError;
   String? _locationSearchError;
@@ -112,13 +111,9 @@ class _AdminAttractionFormContentState
       text: attraction?.cityIdAr ?? '',
     );
     final initialAreaEn = _preferredText(attraction?.areaEn, attraction?.area);
-    _areaController = TextEditingController(
-      text: initialAreaEn.isEmpty ? _defaultAreaEn : initialAreaEn,
-    );
+    _areaController = TextEditingController(text: initialAreaEn);
     final initialAreaAr = attraction?.areaAr.trim() ?? '';
-    _areaArController = TextEditingController(
-      text: initialAreaAr.isEmpty ? _defaultAreaAr : initialAreaAr,
-    );
+    _areaArController = TextEditingController(text: initialAreaAr);
     _ratingController = TextEditingController(
       text: attraction?.rating.toString() ?? '',
     );
@@ -368,6 +363,14 @@ class _AdminAttractionFormContentState
     _selectedMapLocation = point;
   }
 
+  void _moveLocationMapTo(LatLng point) {
+    if (_locationInputMode != _LocationInputMode.map) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _locationInputMode != _LocationInputMode.map) return;
+      _locationMapController.move(point, 14);
+    });
+  }
+
   String _languageCode() {
     final code = Localizations.localeOf(context).languageCode.toLowerCase();
     return code == 'ar' ? 'ar' : 'en';
@@ -416,21 +419,36 @@ class _AdminAttractionFormContentState
   Future<void> _onMapPointPicked(LatLng point) async {
     if (!mounted) return;
     setState(() => _updateCoordinatesFromMap(point));
-    await _resolveAddressFromCoordinates(point);
+    _moveLocationMapTo(point);
+    await _resolveLocalizedAddressFromCoordinates(point);
   }
 
-  Future<void> _resolveAddressFromCoordinates(LatLng point) async {
+  Future<void> _resolveLocalizedAddressFromCoordinates(
+    LatLng point, {
+    OsmPlaceResult? fallback,
+  }) async {
     if (!mounted) return;
     setState(() => _isResolvingAddress = true);
     try {
-      final result = await OsmGeocodingService.reverseGeocode(
+      final english = await OsmGeocodingService.reverseGeocode(
         point,
-        languageCode: _languageCode(),
+        languageCode: 'en',
       );
-      if (!mounted || result == null) return;
-      _applyResolvedLocation(result);
+      final arabic = await OsmGeocodingService.reverseGeocode(
+        point,
+        languageCode: 'ar',
+      );
+      if (!mounted) return;
+      if (english == null && arabic == null && fallback == null) return;
+      _applyResolvedLocation(
+        english: english ?? fallback ?? arabic,
+        arabic: arabic ?? fallback ?? english,
+      );
     } on OsmGeocodingException {
       if (!mounted) return;
+      if (fallback != null) {
+        _applyResolvedLocation(english: fallback, arabic: fallback);
+      }
       // Keep current values if reverse lookup fails.
     } finally {
       if (mounted) {
@@ -446,25 +464,65 @@ class _AdminAttractionFormContentState
       _locationSearchResults = const [];
       _locationSearchController.text = result.displayName;
     });
-    _applyResolvedLocation(result);
+    _moveLocationMapTo(result.point);
+    _resolveLocalizedAddressFromCoordinates(result.point, fallback: result);
   }
 
-  void _applyResolvedLocation(OsmPlaceResult result) {
-    final address = result.displayName.trim();
-    if (address.isNotEmpty) {
-      _addressController.text = address;
-      if (_addressArController.text.trim().isEmpty) {
-        _addressArController.text = address;
-      }
+  void _applyResolvedLocation({
+    OsmPlaceResult? english,
+    OsmPlaceResult? arabic,
+  }) {
+    final englishAddress = english?.displayName.trim() ?? '';
+    if (englishAddress.isNotEmpty) {
+      _addressController.text = englishAddress;
+    }
+    final arabicAddress = arabic?.displayName.trim() ?? '';
+    if (arabicAddress.isNotEmpty) {
+      _addressArController.text = arabicAddress;
     }
 
-    final country = result.country.trim();
-    if (country.isNotEmpty) {
-      _areaController.text = country;
-      if (_areaArController.text.trim().isEmpty) {
-        _areaArController.text = country;
-      }
+    final englishCity = english?.city.trim() ?? '';
+    if (englishCity.isNotEmpty) {
+      _cityIdController.text = englishCity;
     }
+    final arabicCity = arabic?.city.trim() ?? '';
+    if (arabicCity.isNotEmpty) {
+      _cityIdArController.text = arabicCity;
+    }
+
+    final englishArea = english == null ? '' : _areaFromPlaceResult(english);
+    if (englishArea.isNotEmpty) {
+      _areaController.text = englishArea;
+    } else {
+      final country = english?.country.trim() ?? '';
+      if (country.isNotEmpty) _areaController.text = country;
+    }
+
+    final arabicArea = arabic == null ? '' : _areaFromPlaceResult(arabic);
+    if (arabicArea.isNotEmpty) {
+      _areaArController.text = arabicArea;
+    } else {
+      final country = arabic?.country.trim() ?? '';
+      if (country.isNotEmpty) _areaArController.text = country;
+    }
+  }
+
+  String _areaFromPlaceResult(OsmPlaceResult result) {
+    for (final key in [
+      'suburb',
+      'neighbourhood',
+      'quarter',
+      'city_district',
+      'district',
+      'town',
+      'village',
+      'state',
+      'region',
+    ]) {
+      final value = result.addressParts[key]?.trim() ?? '';
+      if (value.isNotEmpty) return value;
+    }
+    return '';
   }
 
   Widget _locationMapPicker() {
@@ -540,6 +598,7 @@ class _AdminAttractionFormContentState
             child: ClipRRect(
               borderRadius: BorderRadius.circular(14.r),
               child: FlutterMap(
+                mapController: _locationMapController,
                 options: MapOptions(
                   initialCenter: center,
                   initialZoom: 14,
@@ -617,16 +676,6 @@ class _AdminAttractionFormContentState
                   arabicController: _nameArController,
                   label: 'Name',
                 ),
-                ..._localizedTextFields(
-                  englishController: _cityIdController,
-                  arabicController: _cityIdArController,
-                  label: 'City ID',
-                ),
-                ..._localizedTextFields(
-                  englishController: _areaController,
-                  arabicController: _areaArController,
-                  label: 'Area',
-                ),
                 _numberField(_ratingController, 'Rating'),
               ],
             ),
@@ -663,10 +712,15 @@ class _AdminAttractionFormContentState
                         label: const Text('Pick from map'),
                         selected: _locationInputMode == _LocationInputMode.map,
                         onSelected: (_) {
+                          final parsed = _parseCoordinates();
                           setState(() {
                             _locationInputMode = _LocationInputMode.map;
-                            _selectedMapLocation ??= _parseCoordinates();
+                            _selectedMapLocation ??= parsed;
                           });
+                          final point = _selectedMapLocation ?? parsed;
+                          if (point != null) {
+                            _moveLocationMapTo(point);
+                          }
                         },
                       ),
                     ],
@@ -685,32 +739,6 @@ class _AdminAttractionFormContentState
                   'Geo Lng',
                   min: -180,
                   max: 180,
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: 14.h),
-          AdminSectionCard(
-            title: 'Content',
-            child: Column(
-              children: [
-                ..._localizedTextFields(
-                  englishController: _aboutController,
-                  arabicController: _aboutArController,
-                  label: 'About',
-                  maxLines: 4,
-                ),
-                ..._localizedTextFields(
-                  englishController: _highlightsController,
-                  arabicController: _highlightsArController,
-                  label: 'Highlights (comma separated)',
-                  maxLines: 2,
-                ),
-                ..._localizedTextFields(
-                  englishController: _inclusionsController,
-                  arabicController: _inclusionsArController,
-                  label: 'Inclusions (comma separated)',
-                  maxLines: 2,
                 ),
               ],
             ),
@@ -767,13 +795,6 @@ class _AdminAttractionFormContentState
                   arabicController: _catalogOptionsArController,
                   label: 'Available Options (one per line)',
                   maxLines: 4,
-                  englishRequired: false,
-                ),
-                ..._localizedTextFields(
-                  englishController: _catalogLocationController,
-                  arabicController: _catalogLocationArController,
-                  label: 'Location',
-                  maxLines: 2,
                   englishRequired: false,
                 ),
               ],
@@ -976,6 +997,7 @@ class _AdminAttractionFormContentState
           if (parsed == null) return;
           if (!mounted) return;
           setState(() => _selectedMapLocation = parsed);
+          _moveLocationMapTo(parsed);
         },
         validator: (value) {
           if (value == null || value.trim().isEmpty) return 'Required';
@@ -1058,8 +1080,24 @@ class _AdminAttractionFormContentState
         .toList(growable: false);
   }
 
+  List<String> _preservedOrEmpty(
+    List<String> preferred,
+    List<String> fallback,
+  ) {
+    if (preferred.isNotEmpty) return preferred;
+    return fallback;
+  }
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      showAppSnackBar(
+        context,
+        'Please fill all required fields.',
+        type: SnackBarType.error,
+        fromTop: true,
+      );
+      return;
+    }
     final now = DateTime.now();
     final nameEn = _nameController.text.trim();
     final cityIdEn = _cityIdController.text.trim();
@@ -1087,10 +1125,16 @@ class _AdminAttractionFormContentState
     final catalogOptionsAr = _splitLines(_catalogOptionsArController.text);
     final catalogLocationEn = _catalogLocationController.text.trim();
     final catalogLocationAr = _catalogLocationArController.text.trim();
-    final packageOverviewEn = catalogOptionsEn;
-    final packageOverviewAr = catalogOptionsAr;
-    final bookingNotesEn = catalogTermsEn;
-    final bookingNotesAr = catalogTermsAr;
+    final packageOverviewEn = _preservedOrEmpty(
+      _cleanList(existingAttraction?.packageOverviewEn),
+      _cleanList(existingAttraction?.packageOverview),
+    );
+    final packageOverviewAr = _cleanList(existingAttraction?.packageOverviewAr);
+    final bookingNotesEn = _preservedOrEmpty(
+      _cleanList(existingAttraction?.bookingNotesEn),
+      _cleanList(existingAttraction?.bookingNotes),
+    );
+    final bookingNotesAr = _cleanList(existingAttraction?.bookingNotesAr);
 
     final attraction = AttractionModel(
       id: widget.attraction?.id ?? '',
@@ -1173,6 +1217,7 @@ class _AdminAttractionFormContentState
         context,
         'Failed to save attraction.',
         type: SnackBarType.error,
+        fromTop: true,
       );
     } finally {
       if (mounted) {

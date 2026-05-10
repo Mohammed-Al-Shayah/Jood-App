@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 import 'core/localization/app_localization_controller.dart';
 import 'core/routing/app_router.dart';
-import 'core/routing/routes.dart';
 import 'core/theming/app_colors.dart';
 import 'core/utils/app_strings.dart';
 import 'core/widgets/app_keyboard_dismiss_region.dart';
@@ -14,7 +12,13 @@ import 'core/widgets/app_scroll_behavior.dart';
 
 class JoodApp extends StatelessWidget {
   final AppRouter appRouter;
-  const JoodApp({super.key, required this.appRouter});
+  final String initialRoute;
+
+  const JoodApp({
+    super.key,
+    required this.appRouter,
+    required this.initialRoute,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +31,6 @@ class JoodApp extends StatelessWidget {
           valueListenable: AppLocalizationController.instance.localeNotifier,
           builder: (context, locale, _) {
             return MaterialApp(
-              key: ValueKey<String>('jood-${locale.languageCode}'),
               title: AppStrings.appTitle,
               debugShowCheckedModeBanner: false,
               locale: locale,
@@ -63,9 +66,7 @@ class JoodApp extends StatelessWidget {
                   surfaceTintColor: Colors.white,
                 ),
               ),
-              initialRoute: FirebaseAuth.instance.currentUser == null
-                  ? Routes.loginScreen
-                  : Routes.homeScreen,
+              initialRoute: initialRoute,
               onGenerateRoute: appRouter.generateRoute,
               builder: (context, widget) {
                 final easyLoadingBuilder = EasyLoading.init();

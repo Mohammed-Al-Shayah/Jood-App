@@ -35,6 +35,7 @@ class RestaurantModel extends RestaurantEntity {
     super.discountValue,
     super.supportsBuffet,
     super.supportsSetMenu,
+    super.supportsCombo,
     super.nameEn,
     super.nameAr,
     super.cityIdEn,
@@ -207,7 +208,9 @@ class RestaurantModel extends RestaurantEntity {
       _stringList(buffetConfig['cancellationPolicyAr']),
       cancellationPolicyAr,
     );
-    final buffetAvailableOptionsEn = _stringList(buffetConfig['availableMeals']);
+    final buffetAvailableOptionsEn = _stringList(
+      buffetConfig['availableMeals'],
+    );
     final buffetAvailableOptionsAr = _stringList(
       buffetConfig['availableMealsAr'],
     );
@@ -313,9 +316,7 @@ class RestaurantModel extends RestaurantEntity {
       _stringList(comboConfig['cancellationPolicyAr']),
       cancellationPolicyAr,
     );
-    final comboAvailableOptionsEn = _stringList(
-      comboConfig['availableCombos'],
-    );
+    final comboAvailableOptionsEn = _stringList(comboConfig['availableCombos']);
     final comboAvailableOptionsAr = _stringList(
       comboConfig['availableCombosAr'],
     );
@@ -371,8 +372,9 @@ class RestaurantModel extends RestaurantEntity {
       slotsLeft: _stringValue(data['slotsLeft']),
       priceFromValue: NumberUtils.toDouble(data['priceFromValue']),
       discountValue: NumberUtils.toDouble(data['discountValue']),
-      supportsBuffet: _supportsCategory(bookingCatalog, 'buffet'),
-      supportsSetMenu: _supportsCategory(bookingCatalog, 'set_menu'),
+      supportsBuffet: _supportsCategory(data, bookingCatalog, 'buffet'),
+      supportsSetMenu: _supportsCategory(data, bookingCatalog, 'set_menu'),
+      supportsCombo: _supportsCategory(data, bookingCatalog, 'combo'),
       nameEn: nameEn,
       nameAr: nameAr,
       cityIdEn: cityIdEn,
@@ -529,81 +531,92 @@ class RestaurantModel extends RestaurantEntity {
   }
 
   Map<String, dynamic> toMap() {
-    final buffetCatalog = _buildCategoryCatalogContent(
-      descriptionEn: buffetDescriptionEn,
-      description: buffetDescription,
-      descriptionAr: buffetDescriptionAr,
-      highlightsEn: buffetHighlightsEn,
-      highlights: buffetHighlights,
-      highlightsAr: buffetHighlightsAr,
-      includedEn: buffetIncludedEn,
-      included: buffetIncluded,
-      includedAr: buffetIncludedAr,
-      termsEn: buffetTermsAndConditionsEn,
-      terms: buffetTermsAndConditions,
-      termsAr: buffetTermsAndConditionsAr,
-      cancellationEn: buffetCancellationPolicyEn,
-      cancellation: buffetCancellationPolicy,
-      cancellationAr: buffetCancellationPolicyAr,
-      locationEn: buffetLocationEn,
-      location: buffetLocation,
-      locationAr: buffetLocationAr,
-      optionValuesEn: buffetAvailableOptionsEn,
-      optionValues: buffetAvailableOptions,
-      optionValuesAr: buffetAvailableOptionsAr,
-      optionKey: 'availableMeals',
-      excludedEn: buffetExcludedEn,
-      excluded: buffetExcluded,
-      excludedAr: buffetExcludedAr,
-    );
-    final setMenuCatalog = _buildCategoryCatalogContent(
-      descriptionEn: setMenuDescriptionEn,
-      description: setMenuDescription,
-      descriptionAr: setMenuDescriptionAr,
-      highlightsEn: setMenuHighlightsEn,
-      highlights: setMenuHighlights,
-      highlightsAr: setMenuHighlightsAr,
-      includedEn: setMenuIncludedEn,
-      included: setMenuIncluded,
-      includedAr: setMenuIncludedAr,
-      termsEn: setMenuTermsAndConditionsEn,
-      terms: setMenuTermsAndConditions,
-      termsAr: setMenuTermsAndConditionsAr,
-      cancellationEn: setMenuCancellationPolicyEn,
-      cancellation: setMenuCancellationPolicy,
-      cancellationAr: setMenuCancellationPolicyAr,
-      locationEn: setMenuLocationEn,
-      location: setMenuLocation,
-      locationAr: setMenuLocationAr,
-      optionValuesEn: setMenuAvailableOptionsEn,
-      optionValues: setMenuAvailableOptions,
-      optionValuesAr: setMenuAvailableOptionsAr,
-      optionKey: 'availableMeals',
-    );
-    final comboCatalog = _buildCategoryCatalogContent(
-      descriptionEn: comboDescriptionEn,
-      description: comboDescription,
-      descriptionAr: comboDescriptionAr,
-      highlightsEn: comboHighlightsEn,
-      highlights: comboHighlights,
-      highlightsAr: comboHighlightsAr,
-      includedEn: comboIncludedEn,
-      included: comboIncluded,
-      includedAr: comboIncludedAr,
-      termsEn: comboTermsAndConditionsEn,
-      terms: comboTermsAndConditions,
-      termsAr: comboTermsAndConditionsAr,
-      cancellationEn: comboCancellationPolicyEn,
-      cancellation: comboCancellationPolicy,
-      cancellationAr: comboCancellationPolicyAr,
-      locationEn: comboLocationEn,
-      location: comboLocation,
-      locationAr: comboLocationAr,
-      optionValuesEn: comboAvailableOptionsEn,
-      optionValues: comboAvailableOptions,
-      optionValuesAr: comboAvailableOptionsAr,
-      optionKey: 'availableCombos',
-    );
+    final buffetCatalog = supportsBuffet
+        ? _buildCategoryCatalogContent(
+            descriptionEn: buffetDescriptionEn,
+            description: buffetDescription,
+            descriptionAr: buffetDescriptionAr,
+            highlightsEn: buffetHighlightsEn,
+            highlights: buffetHighlights,
+            highlightsAr: buffetHighlightsAr,
+            includedEn: buffetIncludedEn,
+            included: buffetIncluded,
+            includedAr: buffetIncludedAr,
+            termsEn: buffetTermsAndConditionsEn,
+            terms: buffetTermsAndConditions,
+            termsAr: buffetTermsAndConditionsAr,
+            cancellationEn: buffetCancellationPolicyEn,
+            cancellation: buffetCancellationPolicy,
+            cancellationAr: buffetCancellationPolicyAr,
+            locationEn: buffetLocationEn,
+            location: buffetLocation,
+            locationAr: buffetLocationAr,
+            optionValuesEn: buffetAvailableOptionsEn,
+            optionValues: buffetAvailableOptions,
+            optionValuesAr: buffetAvailableOptionsAr,
+            optionKey: 'availableMeals',
+            excludedEn: buffetExcludedEn,
+            excluded: buffetExcluded,
+            excludedAr: buffetExcludedAr,
+          )
+        : null;
+    final setMenuCatalog = supportsSetMenu
+        ? _buildCategoryCatalogContent(
+            descriptionEn: setMenuDescriptionEn,
+            description: setMenuDescription,
+            descriptionAr: setMenuDescriptionAr,
+            highlightsEn: setMenuHighlightsEn,
+            highlights: setMenuHighlights,
+            highlightsAr: setMenuHighlightsAr,
+            includedEn: setMenuIncludedEn,
+            included: setMenuIncluded,
+            includedAr: setMenuIncludedAr,
+            termsEn: setMenuTermsAndConditionsEn,
+            terms: setMenuTermsAndConditions,
+            termsAr: setMenuTermsAndConditionsAr,
+            cancellationEn: setMenuCancellationPolicyEn,
+            cancellation: setMenuCancellationPolicy,
+            cancellationAr: setMenuCancellationPolicyAr,
+            locationEn: setMenuLocationEn,
+            location: setMenuLocation,
+            locationAr: setMenuLocationAr,
+            optionValuesEn: setMenuAvailableOptionsEn,
+            optionValues: setMenuAvailableOptions,
+            optionValuesAr: setMenuAvailableOptionsAr,
+            optionKey: 'availableMeals',
+          )
+        : null;
+    final comboCatalog = supportsCombo
+        ? _buildCategoryCatalogContent(
+            descriptionEn: comboDescriptionEn,
+            description: comboDescription,
+            descriptionAr: comboDescriptionAr,
+            highlightsEn: comboHighlightsEn,
+            highlights: comboHighlights,
+            highlightsAr: comboHighlightsAr,
+            includedEn: comboIncludedEn,
+            included: comboIncluded,
+            includedAr: comboIncludedAr,
+            termsEn: comboTermsAndConditionsEn,
+            terms: comboTermsAndConditions,
+            termsAr: comboTermsAndConditionsAr,
+            cancellationEn: comboCancellationPolicyEn,
+            cancellation: comboCancellationPolicy,
+            cancellationAr: comboCancellationPolicyAr,
+            locationEn: comboLocationEn,
+            location: comboLocation,
+            locationAr: comboLocationAr,
+            optionValuesEn: comboAvailableOptionsEn,
+            optionValues: comboAvailableOptions,
+            optionValuesAr: comboAvailableOptionsAr,
+            optionKey: 'availableCombos',
+          )
+        : null;
+    final supportedCategories = <String>[
+      if (supportsBuffet) 'buffet',
+      if (supportsSetMenu) 'set_menu',
+      if (supportsCombo) 'combo',
+    ];
 
     return {
       'name': _baseText(nameEn, name),
@@ -639,7 +652,11 @@ class RestaurantModel extends RestaurantEntity {
       'slotsLeft': slotsLeft,
       'priceFromValue': priceFromValue,
       'discountValue': discountValue,
+      'supportsBuffet': supportsBuffet,
+      'supportsSetMenu': supportsSetMenu,
+      'supportsCombo': supportsCombo,
       'bookingCatalog': {
+        'supportedCategories': supportedCategories,
         if (buffetCatalog != null) 'buffet': buffetCatalog,
         if (setMenuCatalog != null) 'setMenu': setMenuCatalog,
         if (comboCatalog != null) 'combo': comboCatalog,
@@ -674,12 +691,17 @@ class RestaurantModel extends RestaurantEntity {
   }
 
   static bool _supportsCategory(
+    Map<String, dynamic> data,
     Map<String, dynamic> bookingCatalog,
     String category,
   ) {
-    if (category == 'set_menu') {
-      return true;
-    }
+    final explicitSupport = switch (category) {
+      'buffet' => data['supportsBuffet'],
+      'set_menu' => data['supportsSetMenu'],
+      'combo' => data['supportsCombo'],
+      _ => null,
+    };
+    if (explicitSupport is bool) return explicitSupport;
 
     final supported = _normalizedStringList(
       bookingCatalog['supportedCategories'],
@@ -690,7 +712,17 @@ class RestaurantModel extends RestaurantEntity {
       return supported.contains('buffet');
     }
 
-    return true;
+    if (category == 'set_menu') {
+      if (supported.isEmpty) return bookingCatalog.containsKey('setMenu');
+      return supported.contains('set_menu') || supported.contains('setmenu');
+    }
+
+    if (category == 'combo') {
+      if (supported.isEmpty) return bookingCatalog.containsKey('combo');
+      return supported.contains('combo');
+    }
+
+    return false;
   }
 
   static List<String> _normalizedStringList(dynamic value) {

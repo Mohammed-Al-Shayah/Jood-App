@@ -82,10 +82,7 @@ class CatalogRemoteDataSource {
     for (final doc in snapshot.docs) {
       final data = doc.data();
       if (!_supportsRestaurantCategory(data, category)) {
-        final matchingOffers = offersByVenue[doc.id] ?? const [];
-        if (!_hasMatchingOffer(matchingOffers, category)) {
-          continue;
-        }
+        continue;
       }
       final labels = _buildLabels(
         data: data,
@@ -205,20 +202,33 @@ class CatalogRemoteDataSource {
     CatalogCategoryType category,
   ) {
     final bookingCatalog = _asMap(data['bookingCatalog']);
+    final explicitSupport = switch (category) {
+      CatalogCategoryType.buffet => data['supportsBuffet'],
+      CatalogCategoryType.setMenu => data['supportsSetMenu'],
+      CatalogCategoryType.combo => data['supportsCombo'],
+      CatalogCategoryType.attraction => null,
+    };
+    if (explicitSupport is bool) return explicitSupport;
+
     final supported = _normalizedStringList(
       bookingCatalog['supportedCategories'],
     );
+    if (supported.isNotEmpty) {
+      return switch (category) {
+        CatalogCategoryType.buffet => supported.contains('buffet'),
+        CatalogCategoryType.setMenu =>
+          supported.contains('set_menu') || supported.contains('setmenu'),
+        CatalogCategoryType.combo => supported.contains('combo'),
+        CatalogCategoryType.attraction => true,
+      };
+    }
 
     if (category == CatalogCategoryType.buffet) {
-      if (supported.isEmpty) return true;
-      return supported.contains('buffet');
+      return true;
     }
 
     if (category == CatalogCategoryType.setMenu) {
       final setMenuConfig = _asMap(bookingCatalog['setMenu']);
-      if (supported.contains('set_menu') || supported.contains('setmenu')) {
-        return true;
-      }
       if (setMenuConfig.isNotEmpty) {
         return setMenuConfig['enabled'] as bool? ?? true;
       }
@@ -226,23 +236,8 @@ class CatalogRemoteDataSource {
     }
 
     final comboConfig = _asMap(bookingCatalog['combo']);
-    if (supported.contains('combo')) {
-      return true;
-    }
     if (comboConfig.isNotEmpty) {
       return comboConfig['enabled'] as bool? ?? true;
-    }
-    return false;
-  }
-
-  bool _hasMatchingOffer(
-    List<Map<String, dynamic>> offers,
-    CatalogCategoryType category,
-  ) {
-    for (final offer in offers) {
-      if (_matchesCategory(offer, category)) {
-        return true;
-      }
     }
     return false;
   }

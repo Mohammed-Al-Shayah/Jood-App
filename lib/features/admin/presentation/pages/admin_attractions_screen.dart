@@ -12,6 +12,7 @@ import 'package:jood/features/admin/presentation/cubit/admin_attractions_state.d
 import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_list_tile.dart';
 import 'package:jood/features/admin/presentation/widgets/admin_shell.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/attractions/domain/entities/attraction_entity.dart';
 
 class AdminAttractionsScreen extends StatelessWidget {
@@ -32,7 +33,7 @@ class AdminAttractionsScreen extends StatelessWidget {
                   arguments: const AdminAttractionFormArgs(),
                 );
                 if (result is AttractionEntity && context.mounted) {
-                  context.read<AdminAttractionsCubit>().create(result);
+                  await _saveAttraction(context, result, isEdit: false);
                 }
               },
               backgroundColor: AppColors.primary,
@@ -104,8 +105,10 @@ class AdminAttractionsScreen extends StatelessWidget {
                                     );
                                 if (result is AttractionEntity &&
                                     context.mounted) {
-                                  context.read<AdminAttractionsCubit>().update(
+                                  await _saveAttraction(
+                                    context,
                                     result,
+                                    isEdit: true,
                                   );
                                 }
                               },
@@ -124,6 +127,46 @@ class AdminAttractionsScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> _saveAttraction(
+    BuildContext context,
+    AttractionEntity attraction, {
+    required bool isEdit,
+  }) async {
+    final cubit = context.read<AdminAttractionsCubit>();
+    if (isEdit) {
+      await cubit.update(attraction);
+    } else {
+      await cubit.create(attraction);
+    }
+    if (!context.mounted) return;
+    if (cubit.state.status == AdminAttractionsStatus.failure) {
+      _showResultSnackBar(
+        context,
+        cubit.state.errorMessage ?? 'Failed to save attraction.',
+        type: SnackBarType.error,
+      );
+      return;
+    }
+    _showResultSnackBar(
+      context,
+      isEdit
+          ? 'Attraction updated successfully.'
+          : 'Attraction created successfully.',
+      type: SnackBarType.success,
+    );
+  }
+
+  void _showResultSnackBar(
+    BuildContext context,
+    String message, {
+    required SnackBarType type,
+  }) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      showAppSnackBar(context, message, type: type, fromTop: true);
+    });
   }
 
   Future<void> _confirmDelete(

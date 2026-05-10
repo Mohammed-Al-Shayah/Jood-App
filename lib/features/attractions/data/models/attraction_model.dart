@@ -82,7 +82,7 @@ class AttractionModel extends AttractionEntity {
     required Map<String, dynamic> data,
   }) {
     final bookingCatalog = _asMap(data['bookingCatalog']);
-    final geo = _asMap(data['geo']);
+    final geoPoint = _resolveGeoPoint(data);
 
     final nameEn = _stringValue(data['name']);
     final nameAr = _stringValue(data['nameAr']);
@@ -191,8 +191,8 @@ class AttractionModel extends AttractionEntity {
       about: resolveLocalizedText(english: aboutEn, arabic: aboutAr),
       phone: _stringValue(data['phone']),
       address: resolveLocalizedText(english: addressEn, arabic: addressAr),
-      geoLat: NumberUtils.toDouble(geo['lat']),
-      geoLng: NumberUtils.toDouble(geo['lng']),
+      geoLat: geoPoint.latitude,
+      geoLng: geoPoint.longitude,
       highlights: resolveLocalizedList(
         english: highlightsEn,
         arabic: highlightsAr,
@@ -324,9 +324,9 @@ class AttractionModel extends AttractionEntity {
       _cleanList(catalogTermsAndConditionsAr),
       resolvedBookingNotesAr,
     );
-    final resolvedCatalogLocation = _firstNonEmptyString(
-      _baseText(catalogLocationEn, catalogLocation),
-      _baseText(addressEn, address),
+    final resolvedCatalogLocation = _baseText(
+      catalogLocationEn,
+      catalogLocation,
     );
     final resolvedCatalogLocationAr = _firstNonEmptyString(
       catalogLocationAr.trim(),
@@ -416,6 +416,69 @@ class AttractionModel extends AttractionEntity {
     return value.toString().trim();
   }
 
+  static _AttractionGeoPoint _resolveGeoPoint(Map<String, dynamic> data) {
+    final geo = data['geo'];
+    if (geo is GeoPoint) {
+      return _AttractionGeoPoint(geo.latitude, geo.longitude);
+    }
+
+    final geoMap = _asMap(geo);
+    final bookingCatalog = _asMap(data['bookingCatalog']);
+    final catalogGeo = bookingCatalog['geo'];
+    if (catalogGeo is GeoPoint) {
+      return _AttractionGeoPoint(catalogGeo.latitude, catalogGeo.longitude);
+    }
+    final catalogGeoMap = _asMap(catalogGeo);
+    final latitude = _firstNonZeroDouble(
+      geoMap['lat'],
+      geoMap['latitude'],
+      catalogGeoMap['lat'],
+      catalogGeoMap['latitude'],
+      data['geoLat'],
+      data['latitude'],
+    );
+    final longitude = _firstNonZeroDouble(
+      geoMap['lng'],
+      geoMap['longitude'],
+      catalogGeoMap['lng'],
+      catalogGeoMap['longitude'],
+      data['geoLng'],
+      data['longitude'],
+    );
+    return _AttractionGeoPoint(latitude, longitude);
+  }
+
+  static double _firstNonZeroDouble(
+    dynamic primary,
+    dynamic secondary,
+    dynamic tertiary,
+    dynamic quaternary,
+    dynamic quinary,
+    dynamic senary,
+  ) {
+    for (final value in [
+      primary,
+      secondary,
+      tertiary,
+      quaternary,
+      quinary,
+      senary,
+    ]) {
+      final parsed = _toDouble(value);
+      if (parsed != 0) return parsed;
+    }
+    return 0;
+  }
+
+  static double _toDouble(dynamic value) {
+    final numeric = NumberUtils.toDouble(value);
+    if (numeric != 0) return numeric;
+    if (value is String) {
+      return double.tryParse(value.trim()) ?? 0;
+    }
+    return 0;
+  }
+
   static String _catalogLabelValue({
     required Map<String, dynamic> bookingCatalog,
     required dynamic rootValue,
@@ -467,4 +530,11 @@ class AttractionModel extends AttractionEntity {
     if (normalizedPrimary.isNotEmpty) return normalizedPrimary;
     return _cleanList(fallback);
   }
+}
+
+class _AttractionGeoPoint {
+  const _AttractionGeoPoint(this.latitude, this.longitude);
+
+  final double latitude;
+  final double longitude;
 }

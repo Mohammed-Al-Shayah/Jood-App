@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
+import 'package:jood/core/utils/search_text_utils.dart';
 import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_attractions_cubit.dart';
 import 'package:jood/features/admin/presentation/cubit/admin_attractions_state.dart';
@@ -110,7 +111,7 @@ class _AdminWebAttractionsPageState extends State<AdminWebAttractionsPage> {
   }
 
   List<AttractionEntity> _applyFilters(List<AttractionEntity> items) {
-    final query = _searchController.text.trim().toLowerCase();
+    final query = normalizeSearchText(_searchController.text);
     final filtered = items
         .where((attraction) {
           final matchesStatus = switch (_statusFilter) {
@@ -120,18 +121,28 @@ class _AdminWebAttractionsPageState extends State<AdminWebAttractionsPage> {
           };
           if (!matchesStatus) return false;
           if (_cityFilter != 'all' &&
-              attraction.cityId.trim().toLowerCase() !=
-                  _cityFilter.toLowerCase()) {
+              normalizeSearchText(attraction.cityId) !=
+                  normalizeSearchText(_cityFilter)) {
             return false;
           }
           if (query.isEmpty) return true;
-          final haystack = [
+          return matchesSearchQuery(query, [
             attraction.name,
+            attraction.nameEn,
+            attraction.nameAr,
             attraction.cityId,
+            attraction.cityIdEn,
+            attraction.cityIdAr,
             attraction.area,
+            attraction.areaEn,
+            attraction.areaAr,
             attraction.address,
-          ].join(' ').toLowerCase();
-          return haystack.contains(query);
+            attraction.addressEn,
+            attraction.addressAr,
+            attraction.about,
+            attraction.aboutEn,
+            attraction.aboutAr,
+          ]);
         })
         .toList(growable: false);
 
@@ -413,7 +424,7 @@ class _AttractionsTable extends StatelessWidget {
           DataColumn(label: Text('Location')),
           DataColumn(label: Text('Rating')),
           DataColumn(label: Text('Price from')),
-          DataColumn(label: Text('Packages')),
+          DataColumn(label: Text('Options')),
           DataColumn(label: Text('Status')),
           DataColumn(label: Text('Actions')),
         ],
@@ -474,7 +485,7 @@ class _AttractionsTable extends StatelessWidget {
                           : attraction.priceFrom,
                     ),
                   ),
-                  DataCell(Text('${attraction.packageOverview.length}')),
+                  DataCell(Text('${_optionsCount(attraction)}')),
                   DataCell(
                     _StatusPill(
                       label: attraction.isActive ? 'Active' : 'Inactive',
@@ -540,6 +551,13 @@ class _AttractionThumb extends StatelessWidget {
       ),
     );
   }
+}
+
+int _optionsCount(AttractionEntity attraction) {
+  if (attraction.catalogAvailableOptions.isNotEmpty) {
+    return attraction.catalogAvailableOptions.length;
+  }
+  return attraction.packageOverview.length;
 }
 
 class _PageToolbar extends StatelessWidget {

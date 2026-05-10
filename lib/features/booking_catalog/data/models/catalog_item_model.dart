@@ -13,13 +13,23 @@ class CatalogItemModel extends CatalogItemEntity {
     required super.bookingMode,
     required super.sourceCollection,
     required super.name,
+    super.nameEn,
+    super.nameAr,
     required super.cityId,
+    super.cityIdEn,
+    super.cityIdAr,
     required super.area,
+    super.areaEn,
+    super.areaAr,
     required super.address,
+    super.addressEn,
+    super.addressAr,
     required super.rating,
     required super.reviewsCount,
     required super.coverImageUrl,
     required super.description,
+    super.descriptionEn,
+    super.descriptionAr,
     required super.highlights,
     required super.inclusions,
     super.exclusions,
@@ -29,6 +39,8 @@ class CatalogItemModel extends CatalogItemEntity {
     required super.packageOverview,
     required super.bookingNotes,
     super.location,
+    super.locationEn,
+    super.locationAr,
     super.geoLat,
     super.geoLng,
     required super.requiresMenuItemSelection,
@@ -46,7 +58,7 @@ class CatalogItemModel extends CatalogItemEntity {
   }) {
     final data = doc.data() ?? const <String, dynamic>{};
     final bookingCatalog = _asMap(data['bookingCatalog']);
-    final geo = _asMap(data['geo']);
+    final geoPoint = _resolveGeoPoint(data);
     final categoryData = category == CatalogCategoryType.buffet
         ? _asMap(bookingCatalog['buffet'])
         : category == CatalogCategoryType.setMenu
@@ -133,9 +145,17 @@ class CatalogItemModel extends CatalogItemEntity {
       bookingMode: category.bookingMode,
       sourceCollection: 'restaurants',
       name: resolveLocalizedText(english: nameEn, arabic: nameAr),
+      nameEn: nameEn,
+      nameAr: nameAr,
       cityId: resolveLocalizedText(english: cityIdEn, arabic: cityIdAr),
+      cityIdEn: cityIdEn,
+      cityIdAr: cityIdAr,
       area: resolveLocalizedText(english: areaEn, arabic: areaAr),
+      areaEn: areaEn,
+      areaAr: areaAr,
       address: resolveLocalizedText(english: addressEn, arabic: addressAr),
+      addressEn: addressEn,
+      addressAr: addressAr,
       rating: NumberUtils.toDouble(data['rating']),
       reviewsCount: NumberUtils.toInt(data['reviewsCount']),
       coverImageUrl: _stringValue(data['coverImageUrl']),
@@ -143,6 +163,8 @@ class CatalogItemModel extends CatalogItemEntity {
         english: descriptionEn,
         arabic: descriptionAr,
       ),
+      descriptionEn: descriptionEn,
+      descriptionAr: descriptionAr,
       highlights: resolveLocalizedList(
         english: highlightsEn,
         arabic: highlightsAr,
@@ -182,8 +204,10 @@ class CatalogItemModel extends CatalogItemEntity {
         arabic: bookingNotesAr,
       ),
       location: resolveLocalizedText(english: locationEn, arabic: locationAr),
-      geoLat: NumberUtils.toDouble(geo['lat']),
-      geoLng: NumberUtils.toDouble(geo['lng']),
+      locationEn: locationEn,
+      locationAr: locationAr,
+      geoLat: geoPoint.latitude,
+      geoLng: geoPoint.longitude,
       requiresMenuItemSelection:
           category == CatalogCategoryType.setMenu &&
           (categoryData['requiresItemSelection'] as bool? ?? true),
@@ -225,7 +249,7 @@ class CatalogItemModel extends CatalogItemEntity {
   }) {
     final data = doc.data() ?? const <String, dynamic>{};
     final bookingCatalog = _asMap(data['bookingCatalog']);
-    final geo = _asMap(data['geo']);
+    final geoPoint = _resolveGeoPoint(data);
 
     final nameEn = _stringValue(data['name']);
     final nameAr = _stringValue(data['nameAr']);
@@ -330,9 +354,17 @@ class CatalogItemModel extends CatalogItemEntity {
       bookingMode: CatalogCategoryType.attraction.bookingMode,
       sourceCollection: 'attractions',
       name: resolveLocalizedText(english: nameEn, arabic: nameAr),
+      nameEn: nameEn,
+      nameAr: nameAr,
       cityId: resolveLocalizedText(english: cityIdEn, arabic: cityIdAr),
+      cityIdEn: cityIdEn,
+      cityIdAr: cityIdAr,
       area: resolveLocalizedText(english: areaEn, arabic: areaAr),
+      areaEn: areaEn,
+      areaAr: areaAr,
       address: resolveLocalizedText(english: addressEn, arabic: addressAr),
+      addressEn: addressEn,
+      addressAr: addressAr,
       rating: NumberUtils.toDouble(data['rating']),
       reviewsCount: NumberUtils.toInt(data['reviewsCount']),
       coverImageUrl: _stringValue(data['coverImageUrl']),
@@ -340,6 +372,8 @@ class CatalogItemModel extends CatalogItemEntity {
         english: descriptionEn,
         arabic: descriptionAr,
       ),
+      descriptionEn: descriptionEn,
+      descriptionAr: descriptionAr,
       highlights: resolveLocalizedList(
         english: highlightsEn,
         arabic: highlightsAr,
@@ -373,8 +407,10 @@ class CatalogItemModel extends CatalogItemEntity {
         arabic: bookingNotesAr,
       ),
       location: resolveLocalizedText(english: locationEn, arabic: locationAr),
-      geoLat: NumberUtils.toDouble(geo['lat']),
-      geoLng: NumberUtils.toDouble(geo['lng']),
+      locationEn: locationEn,
+      locationAr: locationAr,
+      geoLat: geoPoint.latitude,
+      geoLng: geoPoint.longitude,
       requiresMenuItemSelection: false,
       badge: _catalogLabel(
         primary: bookingCatalog,
@@ -434,6 +470,69 @@ class CatalogItemModel extends CatalogItemEntity {
     return value.toString().trim();
   }
 
+  static _CatalogGeoPoint _resolveGeoPoint(Map<String, dynamic> data) {
+    final geo = data['geo'];
+    if (geo is GeoPoint) {
+      return _CatalogGeoPoint(geo.latitude, geo.longitude);
+    }
+
+    final geoMap = _asMap(geo);
+    final bookingCatalog = _asMap(data['bookingCatalog']);
+    final catalogGeo = bookingCatalog['geo'];
+    if (catalogGeo is GeoPoint) {
+      return _CatalogGeoPoint(catalogGeo.latitude, catalogGeo.longitude);
+    }
+    final catalogGeoMap = _asMap(catalogGeo);
+    final latitude = _firstNonZeroDouble(
+      geoMap['lat'],
+      geoMap['latitude'],
+      catalogGeoMap['lat'],
+      catalogGeoMap['latitude'],
+      data['geoLat'],
+      data['latitude'],
+    );
+    final longitude = _firstNonZeroDouble(
+      geoMap['lng'],
+      geoMap['longitude'],
+      catalogGeoMap['lng'],
+      catalogGeoMap['longitude'],
+      data['geoLng'],
+      data['longitude'],
+    );
+    return _CatalogGeoPoint(latitude, longitude);
+  }
+
+  static double _firstNonZeroDouble(
+    dynamic primary,
+    dynamic secondary,
+    dynamic tertiary,
+    dynamic quaternary,
+    dynamic quinary,
+    dynamic senary,
+  ) {
+    for (final value in [
+      primary,
+      secondary,
+      tertiary,
+      quaternary,
+      quinary,
+      senary,
+    ]) {
+      final parsed = _toDouble(value);
+      if (parsed != 0) return parsed;
+    }
+    return 0;
+  }
+
+  static double _toDouble(dynamic value) {
+    final numeric = NumberUtils.toDouble(value);
+    if (numeric != 0) return numeric;
+    if (value is String) {
+      return double.tryParse(value.trim()) ?? 0;
+    }
+    return 0;
+  }
+
   static String _catalogLabel({
     required Map<String, dynamic> primary,
     Map<String, dynamic> fallback = const <String, dynamic>{},
@@ -472,6 +571,13 @@ class CatalogItemModel extends CatalogItemEntity {
     if (primary.isNotEmpty) return primary;
     return fallback;
   }
+}
+
+class _CatalogGeoPoint {
+  const _CatalogGeoPoint(this.latitude, this.longitude);
+
+  final double latitude;
+  final double longitude;
 }
 
 class CatalogListLabels {

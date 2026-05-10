@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:jood/core/localization/app_localization_controller.dart';
 import 'package:jood/core/utils/app_strings.dart';
+import 'package:jood/core/utils/search_text_utils.dart';
 
 import '../../../ads/domain/usecases/get_active_ads_usecase.dart';
 import '../../../ads/domain/usecases/watch_ads_changes_usecase.dart';
@@ -197,15 +198,33 @@ class HomeCubit extends Cubit<HomeState> {
     SortField? sortField,
     SortOrder sortOrder,
   ) {
-    final trimmed = query.trim().toLowerCase();
+    final trimmed = normalizeSearchText(query);
     final filtered = items.where((item) {
       final matchesCategory =
           selectedCategory == null || item.category == selectedCategory;
       if (!matchesCategory) return false;
       if (trimmed.isEmpty) return true;
-      final name = item.name.toLowerCase();
-      final meta = _metaLabel(item).toLowerCase();
-      return name.contains(trimmed) || meta.contains(trimmed);
+      return matchesSearchQuery(trimmed, [
+        item.name,
+        item.nameEn,
+        item.nameAr,
+        item.cityId,
+        item.cityIdEn,
+        item.cityIdAr,
+        item.area,
+        item.areaEn,
+        item.areaAr,
+        item.address,
+        item.addressEn,
+        item.addressAr,
+        item.description,
+        item.descriptionEn,
+        item.descriptionAr,
+        item.location,
+        item.locationEn,
+        item.locationAr,
+        _metaLabel(item),
+      ]);
     }).toList();
 
     final scopedItems = selectedCategory == null

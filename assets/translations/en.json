@@ -287,6 +287,8 @@
   "experience_highlights": "Experience Highlights",
   "terms_and_conditions": "Terms & Conditions",
   "location_title": "Location",
+  "no_details_available_yet": "No details available yet.",
+  "unable_to_open_map_for_location": "Unable to open the map for this location.",
   "booking_flow_set_menu_selection_note": "Set menu selection is currently treated as the priced booking option. Actual item choices can be completed later.",
   "booking_flow_combo_selection_note": "Choose the combo that should be booked, then set the quantity in the next step.",
   "highlights_will_appear_here_once_configured": "Highlights will appear here once configured.",

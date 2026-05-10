@@ -9,7 +9,12 @@ class SendPhoneOtpUseCase {
   Future<String> call({
     required String phoneNumber,
     OtpMode mode = OtpMode.auth,
+    String? turnstileToken,
   }) {
-    return _repository.sendPhoneOtp(phoneNumber: phoneNumber, mode: mode);
+    return _repository.sendPhoneOtp(
+      phoneNumber: phoneNumber,
+      mode: mode,
+      turnstileToken: turnstileToken,
+    );
   }
 }

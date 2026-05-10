@@ -34,8 +34,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<String> sendPhoneOtp({
     required String phoneNumber,
     OtpMode mode = OtpMode.auth,
+    String? turnstileToken,
   }) {
-    return _sendPhoneOtp(phoneNumber: phoneNumber, mode: mode);
+    return _sendPhoneOtp(
+      phoneNumber: phoneNumber,
+      mode: mode,
+      turnstileToken: turnstileToken,
+    );
   }
 
   @override
@@ -115,16 +120,23 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<String> _sendPhoneOtp({
     required String phoneNumber,
     required OtpMode mode,
+    String? turnstileToken,
   }) async {
     final normalizedPhone = AuthValidators.normalizePhone(phoneNumber);
     final deviceId = await DeviceIdentity.getOrCreateId();
 
     try {
-      final result = await _functions.httpsCallable('sendSmsOtp').call({
+      final payload = <String, dynamic>{
         'phoneNumber': normalizedPhone,
         'mode': mode.apiValue,
         'deviceId': deviceId,
-      });
+      };
+      final normalizedTurnstileToken = turnstileToken?.trim() ?? '';
+      if (normalizedTurnstileToken.isNotEmpty) {
+        payload['turnstileToken'] = normalizedTurnstileToken;
+      }
+
+      final result = await _functions.httpsCallable('sendSmsOtp').call(payload);
       final data = _asMap(result.data);
       final verificationId = (data['verificationId']?.toString() ?? '').trim();
       if (verificationId.isEmpty) {

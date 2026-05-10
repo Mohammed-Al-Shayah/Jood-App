@@ -15,6 +15,7 @@ abstract class AuthRepository {
   Future<String> sendPhoneOtp({
     required String phoneNumber,
     OtpMode mode = OtpMode.auth,
+    String? turnstileToken,
   });
 
   Future<UserCredential?> verifyPhoneOtp({

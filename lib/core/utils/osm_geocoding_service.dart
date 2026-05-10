@@ -85,18 +85,49 @@ class OsmGeocodingService {
     final cached = _searchCache[cacheKey];
     if (cached != null) return cached;
 
+    final results = <OsmPlaceResult>[];
+    final seenKeys = <String>{};
+    for (final queryVariant in _searchQueryVariants(normalizedQuery)) {
+      final response = await _sendSearchRequest(
+        queryVariant,
+        limit: limit,
+        languageCode: languageCode,
+        countryCode: normalizedCountryCode,
+      );
+      final variantResults = _parseSearchResults(response.body);
+      for (final result in variantResults) {
+        final key = _resultKey(result);
+        if (seenKeys.add(key)) {
+          results.add(result);
+        }
+      }
+      if (results.length >= limit) break;
+    }
+
+    final limitedResults = results.take(limit).toList(growable: false);
+    _searchCache[cacheKey] = limitedResults;
+    return limitedResults;
+  }
+
+  static Future<http.Response> _sendSearchRequest(
+    String query, {
+    required int limit,
+    required String languageCode,
+    required String countryCode,
+  }) {
     final uri = Uri.https(_host, '/search', {
-      'q': normalizedQuery,
+      'q': query,
       'format': 'jsonv2',
       'addressdetails': '1',
       'limit': limit.toString(),
       'accept-language': languageCode,
-      if (normalizedCountryCode.isNotEmpty)
-        'countrycodes': normalizedCountryCode,
+      if (countryCode.isNotEmpty) 'countrycodes': countryCode,
     });
+    return _sendRequest(uri);
+  }
 
-    final response = await _sendRequest(uri);
-    final decoded = jsonDecode(response.body);
+  static List<OsmPlaceResult> _parseSearchResults(String body) {
+    final decoded = jsonDecode(body);
     if (decoded is! List) {
       throw const OsmGeocodingException('Unexpected search response format.');
     }
@@ -111,8 +142,107 @@ class OsmGeocodingService {
       }
     }
 
-    _searchCache[cacheKey] = results;
     return results;
+  }
+
+  static List<String> _searchQueryVariants(String query) {
+    final variants = <String>[];
+    void add(String value) {
+      final normalized = _normalizeQuerySpacing(value);
+      if (normalized.isEmpty) return;
+      if (!variants.any(
+        (item) => item.toLowerCase() == normalized.toLowerCase(),
+      )) {
+        variants.add(normalized);
+      }
+    }
+
+    add(query);
+    add(_expandStreetAbbreviations(query));
+    add(_removeStreetTypeWords(query));
+
+    final parts = query
+        .split(',')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
+    if (parts.length >= 2) {
+      add(parts.take(2).join(', '));
+      add(parts.skip(1).join(', '));
+      add(parts.first);
+    }
+
+    return variants.take(5).toList(growable: false);
+  }
+
+  static String _normalizeQuerySpacing(String value) {
+    final buffer = StringBuffer();
+    var previousWasSpace = false;
+    for (final codeUnit in value.trim().codeUnits) {
+      final char = String.fromCharCode(codeUnit);
+      final isSpace = char.trim().isEmpty;
+      if (isSpace) {
+        if (!previousWasSpace) {
+          buffer.write(' ');
+        }
+      } else {
+        buffer.write(char);
+      }
+      previousWasSpace = isSpace;
+    }
+    return buffer
+        .toString()
+        .replaceAll(' ,', ',')
+        .replaceAll(',,', ',')
+        .trim();
+  }
+
+  static String _expandStreetAbbreviations(String query) {
+    return _mapQueryWords(query, (word) {
+      final normalized = _plainWord(word).toLowerCase();
+      if (normalized == 'st') return 'Street${_wordSuffix(word)}';
+      if (normalized == 'rd') return 'Road${_wordSuffix(word)}';
+      if (normalized == 'ave') return 'Avenue${_wordSuffix(word)}';
+      return word;
+    });
+  }
+
+  static String _removeStreetTypeWords(String query) {
+    return _mapQueryWords(query, (word) {
+      final normalized = _plainWord(word).toLowerCase();
+      const streetTypes = {'street', 'st', 'road', 'rd', 'avenue', 'ave'};
+      return streetTypes.contains(normalized) ? _wordSuffix(word) : word;
+    });
+  }
+
+  static String _mapQueryWords(
+    String query,
+    String Function(String word) transform,
+  ) {
+    return _normalizeQuerySpacing(
+      query.split(' ').map(transform).join(' '),
+    );
+  }
+
+  static String _plainWord(String word) {
+    return word
+        .replaceAll(',', '')
+        .replaceAll('.', '')
+        .replaceAll(':', '')
+        .replaceAll(';', '')
+        .trim();
+  }
+
+  static String _wordSuffix(String word) {
+    if (word.endsWith(',')) return ',';
+    if (word.endsWith('.')) return '.';
+    return '';
+  }
+
+  static String _resultKey(OsmPlaceResult result) {
+    final lat = result.point.latitude.toStringAsFixed(5);
+    final lng = result.point.longitude.toStringAsFixed(5);
+    return '$lat|$lng|${result.displayName.toLowerCase()}';
   }
 
   static Future<OsmPlaceResult?> reverseGeocode(

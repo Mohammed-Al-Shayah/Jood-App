@@ -3,26 +3,29 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theming/app_colors.dart';
 import '../../../../core/theming/app_text_styles.dart';
+import '../../../../core/utils/app_strings.dart';
 
 class CatalogInfoSection extends StatelessWidget {
   const CatalogInfoSection({
     super.key,
     required this.title,
     required this.items,
-    this.emptyLabel = 'No details available yet.',
+    this.emptyLabel,
     this.collapsible = false,
     this.initiallyExpanded = false,
   });
 
   final String title;
   final List<String> items;
-  final String emptyLabel;
+  final String? emptyLabel;
   final bool collapsible;
   final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
     final values = items.where((item) => item.trim().isNotEmpty).toList();
+    final effectiveEmptyLabel =
+        emptyLabel ?? AppStrings.noDetailsAvailableYet;
     final decoration = BoxDecoration(
       color: AppColors.cardBackground,
       borderRadius: BorderRadius.circular(16.r),
@@ -44,7 +47,7 @@ class CatalogInfoSection extends StatelessWidget {
           children: [
             Text(title, style: AppTextStyles.sectionTitle),
             SizedBox(height: 12.h),
-            ..._buildItems(values),
+            ..._buildItems(values, effectiveEmptyLabel),
           ],
         ),
       );
@@ -67,17 +70,17 @@ class CatalogInfoSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(16.r),
           ),
           title: Text(title, style: AppTextStyles.sectionTitle),
-          children: _buildItems(values),
+          children: _buildItems(values, effectiveEmptyLabel),
         ),
       ),
     );
   }
 
-  List<Widget> _buildItems(List<String> values) {
+  List<Widget> _buildItems(List<String> values, String effectiveEmptyLabel) {
     if (values.isEmpty) {
       return [
         Text(
-          emptyLabel,
+          effectiveEmptyLabel,
           style: AppTextStyles.cardMeta.copyWith(
             color: AppColors.textSecondary,
           ),
