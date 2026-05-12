@@ -66,13 +66,15 @@ class AdminUsersScreen extends StatelessWidget {
                         onTap: isLoading
                             ? null
                             : () async {
-                                final result =
-                                    await Navigator.of(context).pushNamed(
-                                  Routes.adminUserFormScreen,
-                                  arguments: AdminUserFormArgs(user: user),
-                                );
+                                final result = await Navigator.of(context)
+                                    .pushNamed(
+                                      Routes.adminUserFormScreen,
+                                      arguments: AdminUserFormArgs(user: user),
+                                    );
                                 if (result is UserEntity && context.mounted) {
-                                  context.read<AdminUsersCubit>().update(result);
+                                  context.read<AdminUsersCubit>().update(
+                                    result,
+                                  );
                                 }
                               },
                         onDelete: isLoading
@@ -117,7 +119,7 @@ class _UserIcon extends StatelessWidget {
       width: 44.w,
       height: 44.w,
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.12),
+        color: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14.r),
       ),
       child: Icon(Icons.person_outline, color: AppColors.primary),

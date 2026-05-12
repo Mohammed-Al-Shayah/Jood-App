@@ -78,11 +78,7 @@ class CurrencyAmountInlineText extends StatelessWidget {
 }
 
 class OmaniRialSymbol extends StatelessWidget {
-  const OmaniRialSymbol({
-    super.key,
-    required this.width,
-    required this.height,
-  });
+  const OmaniRialSymbol({super.key, required this.width, required this.height});
 
   final double width;
   final double height;
@@ -146,10 +142,7 @@ class _CurrencyInlineRichText extends StatelessWidget {
             alignment: PlaceholderAlignment.middle,
             child: Padding(
               padding: EdgeInsetsDirectional.only(end: fontSize * 0.12),
-              child: OmaniRialSymbol(
-                width: symbolWidth,
-                height: symbolHeight,
-              ),
+              child: OmaniRialSymbol(width: symbolWidth, height: symbolHeight),
             ),
           ),
         );
@@ -161,10 +154,7 @@ class _CurrencyInlineRichText extends StatelessWidget {
             alignment: PlaceholderAlignment.middle,
             child: Padding(
               padding: EdgeInsetsDirectional.only(start: fontSize * 0.12),
-              child: OmaniRialSymbol(
-                width: symbolWidth,
-                height: symbolHeight,
-              ),
+              child: OmaniRialSymbol(width: symbolWidth, height: symbolHeight),
             ),
           ),
         );
@@ -200,6 +190,7 @@ class _InlineCurrencyMatch {
   });
 
   static const double symbolAspectRatio = 790 / 450;
+  // ignore: deprecated_member_use
   static final RegExp _pattern = RegExp(
     '(OMR|OMN|\u0631\\.\\u0639|\uFDFC)\\s*(-?\\d+(?:\\.\\d+)?)|'
     '(-?\\d+(?:\\.\\d+)?)\\s*(OMR|OMN|\u0631\\.\\u0639|\uFDFC)',

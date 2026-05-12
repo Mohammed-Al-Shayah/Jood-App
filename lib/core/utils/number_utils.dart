@@ -19,6 +19,7 @@ class NumberUtils {
     if (value == null) return 0;
     if (value is num) return value.toDouble();
     final text = value.toString();
+    // ignore: deprecated_member_use
     final match = RegExp(r'(\\d+(\\.\\d+)?)').firstMatch(text);
     if (match == null) return 0;
     return double.tryParse(match.group(1) ?? '') ?? 0;

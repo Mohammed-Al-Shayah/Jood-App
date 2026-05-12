@@ -278,6 +278,7 @@ String _normalizeDisplayedPrice(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) return trimmed;
 
+  // ignore: deprecated_member_use
   final match = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(trimmed);
   if (match == null) return trimmed;
 

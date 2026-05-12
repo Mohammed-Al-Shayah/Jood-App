@@ -65,6 +65,9 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<List<String>> fetchSignInMethodsForEmail(String email) {
+    // Firebase Auth does not currently provide a drop-in replacement that
+    // preserves this pre-registration check without changing product behavior.
+    // ignore: deprecated_member_use
     return _auth.fetchSignInMethodsForEmail(email);
   }
 

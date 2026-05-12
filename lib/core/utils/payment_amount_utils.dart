@@ -4,6 +4,7 @@ const String _omaniRialDisplayLabel = '\u0631.\u0639';
 const String _genericRialLigature = '\uFDFC';
 
 double parsePrice(String price) {
+  // ignore: deprecated_member_use
   final cleaned = price.replaceAll(RegExp(r'[^0-9.,]'), '');
   if (cleaned.isEmpty) return 0.0;
 
@@ -66,8 +67,7 @@ String? currencyFromFormattedLabel(dynamic value) {
   final buffer = StringBuffer();
   for (final rune in text.runes) {
     final character = String.fromCharCode(rune);
-    final isLetter =
-        (rune >= 65 && rune <= 90) || (rune >= 97 && rune <= 122);
+    final isLetter = (rune >= 65 && rune <= 90) || (rune >= 97 && rune <= 122);
     if (isLetter) {
       buffer.write(character);
       continue;
@@ -91,7 +91,9 @@ String formatCurrency(String currency, num value) {
     return '$label $amount';
   }
 
-  final isSymbol = label.length == 1 ||
+  final isSymbol =
+      label.length == 1 ||
+      // ignore: deprecated_member_use
       RegExp(
         r'^[\$\u00A2\u00A3\u00A5\u20AA\u20AC\u20B9\u20BD\u20BA\u20AB\u20A9\u20BF]+$',
       ).hasMatch(label);

@@ -1,13 +1,13 @@
 import 'package:image_picker/image_picker.dart';
 
-import '../../data/datasources/admin_storage_remote_data_source.dart';
+import '../repositories/admin_storage_repository.dart';
 
 class UploadAdImageUseCase {
-  UploadAdImageUseCase(this.remoteDataSource);
+  UploadAdImageUseCase(this.repository);
 
-  final AdminStorageRemoteDataSource remoteDataSource;
+  final AdminStorageRepository repository;
 
   Future<String> call({required String adId, required XFile file}) {
-    return remoteDataSource.uploadAdImage(adId: adId, file: file);
+    return repository.uploadAdImage(adId: adId, file: file);
   }
 }

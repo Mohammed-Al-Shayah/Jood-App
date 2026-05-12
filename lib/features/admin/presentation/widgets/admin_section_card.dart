@@ -18,7 +18,7 @@ class AdminSectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadowColor.withOpacity(0.12),
+            color: AppColors.shadowColor.withValues(alpha: 0.12),
             blurRadius: 16.r,
             offset: const Offset(0, 8),
           ),

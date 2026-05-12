@@ -15,6 +15,7 @@ class AuthValidators {
   }
 
   static String normalizePhone(String value) {
+    // ignore: deprecated_member_use
     return value.replaceAll(RegExp(r'[^0-9]'), '');
   }
 }

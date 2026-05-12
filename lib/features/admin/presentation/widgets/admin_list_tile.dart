@@ -35,15 +35,15 @@ class AdminListTile extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.08)
+              ? AppColors.primary.withValues(alpha: 0.08)
               : AppColors.cardBackground,
           borderRadius: BorderRadius.circular(16.r),
           border: isSelected
-              ? Border.all(color: AppColors.primary.withOpacity(0.4))
+              ? Border.all(color: AppColors.primary.withValues(alpha: 0.4))
               : null,
           boxShadow: [
             BoxShadow(
-              color: AppColors.shadowColor.withOpacity(0.12),
+              color: AppColors.shadowColor.withValues(alpha: 0.12),
               blurRadius: 16.r,
               offset: const Offset(0, 8),
             ),

@@ -1,16 +1,14 @@
 import 'package:image_picker/image_picker.dart';
-import '../../data/datasources/admin_storage_remote_data_source.dart';
+
+import '../repositories/admin_storage_repository.dart';
 
 class UploadRestaurantImageUseCase {
-  UploadRestaurantImageUseCase(this.remoteDataSource);
+  UploadRestaurantImageUseCase(this.repository);
 
-  final AdminStorageRemoteDataSource remoteDataSource;
+  final AdminStorageRepository repository;
 
-  Future<String> call({
-    required String restaurantId,
-    required XFile file,
-  }) {
-    return remoteDataSource.uploadRestaurantImage(
+  Future<String> call({required String restaurantId, required XFile file}) {
+    return repository.uploadRestaurantImage(
       restaurantId: restaurantId,
       file: file,
     );

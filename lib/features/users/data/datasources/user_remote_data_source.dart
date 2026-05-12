@@ -15,6 +15,7 @@ class UserRemoteDataSource {
   }
 
   Future<UserModel?> getUserByPhone(String phone) async {
+    // ignore: deprecated_member_use
     final normalized = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final byNormalized = await firestore
         .collection('users')
@@ -71,22 +72,24 @@ class UserRemoteDataSource {
   }
 
   Future<void> createUser(UserModel user) {
-    return firestore.collection('users').doc(user.id).set(
-          user.toMap(),
-          SetOptions(merge: true),
-        );
+    return firestore
+        .collection('users')
+        .doc(user.id)
+        .set(user.toMap(), SetOptions(merge: true));
   }
 
   Future<void> updateUser(UserModel user) {
-    return firestore.collection('users').doc(user.id).set(
-          user.toMap(),
-          SetOptions(merge: true),
-        );
+    return firestore
+        .collection('users')
+        .doc(user.id)
+        .set(user.toMap(), SetOptions(merge: true));
   }
 
   Future<List<UserModel>> getUsers() async {
     final snapshot = await firestore.collection('users').get();
-    return snapshot.docs.map((doc) => UserModel.fromMap(doc.id, doc.data())).toList();
+    return snapshot.docs
+        .map((doc) => UserModel.fromMap(doc.id, doc.data()))
+        .toList();
   }
 
   Future<void> deleteUser(String id) {

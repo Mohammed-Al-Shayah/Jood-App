@@ -1,11 +1,11 @@
-import '../../data/datasources/admin_storage_remote_data_source.dart';
+import '../repositories/admin_storage_repository.dart';
 
 class DeleteStorageFileUseCase {
-  DeleteStorageFileUseCase(this.remoteDataSource);
+  DeleteStorageFileUseCase(this.repository);
 
-  final AdminStorageRemoteDataSource remoteDataSource;
+  final AdminStorageRepository repository;
 
   Future<void> call(String url) {
-    return remoteDataSource.deleteByUrl(url);
+    return repository.deleteByUrl(url);
   }
 }
