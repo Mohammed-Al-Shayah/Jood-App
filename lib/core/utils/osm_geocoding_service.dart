@@ -70,6 +70,34 @@ class OsmGeocodingService {
   static final Map<String, List<OsmPlaceResult>> _searchCache = {};
   static final Map<String, OsmPlaceResult> _reverseCache = {};
 
+  static LatLng? tryParseCoordinates(String value) {
+    final normalized = _normalizeQuerySpacing(
+      value.trim().replaceAll('\u060C', ',').replaceAll(';', ','),
+    );
+    if (normalized.isEmpty) return null;
+
+    final commaParts = normalized
+        .split(',')
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList(growable: false);
+    final parts = commaParts.length == 2
+        ? commaParts
+        : normalized
+              .split(' ')
+              .map((part) => part.trim())
+              .where((part) => part.isNotEmpty)
+              .toList(growable: false);
+    if (parts.length != 2) return null;
+
+    final latitude = double.tryParse(parts[0]);
+    final longitude = double.tryParse(parts[1]);
+    if (latitude == null || longitude == null) return null;
+    if (latitude < -90 || latitude > 90) return null;
+    if (longitude < -180 || longitude > 180) return null;
+    return LatLng(latitude, longitude);
+  }
+
   static Future<List<OsmPlaceResult>> searchPlaces(
     String query, {
     int limit = 5,
@@ -87,19 +115,25 @@ class OsmGeocodingService {
 
     final results = <OsmPlaceResult>[];
     final seenKeys = <String>{};
-    for (final queryVariant in _searchQueryVariants(normalizedQuery)) {
-      final response = await _sendSearchRequest(
-        queryVariant,
-        limit: limit,
-        languageCode: languageCode,
-        countryCode: normalizedCountryCode,
-      );
-      final variantResults = _parseSearchResults(response.body);
-      for (final result in variantResults) {
-        final key = _resultKey(result);
-        if (seenKeys.add(key)) {
-          results.add(result);
+    for (final lookupLanguage in _lookupLanguageVariants(
+      languageCode,
+      normalizedQuery,
+    )) {
+      for (final queryVariant in _searchQueryVariants(normalizedQuery)) {
+        final response = await _sendSearchRequest(
+          queryVariant,
+          limit: limit,
+          languageCode: lookupLanguage,
+          countryCode: normalizedCountryCode,
+        );
+        final variantResults = _parseSearchResults(response.body);
+        for (final result in variantResults) {
+          final key = _resultKey(result);
+          if (seenKeys.add(key)) {
+            results.add(result);
+          }
         }
+        if (results.length >= limit) break;
       }
       if (results.length >= limit) break;
     }
@@ -158,8 +192,12 @@ class OsmGeocodingService {
     }
 
     add(query);
+    final normalizedArabic = _normalizeArabicQuery(query);
+    add(normalizedArabic);
     add(_expandStreetAbbreviations(query));
     add(_removeStreetTypeWords(query));
+    add(_removeArabicPlaceTypeWords(normalizedArabic));
+    add(_replaceArabicOmanPlaceAliases(normalizedArabic));
 
     final parts = query
         .split(',')
@@ -172,7 +210,26 @@ class OsmGeocodingService {
       add(parts.first);
     }
 
-    return variants.take(5).toList(growable: false);
+    return variants
+        .take(_hasArabicLetters(query) ? 8 : 5)
+        .toList(growable: false);
+  }
+
+  static List<String> _lookupLanguageVariants(
+    String languageCode,
+    String query,
+  ) {
+    final languages = <String>[];
+    void add(String value) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized.isEmpty || languages.contains(normalized)) return;
+      languages.add(normalized);
+    }
+
+    add(languageCode);
+    if (_hasArabicLetters(query)) add('ar');
+    add('en');
+    return languages;
   }
 
   static String _normalizeQuerySpacing(String value) {
@@ -190,11 +247,7 @@ class OsmGeocodingService {
       }
       previousWasSpace = isSpace;
     }
-    return buffer
-        .toString()
-        .replaceAll(' ,', ',')
-        .replaceAll(',,', ',')
-        .trim();
+    return buffer.toString().replaceAll(' ,', ',').replaceAll(',,', ',').trim();
   }
 
   static String _expandStreetAbbreviations(String query) {
@@ -215,13 +268,85 @@ class OsmGeocodingService {
     });
   }
 
+  static String _normalizeArabicQuery(String query) {
+    return _normalizeQuerySpacing(
+      query
+          .replaceAll('\u0640', '')
+          .replaceAll('\u064B', '')
+          .replaceAll('\u064C', '')
+          .replaceAll('\u064D', '')
+          .replaceAll('\u064E', '')
+          .replaceAll('\u064F', '')
+          .replaceAll('\u0650', '')
+          .replaceAll('\u0651', '')
+          .replaceAll('\u0652', '')
+          .replaceAll('أ', 'ا')
+          .replaceAll('إ', 'ا')
+          .replaceAll('آ', 'ا')
+          .replaceAll('ى', 'ي')
+          .replaceAll('ة', 'ه')
+          .replaceAll('\u060C', ','),
+    );
+  }
+
+  static String _removeArabicPlaceTypeWords(String query) {
+    return _mapQueryWords(query, (word) {
+      final normalized = _plainWord(_normalizeArabicQuery(word));
+      const placeTypes = {
+        'شارع',
+        'طريق',
+        'مطعم',
+        'مقهى',
+        'كافيه',
+        'مول',
+        'فندق',
+        'مسجد',
+        'منطقه',
+        'ولايه',
+        'محافظه',
+      };
+      return placeTypes.contains(normalized) ? _wordSuffix(word) : word;
+    });
+  }
+
+  static String _replaceArabicOmanPlaceAliases(String query) {
+    const aliases = {
+      'عمان': 'Oman',
+      'مسقط': 'Muscat',
+      'صلاله': 'Salalah',
+      'نزوي': 'Nizwa',
+      'صحار': 'Sohar',
+      'صور': 'Sur',
+      'السيب': 'Seeb',
+      'مطرح': 'Mutrah',
+      'روي': 'Ruwi',
+      'بوشر': 'Bawshar',
+      'الخوير': 'Al Khuwair',
+      'الغبره': 'Al Ghubrah',
+      'بركاء': 'Barka',
+      'الرستاق': 'Rustaq',
+      'العامرات': 'Al Amarat',
+    };
+
+    return _mapQueryWords(query, (word) {
+      final normalized = _plainWord(_normalizeArabicQuery(word));
+      final replacement = aliases[normalized];
+      return replacement == null ? word : '$replacement${_wordSuffix(word)}';
+    });
+  }
+
+  static bool _hasArabicLetters(String value) {
+    for (final codeUnit in value.codeUnits) {
+      if (codeUnit >= 0x0600 && codeUnit <= 0x06FF) return true;
+    }
+    return false;
+  }
+
   static String _mapQueryWords(
     String query,
     String Function(String word) transform,
   ) {
-    return _normalizeQuerySpacing(
-      query.split(' ').map(transform).join(' '),
-    );
+    return _normalizeQuerySpacing(query.split(' ').map(transform).join(' '));
   }
 
   static String _plainWord(String word) {

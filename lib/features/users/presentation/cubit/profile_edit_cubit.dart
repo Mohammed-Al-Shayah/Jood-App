@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:jood/core/errors/auth_error.dart';
 import 'package:jood/core/errors/auth_error_mapper.dart';
 import 'package:jood/core/utils/app_strings.dart';
 import 'package:jood/core/utils/auth_validators.dart';
+import 'package:jood/features/auth/domain/entities/auth_user_entity.dart';
 import 'package:jood/features/auth/domain/entities/otp_mode.dart';
 import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:jood/features/auth/domain/usecases/reload_user_usecase.dart';
@@ -299,7 +299,7 @@ class ProfileEditCubit extends Cubit<ProfileEditState> {
     }
   }
 
-  Future<bool> _applyUpdates(User current) async {
+  Future<bool> _applyUpdates(AuthUserEntity current) async {
     final newEmail = state.email.trim();
     final emailChanged = newEmail.isNotEmpty && newEmail != _user.email.trim();
     if (emailChanged) {

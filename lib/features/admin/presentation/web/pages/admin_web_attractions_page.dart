@@ -27,6 +27,7 @@ class AdminWebAttractionsPage extends StatefulWidget {
 class _AdminWebAttractionsPageState extends State<AdminWebAttractionsPage> {
   late final AdminAttractionsCubit _cubit;
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedAttractionIds = <String>{};
   String _statusFilter = 'all';
   String _cityFilter = 'all';
   _AttractionsSort _sortBy = _AttractionsSort.nameAsc;
@@ -75,6 +76,57 @@ class _AdminWebAttractionsPageState extends State<AdminWebAttractionsPage> {
     );
     if (confirmed != true) return;
     await _cubit.delete(attraction.id);
+    if (!mounted) return;
+    setState(() {
+      _selectedAttractionIds.remove(attraction.id);
+    });
+  }
+
+  void _toggleAttractionSelection(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedAttractionIds.add(id);
+      } else {
+        _selectedAttractionIds.remove(id);
+      }
+    });
+  }
+
+  void _toggleSelectAllAttractions(List<AttractionEntity> items) {
+    final ids = items.map((item) => item.id).toList(growable: false);
+    final allSelected =
+        ids.isNotEmpty &&
+        ids.every((id) => _selectedAttractionIds.contains(id));
+    setState(() {
+      if (allSelected) {
+        _selectedAttractionIds.removeAll(ids);
+      } else {
+        _selectedAttractionIds.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _confirmDeleteSelectedAttractions(
+    List<AttractionEntity> items,
+  ) async {
+    final selectedIds = items
+        .map((item) => item.id)
+        .where(_selectedAttractionIds.contains)
+        .toList(growable: false);
+    if (selectedIds.isEmpty) return;
+    final confirmed = await showAdminConfirmDialog(
+      context: context,
+      title: 'Delete attractions',
+      message: 'Delete ${selectedIds.length} selected attractions?',
+    );
+    if (confirmed != true) return;
+    for (final id in selectedIds) {
+      await _cubit.delete(id);
+    }
+    if (!mounted) return;
+    setState(() {
+      _selectedAttractionIds.removeAll(selectedIds);
+    });
   }
 
   void _closeForm() {
@@ -184,6 +236,15 @@ class _AdminWebAttractionsPageState extends State<AdminWebAttractionsPage> {
           }
 
           final filteredItems = _applyFilters(state.attractions);
+          _selectedAttractionIds.removeWhere(
+            (id) => !state.attractions.any((item) => item.id == id),
+          );
+          final selectedInViewCount = filteredItems
+              .where((item) => _selectedAttractionIds.contains(item.id))
+              .length;
+          final allFilteredSelected =
+              filteredItems.isNotEmpty &&
+              selectedInViewCount == filteredItems.length;
           final cityOptions =
               state.attractions
                   .map((item) => item.cityId.trim())
@@ -258,6 +319,12 @@ class _AdminWebAttractionsPageState extends State<AdminWebAttractionsPage> {
                       searchController: _searchController,
                       onRefresh: _cubit.load,
                       onActionPressed: _openCreateForm,
+                      onToggleSelectAll: () =>
+                          _toggleSelectAllAttractions(filteredItems),
+                      onDeleteSelected: () =>
+                          _confirmDeleteSelectedAttractions(filteredItems),
+                      hasSelection: selectedInViewCount > 0,
+                      allVisibleSelected: allFilteredSelected,
                       cityFilter: cityOptions.contains(_cityFilter)
                           ? _cityFilter
                           : 'all',
@@ -309,6 +376,8 @@ class _AdminWebAttractionsPageState extends State<AdminWebAttractionsPage> {
                         items: filteredItems,
                         onEdit: _openEditForm,
                         onDelete: _confirmDelete,
+                        selectedIds: _selectedAttractionIds,
+                        onSelectionChanged: _toggleAttractionSelection,
                       ),
                   ],
                 ),
@@ -404,22 +473,33 @@ class _AttractionsTable extends StatelessWidget {
     required this.items,
     required this.onEdit,
     required this.onDelete,
+    required this.selectedIds,
+    required this.onSelectionChanged,
   });
 
   final List<AttractionEntity> items;
   final ValueChanged<AttractionEntity> onEdit;
   final ValueChanged<AttractionEntity> onDelete;
+  final Set<String> selectedIds;
+  final void Function(String id, bool selected) onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        showCheckboxColumn: false,
         columnSpacing: 24.w,
         headingRowHeight: 48.h,
         dataRowMinHeight: 68.h,
         dataRowMaxHeight: 82.h,
-        columns: const [
+        columns: [
+          DataColumn(
+            label: SizedBox(
+              width: 28.w,
+              child: const Icon(Icons.check_box_outline_blank, size: 18),
+            ),
+          ),
           DataColumn(label: Text('Attraction')),
           DataColumn(label: Text('Location')),
           DataColumn(label: Text('Rating')),
@@ -430,8 +510,17 @@ class _AttractionsTable extends StatelessWidget {
         ],
         rows: items
             .map((attraction) {
+              final isSelected = selectedIds.contains(attraction.id);
               return DataRow(
+                selected: isSelected,
                 cells: [
+                  DataCell(
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: (value) =>
+                          onSelectionChanged(attraction.id, value ?? false),
+                    ),
+                  ),
                   DataCell(
                     SizedBox(
                       width: 280.w,
@@ -565,6 +654,10 @@ class _PageToolbar extends StatelessWidget {
     required this.searchController,
     required this.onRefresh,
     required this.onActionPressed,
+    required this.onToggleSelectAll,
+    required this.onDeleteSelected,
+    required this.hasSelection,
+    required this.allVisibleSelected,
     required this.cityFilter,
     required this.cityOptions,
     required this.sortBy,
@@ -575,6 +668,10 @@ class _PageToolbar extends StatelessWidget {
   final TextEditingController searchController;
   final Future<void> Function() onRefresh;
   final VoidCallback onActionPressed;
+  final VoidCallback onToggleSelectAll;
+  final VoidCallback onDeleteSelected;
+  final bool hasSelection;
+  final bool allVisibleSelected;
   final String cityFilter;
   final List<String> cityOptions;
   final _AttractionsSort sortBy;
@@ -597,6 +694,20 @@ class _PageToolbar extends StatelessWidget {
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Refresh'),
+            ),
+            OutlinedButton.icon(
+              onPressed: onToggleSelectAll,
+              icon: Icon(
+                allVisibleSelected
+                    ? Icons.deselect_outlined
+                    : Icons.select_all_rounded,
+              ),
+              label: Text(allVisibleSelected ? 'Deselect all' : 'Select all'),
+            ),
+            OutlinedButton.icon(
+              onPressed: hasSelection ? onDeleteSelected : null,
+              icon: const Icon(Icons.delete_sweep_outlined),
+              label: const Text('Delete selected'),
             ),
             ElevatedButton.icon(
               onPressed: onActionPressed,

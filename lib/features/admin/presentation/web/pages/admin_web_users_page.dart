@@ -25,6 +25,7 @@ class AdminWebUsersPage extends StatefulWidget {
 class _AdminWebUsersPageState extends State<AdminWebUsersPage> {
   late final AdminUsersCubit _cubit;
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedUserIds = <String>{};
   String _roleFilter = 'all';
   _UsersView _view = _UsersView.list;
   UserEntity? _selectedUser;
@@ -64,6 +65,54 @@ class _AdminWebUsersPageState extends State<AdminWebUsersPage> {
     );
     if (confirmed != true) return;
     await _cubit.delete(user.id);
+    if (!mounted) return;
+    setState(() {
+      _selectedUserIds.remove(user.id);
+    });
+  }
+
+  void _toggleUserSelection(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedUserIds.add(id);
+      } else {
+        _selectedUserIds.remove(id);
+      }
+    });
+  }
+
+  void _toggleSelectAllUsers(List<UserEntity> items) {
+    final ids = items.map((item) => item.id).toList(growable: false);
+    final allSelected =
+        ids.isNotEmpty && ids.every((id) => _selectedUserIds.contains(id));
+    setState(() {
+      if (allSelected) {
+        _selectedUserIds.removeAll(ids);
+      } else {
+        _selectedUserIds.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _confirmDeleteSelectedUsers(List<UserEntity> items) async {
+    final selectedIds = items
+        .map((item) => item.id)
+        .where(_selectedUserIds.contains)
+        .toList(growable: false);
+    if (selectedIds.isEmpty) return;
+    final confirmed = await showAdminConfirmDialog(
+      context: context,
+      title: 'Delete users',
+      message: 'Delete ${selectedIds.length} selected users?',
+    );
+    if (confirmed != true) return;
+    for (final id in selectedIds) {
+      await _cubit.delete(id);
+    }
+    if (!mounted) return;
+    setState(() {
+      _selectedUserIds.removeAll(selectedIds);
+    });
   }
 
   void _closeForm() {
@@ -136,6 +185,15 @@ class _AdminWebUsersPageState extends State<AdminWebUsersPage> {
           }
 
           final filteredItems = _applyFilters(state.users);
+          _selectedUserIds.removeWhere(
+            (id) => !state.users.any((item) => item.id == id),
+          );
+          final selectedInViewCount = filteredItems
+              .where((item) => _selectedUserIds.contains(item.id))
+              .length;
+          final allFilteredSelected =
+              filteredItems.isNotEmpty &&
+              selectedInViewCount == filteredItems.length;
           final adminCount = state.users
               .where((user) => user.role.trim().toLowerCase() == 'admin')
               .length;
@@ -217,6 +275,29 @@ class _AdminWebUsersPageState extends State<AdminWebUsersPage> {
                               icon: const Icon(Icons.refresh_rounded),
                               label: const Text('Refresh'),
                             ),
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  _toggleSelectAllUsers(filteredItems),
+                              icon: Icon(
+                                allFilteredSelected
+                                    ? Icons.deselect_outlined
+                                    : Icons.select_all_rounded,
+                              ),
+                              label: Text(
+                                allFilteredSelected
+                                    ? 'Deselect all'
+                                    : 'Select all',
+                              ),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: selectedInViewCount > 0
+                                  ? () => _confirmDeleteSelectedUsers(
+                                      filteredItems,
+                                    )
+                                  : null,
+                              icon: const Icon(Icons.delete_sweep_outlined),
+                              label: const Text('Delete selected'),
+                            ),
                           ],
                         );
                         if (constraints.maxWidth < 1180) {
@@ -284,6 +365,8 @@ class _AdminWebUsersPageState extends State<AdminWebUsersPage> {
                         items: filteredItems,
                         onEdit: _openEditForm,
                         onDelete: _confirmDelete,
+                        selectedIds: _selectedUserIds,
+                        onSelectionChanged: _toggleUserSelection,
                       ),
                   ],
                 ),
@@ -314,22 +397,33 @@ class _UsersTable extends StatelessWidget {
     required this.items,
     required this.onEdit,
     required this.onDelete,
+    required this.selectedIds,
+    required this.onSelectionChanged,
   });
 
   final List<UserEntity> items;
   final ValueChanged<UserEntity> onEdit;
   final ValueChanged<UserEntity> onDelete;
+  final Set<String> selectedIds;
+  final void Function(String id, bool selected) onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        showCheckboxColumn: false,
         columnSpacing: 22.w,
         headingRowHeight: 48.h,
         dataRowMinHeight: 68.h,
         dataRowMaxHeight: 78.h,
-        columns: const [
+        columns: [
+          DataColumn(
+            label: SizedBox(
+              width: 28.w,
+              child: const Icon(Icons.check_box_outline_blank, size: 18),
+            ),
+          ),
           DataColumn(label: Text('User')),
           DataColumn(label: Text('Email')),
           DataColumn(label: Text('Phone')),
@@ -340,8 +434,17 @@ class _UsersTable extends StatelessWidget {
         ],
         rows: items
             .map((user) {
+              final isSelected = selectedIds.contains(user.id);
               return DataRow(
+                selected: isSelected,
                 cells: [
+                  DataCell(
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: (value) =>
+                          onSelectionChanged(user.id, value ?? false),
+                    ),
+                  ),
                   DataCell(
                     SizedBox(
                       width: 220.w,

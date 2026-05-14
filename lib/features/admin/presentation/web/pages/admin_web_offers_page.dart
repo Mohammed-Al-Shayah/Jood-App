@@ -81,6 +81,7 @@ class AdminWebOffersPage extends StatefulWidget {
 class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
   late final AdminOffersCubit _cubit;
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedOfferIds = <String>{};
   Map<String, String> _venueNames = const {};
   String _categoryFilter = 'all';
   String _statusFilter = 'all';
@@ -154,6 +155,52 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
     );
     if (confirmed != true) return;
     await _cubit.delete(offer.id);
+    if (!mounted) return;
+    setState(() {
+      _selectedOfferIds.remove(offer.id);
+    });
+  }
+
+  void _toggleOfferSelection(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedOfferIds.add(id);
+      } else {
+        _selectedOfferIds.remove(id);
+      }
+    });
+  }
+
+  void _toggleSelectAllOffers(List<OfferEntity> items) {
+    final ids = items.map((item) => item.id).toList(growable: false);
+    final allSelected =
+        ids.isNotEmpty && ids.every((id) => _selectedOfferIds.contains(id));
+    setState(() {
+      if (allSelected) {
+        _selectedOfferIds.removeAll(ids);
+      } else {
+        _selectedOfferIds.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _confirmDeleteSelectedOffers(List<OfferEntity> items) async {
+    final selectedIds = items
+        .map((item) => item.id)
+        .where(_selectedOfferIds.contains)
+        .toList(growable: false);
+    if (selectedIds.isEmpty) return;
+    final confirmed = await showAdminConfirmDialog(
+      context: context,
+      title: 'Delete offers',
+      message: 'Delete ${selectedIds.length} selected offers?',
+    );
+    if (confirmed != true) return;
+    await _cubit.deleteMany(selectedIds);
+    if (!mounted) return;
+    setState(() {
+      _selectedOfferIds.removeAll(selectedIds);
+    });
   }
 
   void _closeForm() {
@@ -317,6 +364,15 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
           }
 
           final filteredItems = _applyFilters(state.offers);
+          _selectedOfferIds.removeWhere(
+            (id) => !state.offers.any((item) => item.id == id),
+          );
+          final selectedInViewCount = filteredItems
+              .where((item) => _selectedOfferIds.contains(item.id))
+              .length;
+          final allFilteredSelected =
+              filteredItems.isNotEmpty &&
+              selectedInViewCount == filteredItems.length;
           final scopedItems = widget.isCategoryLocked
               ? state.offers
                     .where(
@@ -426,6 +482,12 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
                       },
                       onAddPressed: _openCreateForm,
                       actionLabel: widget.addActionLabel,
+                      onToggleSelectAll: () =>
+                          _toggleSelectAllOffers(filteredItems),
+                      onDeleteSelected: () =>
+                          _confirmDeleteSelectedOffers(filteredItems),
+                      hasSelection: selectedInViewCount > 0,
+                      allVisibleSelected: allFilteredSelected,
                       venueFilter: venueOptions.contains(_venueFilter)
                           ? _venueFilter
                           : 'all',
@@ -505,6 +567,8 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
                         onEdit: _openEditForm,
                         onDelete: _confirmDelete,
                         categoryLabelBuilder: _displayCategory,
+                        selectedIds: _selectedOfferIds,
+                        onSelectionChanged: _toggleOfferSelection,
                       ),
                   ],
                 ),
@@ -555,6 +619,10 @@ class _OffersToolbar extends StatelessWidget {
     required this.onRefresh,
     required this.onAddPressed,
     required this.actionLabel,
+    required this.onToggleSelectAll,
+    required this.onDeleteSelected,
+    required this.hasSelection,
+    required this.allVisibleSelected,
     required this.venueFilter,
     required this.venueOptions,
     required this.sortBy,
@@ -566,6 +634,10 @@ class _OffersToolbar extends StatelessWidget {
   final Future<void> Function() onRefresh;
   final VoidCallback onAddPressed;
   final String actionLabel;
+  final VoidCallback onToggleSelectAll;
+  final VoidCallback onDeleteSelected;
+  final bool hasSelection;
+  final bool allVisibleSelected;
   final String venueFilter;
   final List<String> venueOptions;
   final _OffersSort sortBy;
@@ -588,6 +660,20 @@ class _OffersToolbar extends StatelessWidget {
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Refresh'),
+            ),
+            OutlinedButton.icon(
+              onPressed: onToggleSelectAll,
+              icon: Icon(
+                allVisibleSelected
+                    ? Icons.deselect_outlined
+                    : Icons.select_all_rounded,
+              ),
+              label: Text(allVisibleSelected ? 'Deselect all' : 'Select all'),
+            ),
+            OutlinedButton.icon(
+              onPressed: hasSelection ? onDeleteSelected : null,
+              icon: const Icon(Icons.delete_sweep_outlined),
+              label: const Text('Delete selected'),
             ),
             ElevatedButton.icon(
               onPressed: onAddPressed,
@@ -689,6 +775,8 @@ class _OffersTable extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.categoryLabelBuilder,
+    required this.selectedIds,
+    required this.onSelectionChanged,
   });
 
   final List<OfferEntity> items;
@@ -696,17 +784,26 @@ class _OffersTable extends StatelessWidget {
   final ValueChanged<OfferEntity> onEdit;
   final ValueChanged<OfferEntity> onDelete;
   final String Function(OfferEntity) categoryLabelBuilder;
+  final Set<String> selectedIds;
+  final void Function(String id, bool selected) onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        showCheckboxColumn: false,
         columnSpacing: 22.w,
         headingRowHeight: 48.h,
         dataRowMinHeight: 70.h,
         dataRowMaxHeight: 82.h,
-        columns: const [
+        columns: [
+          DataColumn(
+            label: SizedBox(
+              width: 28.w,
+              child: const Icon(Icons.check_box_outline_blank, size: 18),
+            ),
+          ),
           DataColumn(label: Text('Offer')),
           DataColumn(label: Text('Restaurant')),
           DataColumn(label: Text('Category')),
@@ -719,6 +816,7 @@ class _OffersTable extends StatelessWidget {
         ],
         rows: items
             .map((offer) {
+              final isSelected = selectedIds.contains(offer.id);
               final venueName =
                   venueNames[offer.restaurantId] ?? offer.restaurantId;
               final primaryOfferLabel = offer.packageName.trim().isNotEmpty
@@ -733,7 +831,15 @@ class _OffersTable extends StatelessWidget {
                   ? offer.title
                   : offer.mealType;
               return DataRow(
+                selected: isSelected,
                 cells: [
+                  DataCell(
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: (value) =>
+                          onSelectionChanged(offer.id, value ?? false),
+                    ),
+                  ),
                   DataCell(
                     SizedBox(
                       width: 220.w,

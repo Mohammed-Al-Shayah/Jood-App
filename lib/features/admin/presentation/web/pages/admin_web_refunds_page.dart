@@ -6,12 +6,15 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_filter_dropdown_field.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
+import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
 import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
+import 'package:jood/features/bookings/domain/usecases/delete_booking_usecase.dart';
 import 'package:jood/features/bookings/domain/usecases/update_booking_refund_status_usecase.dart';
 import 'package:jood/features/bookings/domain/usecases/watch_all_bookings_usecase.dart';
 import 'package:jood/features/users/domain/usecases/get_users_usecase.dart';
@@ -25,10 +28,12 @@ class AdminWebRefundsPage extends StatefulWidget {
 
 class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedRefundIds = <String>{};
   String _refundFilter = 'all';
   String _venueFilter = 'all';
   _RefundsSort _sortBy = _RefundsSort.cancelledNewest;
   String? _updatingBookingId;
+  bool _isDeletingSelected = false;
   final Map<String, _RefundCustomerInfo> _customerCache = {};
 
   @override
@@ -149,6 +154,75 @@ class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
     }
   }
 
+  void _toggleRefundSelection(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedRefundIds.add(id);
+      } else {
+        _selectedRefundIds.remove(id);
+      }
+    });
+  }
+
+  void _toggleSelectAllRefunds(List<BookingEntity> items) {
+    final ids = items.map((item) => item.id).toList(growable: false);
+    final allSelected =
+        ids.isNotEmpty && ids.every((id) => _selectedRefundIds.contains(id));
+    setState(() {
+      if (allSelected) {
+        _selectedRefundIds.removeAll(ids);
+      } else {
+        _selectedRefundIds.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _confirmDeleteSelectedRefunds(List<BookingEntity> items) async {
+    final selectedIds = items
+        .map((item) => item.id)
+        .where(_selectedRefundIds.contains)
+        .toList(growable: false);
+    if (selectedIds.isEmpty || _isDeletingSelected) return;
+    final confirmed = await showAdminConfirmDialog(
+      context: context,
+      title: 'Delete refunds',
+      message: 'Delete ${selectedIds.length} selected refund records?',
+    );
+    if (confirmed != true) return;
+
+    setState(() {
+      _isDeletingSelected = true;
+    });
+    try {
+      final deleteBooking = getIt<DeleteBookingUseCase>();
+      for (final id in selectedIds) {
+        await deleteBooking(id);
+      }
+      if (!mounted) return;
+      setState(() {
+        _selectedRefundIds.removeAll(selectedIds);
+      });
+      showAppSnackBar(
+        context,
+        '${selectedIds.length} refund records deleted successfully.',
+        type: SnackBarType.success,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        'Failed to delete selected refund records.',
+        type: SnackBarType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeletingSelected = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final stream = getIt<WatchAllBookingsUseCase>()();
@@ -183,6 +257,15 @@ class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
                 .toList()
               ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
         final filteredItems = _applyFilters(cancelledBookings);
+        _selectedRefundIds.removeWhere(
+          (id) => !cancelledBookings.any((item) => item.id == id),
+        );
+        final selectedInViewCount = filteredItems
+            .where((item) => _selectedRefundIds.contains(item.id))
+            .length;
+        final allFilteredSelected =
+            filteredItems.isNotEmpty &&
+            selectedInViewCount == filteredItems.length;
         final pendingCount = cancelledBookings
             .where((item) => _refundStatus(item) == 'pending')
             .length;
@@ -272,6 +355,36 @@ class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
                         setState(() => _venueFilter = value),
                     onSortChanged: (value) => setState(() => _sortBy = value),
                   ),
+                  SizedBox(height: 10.h),
+                  Wrap(
+                    spacing: 10.w,
+                    runSpacing: 10.h,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _toggleSelectAllRefunds(filteredItems),
+                        icon: Icon(
+                          allFilteredSelected
+                              ? Icons.deselect_outlined
+                              : Icons.select_all_rounded,
+                        ),
+                        label: Text(
+                          allFilteredSelected ? 'Deselect all' : 'Select all',
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed:
+                            selectedInViewCount > 0 && !_isDeletingSelected
+                            ? () => _confirmDeleteSelectedRefunds(filteredItems)
+                            : null,
+                        icon: const Icon(Icons.delete_sweep_outlined),
+                        label: Text(
+                          _isDeletingSelected
+                              ? 'Deleting...'
+                              : 'Delete selected',
+                        ),
+                      ),
+                    ],
+                  ),
                   SizedBox(height: 12.h),
                   Wrap(
                     spacing: 8.w,
@@ -317,6 +430,14 @@ class _AdminWebRefundsPageState extends State<AdminWebRefundsPage> {
                             booking: filteredItems[index],
                             customerInfo:
                                 _customerCache[filteredItems[index].userId],
+                            isSelected: _selectedRefundIds.contains(
+                              filteredItems[index].id,
+                            ),
+                            onSelectionChanged: (selected) =>
+                                _toggleRefundSelection(
+                                  filteredItems[index].id,
+                                  selected,
+                                ),
                             isUpdating:
                                 _updatingBookingId == filteredItems[index].id,
                             onUpdateRefundStatus: _updateRefundStatus,
@@ -451,12 +572,16 @@ class _RefundCard extends StatelessWidget {
   const _RefundCard({
     required this.booking,
     required this.customerInfo,
+    required this.isSelected,
+    required this.onSelectionChanged,
     required this.isUpdating,
     required this.onUpdateRefundStatus,
   });
 
   final BookingEntity booking;
   final _RefundCustomerInfo? customerInfo;
+  final bool isSelected;
+  final ValueChanged<bool> onSelectionChanged;
   final bool isUpdating;
   final Future<void> Function(String bookingId, String status)
   onUpdateRefundStatus;
@@ -483,11 +608,21 @@ class _RefundCard extends StatelessWidget {
           final details = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                (booking.restaurantNameSnapshot ?? '').trim().isEmpty
-                    ? booking.restaurantId
-                    : booking.restaurantNameSnapshot!,
-                style: AppTextStyles.sectionTitle,
+              Row(
+                children: [
+                  Checkbox(
+                    value: isSelected,
+                    onChanged: (value) => onSelectionChanged(value ?? false),
+                  ),
+                  Expanded(
+                    child: Text(
+                      (booking.restaurantNameSnapshot ?? '').trim().isEmpty
+                          ? booking.restaurantId
+                          : booking.restaurantNameSnapshot!,
+                      style: AppTextStyles.sectionTitle,
+                    ),
+                  ),
+                ],
               ),
               SizedBox(height: 6.h),
               Wrap(

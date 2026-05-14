@@ -48,6 +48,30 @@ class AdModel extends AdEntity {
     );
   }
 
+  factory AdModel.fromEntity(AdEntity ad) {
+    if (ad is AdModel) return ad;
+    return AdModel(
+      id: ad.id,
+      title: ad.title,
+      imageUrl: ad.imageUrl,
+      isActive: ad.isActive,
+      sortOrder: ad.sortOrder,
+      displaySeconds: ad.displaySeconds,
+      targetCategory: ad.targetCategory,
+      targetVenueId: ad.targetVenueId,
+      targetVenueName: ad.targetVenueName,
+      targetOfferId: ad.targetOfferId,
+      targetOfferTitle: ad.targetOfferTitle,
+      targetOfferDate: ad.targetOfferDate,
+      startDate: ad.startDate,
+      startTime: ad.startTime,
+      endDate: ad.endDate,
+      endTime: ad.endTime,
+      createdAt: ad.createdAt,
+      updatedAt: ad.updatedAt,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'title': title.trim(),

@@ -15,12 +15,16 @@ class AttractionRepositoryImpl implements AttractionRepository {
 
   @override
   Future<AttractionEntity> createAttraction(AttractionEntity attraction) {
-    return remoteDataSource.createAttraction(attraction as AttractionModel);
+    return remoteDataSource.createAttraction(
+      AttractionModel.fromEntity(attraction),
+    );
   }
 
   @override
   Future<AttractionEntity> updateAttraction(AttractionEntity attraction) {
-    return remoteDataSource.updateAttraction(attraction as AttractionModel);
+    return remoteDataSource.updateAttraction(
+      AttractionModel.fromEntity(attraction),
+    );
   }
 
   @override

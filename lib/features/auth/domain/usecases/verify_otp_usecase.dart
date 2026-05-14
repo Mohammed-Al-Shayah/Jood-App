@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
+import '../entities/auth_credential_entity.dart';
 import '../entities/otp_mode.dart';
 import '../repositories/auth_repository.dart';
 
@@ -8,7 +7,7 @@ class VerifyOtpUseCase {
 
   final AuthRepository _repository;
 
-  Future<UserCredential?> call({
+  Future<AuthCredentialEntity?> call({
     required String phoneNumber,
     required String verificationId,
     required String smsCode,

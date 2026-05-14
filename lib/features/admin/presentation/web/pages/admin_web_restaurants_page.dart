@@ -30,6 +30,7 @@ class AdminWebRestaurantsPage extends StatefulWidget {
 class _AdminWebRestaurantsPageState extends State<AdminWebRestaurantsPage> {
   late final AdminRestaurantsCubit _cubit;
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedRestaurantIds = <String>{};
   String _statusFilter = 'all';
   String _cityFilter = 'all';
   _RestaurantsSort _sortBy = _RestaurantsSort.nameAsc;
@@ -78,6 +79,57 @@ class _AdminWebRestaurantsPageState extends State<AdminWebRestaurantsPage> {
     );
     if (confirmed != true) return;
     await _cubit.delete(restaurant.id);
+    if (!mounted) return;
+    setState(() {
+      _selectedRestaurantIds.remove(restaurant.id);
+    });
+  }
+
+  void _toggleRestaurantSelection(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedRestaurantIds.add(id);
+      } else {
+        _selectedRestaurantIds.remove(id);
+      }
+    });
+  }
+
+  void _toggleSelectAllRestaurants(List<RestaurantEntity> items) {
+    final ids = items.map((item) => item.id).toList(growable: false);
+    final allSelected =
+        ids.isNotEmpty &&
+        ids.every((id) => _selectedRestaurantIds.contains(id));
+    setState(() {
+      if (allSelected) {
+        _selectedRestaurantIds.removeAll(ids);
+      } else {
+        _selectedRestaurantIds.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _confirmDeleteSelectedRestaurants(
+    List<RestaurantEntity> items,
+  ) async {
+    final selectedIds = items
+        .map((item) => item.id)
+        .where(_selectedRestaurantIds.contains)
+        .toList(growable: false);
+    if (selectedIds.isEmpty) return;
+    final confirmed = await showAdminConfirmDialog(
+      context: context,
+      title: 'Delete restaurants',
+      message: 'Delete ${selectedIds.length} selected restaurants?',
+    );
+    if (confirmed != true) return;
+    for (final id in selectedIds) {
+      await _cubit.delete(id);
+    }
+    if (!mounted) return;
+    setState(() {
+      _selectedRestaurantIds.removeAll(selectedIds);
+    });
   }
 
   void _closeForm() {
@@ -191,6 +243,15 @@ class _AdminWebRestaurantsPageState extends State<AdminWebRestaurantsPage> {
           }
 
           final filteredItems = _applyFilters(state.restaurants);
+          _selectedRestaurantIds.removeWhere(
+            (id) => !state.restaurants.any((item) => item.id == id),
+          );
+          final selectedInViewCount = filteredItems
+              .where((item) => _selectedRestaurantIds.contains(item.id))
+              .length;
+          final allFilteredSelected =
+              filteredItems.isNotEmpty &&
+              selectedInViewCount == filteredItems.length;
           final cityOptions =
               state.restaurants
                   .map((item) => item.cityId.trim())
@@ -267,6 +328,12 @@ class _AdminWebRestaurantsPageState extends State<AdminWebRestaurantsPage> {
                       onRefresh: _cubit.load,
                       actionLabel: 'Add restaurant',
                       onActionPressed: _openCreateForm,
+                      onToggleSelectAll: () =>
+                          _toggleSelectAllRestaurants(filteredItems),
+                      onDeleteSelected: () =>
+                          _confirmDeleteSelectedRestaurants(filteredItems),
+                      hasSelection: selectedInViewCount > 0,
+                      allVisibleSelected: allFilteredSelected,
                       cityFilter: cityOptions.contains(_cityFilter)
                           ? _cityFilter
                           : 'all',
@@ -318,6 +385,8 @@ class _AdminWebRestaurantsPageState extends State<AdminWebRestaurantsPage> {
                         items: filteredItems,
                         onEdit: _openEditForm,
                         onDelete: _confirmDelete,
+                        selectedIds: _selectedRestaurantIds,
+                        onSelectionChanged: _toggleRestaurantSelection,
                       ),
                   ],
                 ),
@@ -339,22 +408,33 @@ class _RestaurantsTable extends StatelessWidget {
     required this.items,
     required this.onEdit,
     required this.onDelete,
+    required this.selectedIds,
+    required this.onSelectionChanged,
   });
 
   final List<RestaurantEntity> items;
   final ValueChanged<RestaurantEntity> onEdit;
   final ValueChanged<RestaurantEntity> onDelete;
+  final Set<String> selectedIds;
+  final void Function(String id, bool selected) onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        showCheckboxColumn: false,
         columnSpacing: 24.w,
         headingRowHeight: 48.h,
         dataRowMinHeight: 68.h,
         dataRowMaxHeight: 76.h,
-        columns: const [
+        columns: [
+          DataColumn(
+            label: SizedBox(
+              width: 28.w,
+              child: const Icon(Icons.check_box_outline_blank, size: 18),
+            ),
+          ),
           DataColumn(label: Text('Restaurant')),
           DataColumn(label: Text('Location')),
           DataColumn(label: Text('Open hours')),
@@ -365,8 +445,17 @@ class _RestaurantsTable extends StatelessWidget {
         ],
         rows: items
             .map((restaurant) {
+              final isSelected = selectedIds.contains(restaurant.id);
               return DataRow(
+                selected: isSelected,
                 cells: [
+                  DataCell(
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: (value) =>
+                          onSelectionChanged(restaurant.id, value ?? false),
+                    ),
+                  ),
                   DataCell(
                     SizedBox(
                       width: 280.w,
@@ -495,6 +584,10 @@ class _PageToolbar extends StatelessWidget {
     required this.onRefresh,
     required this.actionLabel,
     required this.onActionPressed,
+    required this.onToggleSelectAll,
+    required this.onDeleteSelected,
+    required this.hasSelection,
+    required this.allVisibleSelected,
     required this.cityFilter,
     required this.cityOptions,
     required this.sortBy,
@@ -507,6 +600,10 @@ class _PageToolbar extends StatelessWidget {
   final Future<void> Function() onRefresh;
   final String actionLabel;
   final VoidCallback onActionPressed;
+  final VoidCallback onToggleSelectAll;
+  final VoidCallback onDeleteSelected;
+  final bool hasSelection;
+  final bool allVisibleSelected;
   final String cityFilter;
   final List<String> cityOptions;
   final _RestaurantsSort sortBy;
@@ -529,6 +626,20 @@ class _PageToolbar extends StatelessWidget {
               onPressed: onRefresh,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Refresh'),
+            ),
+            OutlinedButton.icon(
+              onPressed: onToggleSelectAll,
+              icon: Icon(
+                allVisibleSelected
+                    ? Icons.deselect_outlined
+                    : Icons.select_all_rounded,
+              ),
+              label: Text(allVisibleSelected ? 'Deselect all' : 'Select all'),
+            ),
+            OutlinedButton.icon(
+              onPressed: hasSelection ? onDeleteSelected : null,
+              icon: const Icon(Icons.delete_sweep_outlined),
+              label: const Text('Delete selected'),
             ),
             ElevatedButton.icon(
               onPressed: onActionPressed,

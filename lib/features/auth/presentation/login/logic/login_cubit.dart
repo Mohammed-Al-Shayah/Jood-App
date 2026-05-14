@@ -1,5 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error.dart';
@@ -7,6 +5,7 @@ import '../../../../../core/errors/auth_error_mapper.dart';
 import '../../../../../core/utils/auth_validators.dart';
 import '../../../../../features/users/domain/usecases/get_user_by_phone_usecase.dart';
 import '../../../../../features/users/domain/usecases/sync_auth_user_usecase.dart';
+import '../../../domain/entities/auth_credential_entity.dart';
 import '../../../domain/usecases/get_current_user_usecase.dart';
 import '../../../domain/usecases/login_with_email_usecase.dart';
 import '../../../domain/usecases/reload_user_usecase.dart';
@@ -200,7 +199,7 @@ class LoginCubit extends SafeCubit<LoginState> {
     }
   }
 
-  Future<UserCredential> _signInWithPhoneAndPassword(
+  Future<AuthCredentialEntity> _signInWithPhoneAndPassword(
     String normalizedPhone,
     String password,
   ) async {

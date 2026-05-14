@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../../../../../core/bloc/safe_cubit.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/errors/auth_error.dart';
@@ -10,6 +8,7 @@ import '../../../../../core/utils/auth_validators.dart';
 import '../../../../users/domain/entities/user_entity.dart';
 import '../../../../users/domain/usecases/create_user_usecase.dart';
 import '../../../../users/domain/usecases/sync_auth_user_usecase.dart';
+import '../../../domain/entities/auth_user_entity.dart';
 import '../../../domain/entities/otp_mode.dart';
 import '../../../domain/usecases/link_email_password_usecase.dart';
 import '../../../domain/usecases/send_email_verification_usecase.dart';
@@ -156,7 +155,7 @@ class OtpCubit extends SafeCubit<OtpState> {
     return super.close();
   }
 
-  Future<void> _finishRegisterFlow(User user) async {
+  Future<void> _finishRegisterFlow(AuthUserEntity user) async {
     final email = (_args.email ?? '').trim();
     if (email.isEmpty) {
       throw const AppAuthException(code: 'invalid-email');
@@ -179,7 +178,7 @@ class OtpCubit extends SafeCubit<OtpState> {
   }
 
   Future<void> _linkPasswordCredential(
-    User user,
+    AuthUserEntity user,
     String email,
     String password,
   ) async {

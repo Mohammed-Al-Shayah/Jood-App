@@ -6,11 +6,14 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
+import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
 import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
+import 'package:jood/features/bookings/domain/usecases/delete_booking_usecase.dart';
 import 'package:jood/features/bookings/domain/usecases/watch_all_bookings_usecase.dart';
 
 class AdminWebBookingsPage extends StatefulWidget {
@@ -24,11 +27,13 @@ class AdminWebBookingsPage extends StatefulWidget {
 
 class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedBookingIds = <String>{};
   String _statusFilter = 'all';
   String _typeFilter = 'all';
   String _venueFilter = 'all';
   AdminWebTimeFilter _timeFilter = AdminWebTimeFilter.allTime;
   _BookingsSort _sortBy = _BookingsSort.createdNewest;
+  bool _isDeletingSelected = false;
 
   @override
   void initState() {
@@ -145,6 +150,74 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
     return raw.isEmpty ? 'restaurant' : raw;
   }
 
+  void _toggleBookingSelection(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedBookingIds.add(id);
+      } else {
+        _selectedBookingIds.remove(id);
+      }
+    });
+  }
+
+  void _toggleSelectAllBookings(List<BookingEntity> items) {
+    final ids = items.map((item) => item.id).toList(growable: false);
+    final allSelected =
+        ids.isNotEmpty && ids.every((id) => _selectedBookingIds.contains(id));
+    setState(() {
+      if (allSelected) {
+        _selectedBookingIds.removeAll(ids);
+      } else {
+        _selectedBookingIds.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _confirmDeleteSelectedBookings(List<BookingEntity> items) async {
+    final selectedIds = items
+        .map((item) => item.id)
+        .where(_selectedBookingIds.contains)
+        .toList(growable: false);
+    if (selectedIds.isEmpty || _isDeletingSelected) return;
+    final confirmed = await showAdminConfirmDialog(
+      context: context,
+      title: 'Delete bookings',
+      message: 'Delete ${selectedIds.length} selected bookings?',
+    );
+    if (confirmed != true) return;
+    setState(() {
+      _isDeletingSelected = true;
+    });
+    try {
+      final deleteBooking = getIt<DeleteBookingUseCase>();
+      for (final id in selectedIds) {
+        await deleteBooking(id);
+      }
+      if (!mounted) return;
+      setState(() {
+        _selectedBookingIds.removeAll(selectedIds);
+      });
+      showAppSnackBar(
+        context,
+        '${selectedIds.length} bookings deleted successfully.',
+        type: SnackBarType.success,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        'Failed to delete selected bookings.',
+        type: SnackBarType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeletingSelected = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final stream = getIt<WatchAllBookingsUseCase>()();
@@ -175,6 +248,15 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
                 .toList()
               ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
         final filteredItems = _applyFilters(timeFilteredItems);
+        _selectedBookingIds.removeWhere(
+          (id) => !bookings.any((item) => item.id == id),
+        );
+        final selectedInViewCount = filteredItems
+            .where((item) => _selectedBookingIds.contains(item.id))
+            .length;
+        final allFilteredSelected =
+            filteredItems.isNotEmpty &&
+            selectedInViewCount == filteredItems.length;
         final paidCount = timeFilteredItems.where((booking) {
           final status = booking.status.trim().toLowerCase();
           return status == 'paid' || status == 'confirmed';
@@ -265,6 +347,38 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
                         setState(() => _venueFilter = value),
                     onSortChanged: (value) => setState(() => _sortBy = value),
                   ),
+                  SizedBox(height: 10.h),
+                  Wrap(
+                    spacing: 10.w,
+                    runSpacing: 10.h,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            _toggleSelectAllBookings(filteredItems),
+                        icon: Icon(
+                          allFilteredSelected
+                              ? Icons.deselect_outlined
+                              : Icons.select_all_rounded,
+                        ),
+                        label: Text(
+                          allFilteredSelected ? 'Deselect all' : 'Select all',
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed:
+                            selectedInViewCount > 0 && !_isDeletingSelected
+                            ? () =>
+                                  _confirmDeleteSelectedBookings(filteredItems)
+                            : null,
+                        icon: const Icon(Icons.delete_sweep_outlined),
+                        label: Text(
+                          _isDeletingSelected
+                              ? 'Deleting...'
+                              : 'Delete selected',
+                        ),
+                      ),
+                    ],
+                  ),
                   SizedBox(height: 12.h),
                   Wrap(
                     spacing: 8.w,
@@ -333,7 +447,11 @@ class _AdminWebBookingsPageState extends State<AdminWebBookingsPage> {
                       message: 'No bookings match the current filters.',
                     )
                   else
-                    _BookingsTable(items: filteredItems),
+                    _BookingsTable(
+                      items: filteredItems,
+                      selectedIds: _selectedBookingIds,
+                      onSelectionChanged: _toggleBookingSelection,
+                    ),
                 ],
               ),
             ),
@@ -354,9 +472,15 @@ enum _BookingsSort {
 }
 
 class _BookingsTable extends StatelessWidget {
-  const _BookingsTable({required this.items});
+  const _BookingsTable({
+    required this.items,
+    required this.selectedIds,
+    required this.onSelectionChanged,
+  });
 
   final List<BookingEntity> items;
+  final Set<String> selectedIds;
+  final void Function(String id, bool selected) onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -364,11 +488,18 @@ class _BookingsTable extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        showCheckboxColumn: false,
         columnSpacing: 22.w,
         headingRowHeight: 48.h,
         dataRowMinHeight: 70.h,
         dataRowMaxHeight: 82.h,
-        columns: const [
+        columns: [
+          DataColumn(
+            label: SizedBox(
+              width: 28.w,
+              child: const Icon(Icons.check_box_outline_blank, size: 18),
+            ),
+          ),
           DataColumn(label: Text('Code')),
           DataColumn(label: Text('Venue')),
           DataColumn(label: Text('Offer')),
@@ -381,12 +512,21 @@ class _BookingsTable extends StatelessWidget {
         ],
         rows: items
             .map((booking) {
+              final isSelected = selectedIds.contains(booking.id);
               final created = formatter.format(booking.createdAt);
               final type = (booking.bookableType ?? '').trim().isEmpty
                   ? 'restaurant'
                   : booking.bookableType!;
               return DataRow(
+                selected: isSelected,
                 cells: [
+                  DataCell(
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: (value) =>
+                          onSelectionChanged(booking.id, value ?? false),
+                    ),
+                  ),
                   DataCell(Text(booking.bookingCode)),
                   DataCell(
                     SizedBox(

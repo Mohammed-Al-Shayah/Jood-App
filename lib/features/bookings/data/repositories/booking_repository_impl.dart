@@ -90,4 +90,9 @@ class BookingRepositoryImpl implements BookingRepository {
       actorUserId: actorUserId,
     );
   }
+
+  @override
+  Future<void> deleteBooking(String bookingId) {
+    return remoteDataSource.deleteBooking(bookingId);
+  }
 }

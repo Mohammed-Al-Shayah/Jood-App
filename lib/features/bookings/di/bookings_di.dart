@@ -17,6 +17,7 @@ import '../domain/repositories/booking_repository.dart';
 import '../domain/usecases/cancel_booking_usecase.dart';
 import '../domain/usecases/complete_booking_usecase.dart';
 import '../domain/usecases/create_booking_usecase.dart';
+import '../domain/usecases/delete_booking_usecase.dart';
 import '../domain/usecases/get_all_bookings_usecase.dart';
 import '../domain/usecases/get_booking_by_code_usecase.dart';
 import '../domain/usecases/update_booking_refund_status_usecase.dart';
@@ -50,6 +51,9 @@ void registerBookingsDependencies(GetIt getIt) {
   );
   getIt.registerLazySingleton<GetAllBookingsUseCase>(
     () => GetAllBookingsUseCase(getIt<BookingRepository>()),
+  );
+  getIt.registerLazySingleton<DeleteBookingUseCase>(
+    () => DeleteBookingUseCase(getIt<BookingRepository>()),
   );
   getIt.registerLazySingleton<WatchAllBookingsUseCase>(
     () => WatchAllBookingsUseCase(getIt<BookingRepository>()),

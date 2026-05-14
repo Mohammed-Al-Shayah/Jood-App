@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
+import '../entities/auth_credential_entity.dart';
 import '../repositories/auth_repository.dart';
 
 class LoginWithEmailUseCase {
@@ -7,7 +6,7 @@ class LoginWithEmailUseCase {
 
   final AuthRepository _repository;
 
-  Future<UserCredential> call({
+  Future<AuthCredentialEntity> call({
     required String email,
     required String password,
   }) {

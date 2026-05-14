@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
+import '../entities/auth_user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 class SendEmailVerificationUseCase {
@@ -7,7 +6,7 @@ class SendEmailVerificationUseCase {
 
   final AuthRepository _repository;
 
-  Future<void> call(User user) {
+  Future<void> call(AuthUserEntity user) {
     return _repository.sendEmailVerification(user);
   }
 }

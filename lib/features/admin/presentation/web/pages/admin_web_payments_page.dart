@@ -6,12 +6,15 @@ import 'package:jood/core/di/service_locator.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/core/utils/payment_amount_utils.dart';
+import 'package:jood/core/widgets/app_snackbar.dart';
 import 'package:jood/core/widgets/currency_amount_text.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_navigation.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_filter_dropdown_field.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_metric_card.dart';
 import 'package:jood/features/admin/presentation/web/widgets/admin_web_panel.dart';
+import 'package:jood/features/admin/presentation/widgets/admin_confirm_dialog.dart';
 import 'package:jood/features/bookings/domain/entities/booking_entity.dart';
+import 'package:jood/features/bookings/domain/usecases/delete_booking_usecase.dart';
 import 'package:jood/features/bookings/domain/usecases/watch_all_bookings_usecase.dart';
 
 class AdminWebPaymentsPage extends StatefulWidget {
@@ -25,10 +28,12 @@ class AdminWebPaymentsPage extends StatefulWidget {
 
 class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedPaymentIds = <String>{};
   String _paymentFilter = 'all';
   String _venueFilter = 'all';
   AdminWebTimeFilter _timeFilter = AdminWebTimeFilter.allTime;
   _PaymentsSort _sortBy = _PaymentsSort.createdNewest;
+  bool _isDeletingSelected = false;
 
   @override
   void initState() {
@@ -136,6 +141,75 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
     return fallback.isEmpty ? '-' : fallback;
   }
 
+  void _togglePaymentSelection(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedPaymentIds.add(id);
+      } else {
+        _selectedPaymentIds.remove(id);
+      }
+    });
+  }
+
+  void _toggleSelectAllPayments(List<BookingEntity> items) {
+    final ids = items.map((item) => item.id).toList(growable: false);
+    final allSelected =
+        ids.isNotEmpty && ids.every((id) => _selectedPaymentIds.contains(id));
+    setState(() {
+      if (allSelected) {
+        _selectedPaymentIds.removeAll(ids);
+      } else {
+        _selectedPaymentIds.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _confirmDeleteSelectedPayments(List<BookingEntity> items) async {
+    final selectedIds = items
+        .map((item) => item.id)
+        .where(_selectedPaymentIds.contains)
+        .toList(growable: false);
+    if (selectedIds.isEmpty || _isDeletingSelected) return;
+    final confirmed = await showAdminConfirmDialog(
+      context: context,
+      title: 'Delete payments',
+      message: 'Delete ${selectedIds.length} selected payment records?',
+    );
+    if (confirmed != true) return;
+
+    setState(() {
+      _isDeletingSelected = true;
+    });
+    try {
+      final deleteBooking = getIt<DeleteBookingUseCase>();
+      for (final id in selectedIds) {
+        await deleteBooking(id);
+      }
+      if (!mounted) return;
+      setState(() {
+        _selectedPaymentIds.removeAll(selectedIds);
+      });
+      showAppSnackBar(
+        context,
+        '${selectedIds.length} payment records deleted successfully.',
+        type: SnackBarType.success,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        'Failed to delete selected payment records.',
+        type: SnackBarType.error,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeletingSelected = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final stream = getIt<WatchAllBookingsUseCase>()();
@@ -168,6 +242,15 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
                 .toList()
               ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
         final filteredItems = _applyFilters(timeFilteredItems);
+        _selectedPaymentIds.removeWhere(
+          (id) => !bookings.any((item) => item.id == id),
+        );
+        final selectedInViewCount = filteredItems
+            .where((item) => _selectedPaymentIds.contains(item.id))
+            .length;
+        final allFilteredSelected =
+            filteredItems.isNotEmpty &&
+            selectedInViewCount == filteredItems.length;
         final paidItems = timeFilteredItems.where(
           (item) => _paymentState(item) == 'paid',
         );
@@ -269,6 +352,38 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
                         setState(() => _venueFilter = value),
                     onSortChanged: (value) => setState(() => _sortBy = value),
                   ),
+                  SizedBox(height: 10.h),
+                  Wrap(
+                    spacing: 10.w,
+                    runSpacing: 10.h,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            _toggleSelectAllPayments(filteredItems),
+                        icon: Icon(
+                          allFilteredSelected
+                              ? Icons.deselect_outlined
+                              : Icons.select_all_rounded,
+                        ),
+                        label: Text(
+                          allFilteredSelected ? 'Deselect all' : 'Select all',
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed:
+                            selectedInViewCount > 0 && !_isDeletingSelected
+                            ? () =>
+                                  _confirmDeleteSelectedPayments(filteredItems)
+                            : null,
+                        icon: const Icon(Icons.delete_sweep_outlined),
+                        label: Text(
+                          _isDeletingSelected
+                              ? 'Deleting...'
+                              : 'Delete selected',
+                        ),
+                      ),
+                    ],
+                  ),
                   SizedBox(height: 12.h),
                   Wrap(
                     spacing: 8.w,
@@ -326,7 +441,11 @@ class _AdminWebPaymentsPageState extends State<AdminWebPaymentsPage> {
                       message: 'No payments match the current filters.',
                     )
                   else
-                    _PaymentsTable(items: filteredItems),
+                    _PaymentsTable(
+                      items: filteredItems,
+                      selectedIds: _selectedPaymentIds,
+                      onSelectionChanged: _togglePaymentSelection,
+                    ),
                 ],
               ),
             ),
@@ -449,9 +568,15 @@ class _PaymentsToolbar extends StatelessWidget {
 }
 
 class _PaymentsTable extends StatelessWidget {
-  const _PaymentsTable({required this.items});
+  const _PaymentsTable({
+    required this.items,
+    required this.selectedIds,
+    required this.onSelectionChanged,
+  });
 
   final List<BookingEntity> items;
+  final Set<String> selectedIds;
+  final void Function(String id, bool selected) onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -459,11 +584,18 @@ class _PaymentsTable extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
+        showCheckboxColumn: false,
         columnSpacing: 22.w,
         headingRowHeight: 48.h,
         dataRowMinHeight: 70.h,
         dataRowMaxHeight: 84.h,
-        columns: const [
+        columns: [
+          DataColumn(
+            label: SizedBox(
+              width: 28.w,
+              child: const Icon(Icons.check_box_outline_blank, size: 18),
+            ),
+          ),
           DataColumn(label: Text('Code')),
           DataColumn(label: Text('Venue')),
           DataColumn(label: Text('Offer')),
@@ -475,8 +607,17 @@ class _PaymentsTable extends StatelessWidget {
         ],
         rows: items
             .map((booking) {
+              final isSelected = selectedIds.contains(booking.id);
               return DataRow(
+                selected: isSelected,
                 cells: [
+                  DataCell(
+                    Checkbox(
+                      value: isSelected,
+                      onChanged: (value) =>
+                          onSelectionChanged(booking.id, value ?? false),
+                    ),
+                  ),
                   DataCell(Text(booking.bookingCode)),
                   DataCell(
                     SizedBox(

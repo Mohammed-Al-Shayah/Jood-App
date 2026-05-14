@@ -12,6 +12,7 @@ import 'core/localization/app_localization_controller.dart';
 import 'core/routing/app_router.dart';
 import 'core/routing/routes.dart';
 import 'core/utils/seed_firestore.dart';
+import 'features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'features/users/domain/usecases/sync_auth_user_usecase.dart';
 import 'jood_app.dart';
 
@@ -44,14 +45,19 @@ void main() async {
       const Duration(seconds: 2),
       onTimeout: () => firebaseAuth.currentUser,
     );
-    if (authUser != null) {
-      await getIt<SyncAuthUserUseCase>()(authUser);
+    final currentUser = authUser == null
+        ? null
+        : getIt<GetCurrentUserUseCase>()();
+    if (currentUser != null) {
+      await getIt<SyncAuthUserUseCase>()(currentUser);
     }
 
     runApp(
       JoodApp(
         appRouter: AppRouter(),
-        initialRoute: authUser == null ? Routes.loginScreen : Routes.homeScreen,
+        initialRoute: currentUser == null
+            ? Routes.loginScreen
+            : Routes.homeScreen,
       ),
     );
 

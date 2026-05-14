@@ -41,7 +41,7 @@ class OfferRepositoryImpl implements OfferRepository {
 
   @override
   Future<OfferEntity> createOffer(OfferEntity offer) {
-    return remoteDataSource.createOffer(offer as OfferModel);
+    return remoteDataSource.createOffer(OfferModel.fromEntity(offer));
   }
 
   @override
@@ -51,7 +51,7 @@ class OfferRepositoryImpl implements OfferRepository {
 
   @override
   Future<OfferEntity> updateOffer(OfferEntity offer) {
-    return remoteDataSource.updateOffer(offer as OfferModel);
+    return remoteDataSource.updateOffer(OfferModel.fromEntity(offer));
   }
 
   @override

@@ -25,6 +25,7 @@ class AdminWebAdsPage extends StatefulWidget {
 class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
   late final AdminAdsCubit _cubit;
   final TextEditingController _searchController = TextEditingController();
+  final Set<String> _selectedAdIds = <String>{};
   _AdsView _view = _AdsView.list;
   AdEntity? _selectedAd;
 
@@ -102,25 +103,75 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
     );
     if (confirmed != true) return;
     await _cubit.delete(ad.id);
+    if (!mounted) return;
+    setState(() {
+      _selectedAdIds.remove(ad.id);
+    });
+  }
+
+  void _toggleAdSelection(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedAdIds.add(id);
+      } else {
+        _selectedAdIds.remove(id);
+      }
+    });
+  }
+
+  void _toggleSelectAllAds(List<AdEntity> items) {
+    final ids = items.map((item) => item.id).toList(growable: false);
+    final allSelected =
+        ids.isNotEmpty && ids.every((id) => _selectedAdIds.contains(id));
+    setState(() {
+      if (allSelected) {
+        _selectedAdIds.removeAll(ids);
+      } else {
+        _selectedAdIds.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _confirmDeleteSelectedAds(List<AdEntity> items) async {
+    final selectedIds = items
+        .map((item) => item.id)
+        .where(_selectedAdIds.contains)
+        .toList(growable: false);
+    if (selectedIds.isEmpty) return;
+    final confirmed = await showAdminConfirmDialog(
+      context: context,
+      title: 'Delete ads',
+      message: 'Delete ${selectedIds.length} selected ads?',
+    );
+    if (confirmed != true) return;
+    for (final id in selectedIds) {
+      await _cubit.delete(id);
+    }
+    if (!mounted) return;
+    setState(() {
+      _selectedAdIds.removeAll(selectedIds);
+    });
   }
 
   List<AdEntity> _filteredAds(List<AdEntity> ads) {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return ads;
-    return ads.where((ad) {
-      final haystack = [
-        ad.title,
-        ad.targetVenueName,
-        ad.targetOfferTitle,
-        ad.targetCategory,
-        ad.targetOfferDate,
-        ad.startDate,
-        ad.startTime,
-        ad.endDate,
-        ad.endTime,
-      ].join(' ').toLowerCase();
-      return haystack.contains(query);
-    }).toList(growable: false);
+    return ads
+        .where((ad) {
+          final haystack = [
+            ad.title,
+            ad.targetVenueName,
+            ad.targetOfferTitle,
+            ad.targetCategory,
+            ad.targetOfferDate,
+            ad.startDate,
+            ad.startTime,
+            ad.endDate,
+            ad.endTime,
+          ].join(' ').toLowerCase();
+          return haystack.contains(query);
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -146,6 +197,15 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
           }
 
           final filteredAds = _filteredAds(state.ads);
+          _selectedAdIds.removeWhere(
+            (id) => !state.ads.any((item) => item.id == id),
+          );
+          final selectedInViewCount = filteredAds
+              .where((item) => _selectedAdIds.contains(item.id))
+              .length;
+          final allFilteredSelected =
+              filteredAds.isNotEmpty &&
+              selectedInViewCount == filteredAds.length;
           final activeCount = state.ads
               .where((ad) => ad.canShowOnHomeSliderAt())
               .length;
@@ -243,6 +303,26 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
                               icon: const Icon(Icons.refresh_rounded),
                               label: const Text('Refresh'),
                             ),
+                            OutlinedButton.icon(
+                              onPressed: () => _toggleSelectAllAds(filteredAds),
+                              icon: Icon(
+                                allFilteredSelected
+                                    ? Icons.deselect_outlined
+                                    : Icons.select_all_rounded,
+                              ),
+                              label: Text(
+                                allFilteredSelected
+                                    ? 'Deselect all'
+                                    : 'Select all',
+                              ),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: selectedInViewCount > 0
+                                  ? () => _confirmDeleteSelectedAds(filteredAds)
+                                  : null,
+                              icon: const Icon(Icons.delete_sweep_outlined),
+                              label: const Text('Delete selected'),
+                            ),
                             ElevatedButton.icon(
                               onPressed: _openCreateForm,
                               style: ElevatedButton.styleFrom(
@@ -290,11 +370,21 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: DataTable(
+                          showCheckboxColumn: false,
                           columnSpacing: 22.w,
                           headingRowHeight: 48.h,
                           dataRowMinHeight: 70.h,
                           dataRowMaxHeight: 88.h,
-                          columns: const [
+                          columns: [
+                            DataColumn(
+                              label: SizedBox(
+                                width: 28.w,
+                                child: const Icon(
+                                  Icons.check_box_outline_blank,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
                             DataColumn(label: Text('Ad')),
                             DataColumn(label: Text('Category')),
                             DataColumn(label: Text('Venue')),
@@ -304,77 +394,101 @@ class _AdminWebAdsPageState extends State<AdminWebAdsPage> {
                             DataColumn(label: Text('Status')),
                             DataColumn(label: Text('Actions')),
                           ],
-                          rows: filteredAds.map((ad) {
-                            final status = _statusFor(ad);
-                            return DataRow(
-                              cells: [
-                                DataCell(
-                                  SizedBox(
-                                    width: 220.w,
-                                    child: Text(
-                                      ad.title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                                DataCell(Text(_categoryLabel(ad.targetCategory))),
-                                DataCell(
-                                  SizedBox(
-                                    width: 180.w,
-                                    child: Text(
-                                      ad.targetVenueName,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                                DataCell(
-                                  SizedBox(
-                                    width: 260.w,
-                                    child: Text(
-                                      ad.targetOfferTitle,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                                DataCell(
-                                  SizedBox(
-                                    width: 260.w,
-                                    child: Text(
-                                      _scheduleLabel(ad),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ),
-                                DataCell(Text('${ad.resolvedDisplaySeconds}s')),
-                                DataCell(
-                                  _AdsStatusPill(
-                                    label: status.label,
-                                    color: status.color,
-                                  ),
-                                ),
-                                DataCell(
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        onPressed: () => _openEditForm(ad),
-                                        tooltip: 'Edit',
-                                        icon: const Icon(Icons.edit_outlined),
+                          rows: filteredAds
+                              .map((ad) {
+                                final isSelected = _selectedAdIds.contains(
+                                  ad.id,
+                                );
+                                final status = _statusFor(ad);
+                                return DataRow(
+                                  selected: isSelected,
+                                  cells: [
+                                    DataCell(
+                                      Checkbox(
+                                        value: isSelected,
+                                        onChanged: (value) =>
+                                            _toggleAdSelection(
+                                              ad.id,
+                                              value ?? false,
+                                            ),
                                       ),
-                                      IconButton(
-                                        onPressed: () => _confirmDelete(ad),
-                                        tooltip: 'Delete',
-                                        icon: const Icon(Icons.delete_outline),
+                                    ),
+                                    DataCell(
+                                      SizedBox(
+                                        width: 220.w,
+                                        child: Text(
+                                          ad.title,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(growable: false),
+                                    ),
+                                    DataCell(
+                                      Text(_categoryLabel(ad.targetCategory)),
+                                    ),
+                                    DataCell(
+                                      SizedBox(
+                                        width: 180.w,
+                                        child: Text(
+                                          ad.targetVenueName,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      SizedBox(
+                                        width: 260.w,
+                                        child: Text(
+                                          ad.targetOfferTitle,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      SizedBox(
+                                        width: 260.w,
+                                        child: Text(
+                                          _scheduleLabel(ad),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Text('${ad.resolvedDisplaySeconds}s'),
+                                    ),
+                                    DataCell(
+                                      _AdsStatusPill(
+                                        label: status.label,
+                                        color: status.color,
+                                      ),
+                                    ),
+                                    DataCell(
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            onPressed: () => _openEditForm(ad),
+                                            tooltip: 'Edit',
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () => _confirmDelete(ad),
+                                            tooltip: 'Delete',
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              })
+                              .toList(growable: false),
                         ),
                       ),
                   ],

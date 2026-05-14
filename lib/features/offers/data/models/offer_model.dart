@@ -99,6 +99,44 @@ class OfferModel extends OfferEntity {
     );
   }
 
+  factory OfferModel.fromEntity(OfferEntity offer) {
+    if (offer is OfferModel) return offer;
+    return OfferModel(
+      id: offer.id,
+      restaurantId: offer.restaurantId,
+      date: offer.date,
+      startTime: offer.startTime,
+      endTime: offer.endTime,
+      currency: offer.currency,
+      priceAdult: offer.priceAdult,
+      priceAdultOriginal: offer.priceAdultOriginal,
+      priceChild: offer.priceChild,
+      capacityAdult: offer.capacityAdult,
+      capacityChild: offer.capacityChild,
+      bookedAdult: offer.bookedAdult,
+      bookedChild: offer.bookedChild,
+      status: offer.status,
+      title: offer.title,
+      entryConditions: offer.entryConditions,
+      createdAt: offer.createdAt,
+      updatedAt: offer.updatedAt,
+      bookingCategory: offer.bookingCategory,
+      bookableType: offer.bookableType,
+      guestPricingMode: offer.guestPricingMode,
+      mealType: offer.mealType,
+      packageName: offer.packageName,
+      packageDescription: offer.packageDescription,
+      titleEn: offer.titleEn,
+      titleAr: offer.titleAr,
+      entryConditionsEn: offer.entryConditionsEn,
+      entryConditionsAr: offer.entryConditionsAr,
+      packageNameEn: offer.packageNameEn,
+      packageNameAr: offer.packageNameAr,
+      packageDescriptionEn: offer.packageDescriptionEn,
+      packageDescriptionAr: offer.packageDescriptionAr,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'restaurantId': restaurantId,

@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -10,6 +9,7 @@ import 'package:jood/core/errors/auth_error_mapper.dart';
 import 'package:jood/core/theming/app_colors.dart';
 import 'package:jood/core/theming/app_text_styles.dart';
 import 'package:jood/features/admin/presentation/web/admin_web_shell_screen.dart';
+import 'package:jood/features/auth/domain/entities/auth_user_entity.dart';
 import 'package:jood/features/auth/domain/usecases/login_with_email_usecase.dart';
 import 'package:jood/features/auth/domain/usecases/sign_out_usecase.dart';
 import 'package:jood/features/auth/domain/usecases/watch_auth_state_changes_usecase.dart';
@@ -21,7 +21,7 @@ class AdminWebGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
+    return StreamBuilder<AuthUserEntity?>(
       stream: getIt<WatchAuthStateChangesUseCase>()(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -533,4 +533,3 @@ InputDecoration _adminWebInputDecoration({
     suffixIcon: suffixIcon,
   );
 }
-

@@ -25,12 +25,12 @@ class AdRepositoryImpl implements AdRepository {
 
   @override
   Future<AdEntity> createAd(AdEntity ad) {
-    return remoteDataSource.createAd(ad as AdModel);
+    return remoteDataSource.createAd(AdModel.fromEntity(ad));
   }
 
   @override
   Future<AdEntity> updateAd(AdEntity ad) {
-    return remoteDataSource.updateAd(ad as AdModel);
+    return remoteDataSource.updateAd(AdModel.fromEntity(ad));
   }
 
   @override

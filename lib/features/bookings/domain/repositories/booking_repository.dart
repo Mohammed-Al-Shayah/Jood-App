@@ -28,4 +28,5 @@ abstract class BookingRepository {
     required String status,
     required String actorUserId,
   });
+  Future<void> deleteBooking(String bookingId);
 }

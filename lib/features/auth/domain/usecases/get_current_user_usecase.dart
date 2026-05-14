@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
+import '../entities/auth_user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 class GetCurrentUserUseCase {
@@ -7,7 +6,7 @@ class GetCurrentUserUseCase {
 
   final AuthRepository _repository;
 
-  User? call() {
+  AuthUserEntity? call() {
     return _repository.getCurrentUser();
   }
 }

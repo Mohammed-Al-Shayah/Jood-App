@@ -1,6 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
 import '../../../../core/utils/auth_validators.dart';
+import '../../../auth/domain/entities/auth_user_entity.dart';
 import '../entities/user_entity.dart';
 import 'create_user_usecase.dart';
 import 'get_user_by_id_usecase.dart';
@@ -19,7 +18,7 @@ class SyncAuthUserUseCase {
   final CreateUserUseCase _createUser;
   final UpdateUserUseCase _updateUser;
 
-  Future<void> call(User authUser, {UserEntity? fallback}) async {
+  Future<void> call(AuthUserEntity authUser, {UserEntity? fallback}) async {
     final existing = await _getUserById(authUser.uid);
     final authPhone = AuthValidators.normalizePhone(authUser.phoneNumber ?? '');
     final fallbackPhone = AuthValidators.normalizePhone(fallback?.phone ?? '');

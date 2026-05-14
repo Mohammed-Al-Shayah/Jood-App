@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
+import '../entities/auth_user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 class LinkEmailPasswordUseCase {
@@ -8,7 +7,7 @@ class LinkEmailPasswordUseCase {
   final AuthRepository _repository;
 
   Future<void> call({
-    required User user,
+    required AuthUserEntity user,
     required String email,
     required String password,
   }) {

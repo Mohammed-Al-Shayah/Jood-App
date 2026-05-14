@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
+import '../entities/auth_user_entity.dart';
 import '../repositories/auth_repository.dart';
 
 class UpdatePasswordUseCase {
@@ -7,7 +6,10 @@ class UpdatePasswordUseCase {
 
   final AuthRepository _repository;
 
-  Future<void> call({required User user, required String newPassword}) {
+  Future<void> call({
+    required AuthUserEntity user,
+    required String newPassword,
+  }) {
     return _repository.updatePassword(user: user, newPassword: newPassword);
   }
 }

@@ -1,7 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/errors/auth_error_mapper.dart';
+import '../../../auth/domain/entities/auth_user_entity.dart';
 import '../../../auth/domain/usecases/delete_account_usecase.dart';
 import '../../../auth/domain/usecases/get_current_user_usecase.dart';
 import '../../../auth/domain/usecases/reload_user_usecase.dart';
@@ -139,7 +139,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   Future<UserEntity> _syncEmailFromAuth(
     UserEntity profile,
-    User authUser,
+    AuthUserEntity authUser,
   ) async {
     final authEmail = (authUser.email ?? '').trim();
     final emailChanged =

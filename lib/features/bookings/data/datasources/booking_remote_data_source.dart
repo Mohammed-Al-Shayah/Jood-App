@@ -332,6 +332,10 @@ class BookingRemoteDataSource {
         .set(payload, SetOptions(merge: true));
   }
 
+  Future<void> deleteBooking(String bookingId) async {
+    await firestore.collection('bookings').doc(bookingId).delete();
+  }
+
   // Number parsing moved to NumberUtils
 
   static String _generateCode() {

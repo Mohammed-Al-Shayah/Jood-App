@@ -25,12 +25,16 @@ class RestaurantRepositoryImpl implements RestaurantRepository {
 
   @override
   Future<RestaurantEntity> createRestaurant(RestaurantEntity restaurant) {
-    return remoteDataSource.createRestaurant(restaurant as RestaurantModel);
+    return remoteDataSource.createRestaurant(
+      RestaurantModel.fromEntity(restaurant),
+    );
   }
 
   @override
   Future<RestaurantEntity> updateRestaurant(RestaurantEntity restaurant) {
-    return remoteDataSource.updateRestaurant(restaurant as RestaurantModel);
+    return remoteDataSource.updateRestaurant(
+      RestaurantModel.fromEntity(restaurant),
+    );
   }
 
   @override

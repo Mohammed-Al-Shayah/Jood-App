@@ -1,13 +1,13 @@
-import 'package:firebase_auth/firebase_auth.dart';
-
+import '../entities/auth_credential_entity.dart';
+import '../entities/auth_user_entity.dart';
 import '../entities/otp_mode.dart';
 
 abstract class AuthRepository {
-  User? getCurrentUser();
+  AuthUserEntity? getCurrentUser();
 
-  Stream<User?> authStateChanges();
+  Stream<AuthUserEntity?> authStateChanges();
 
-  Future<UserCredential> loginWithEmailAndPassword({
+  Future<AuthCredentialEntity> loginWithEmailAndPassword({
     required String email,
     required String password,
   });
@@ -18,7 +18,7 @@ abstract class AuthRepository {
     String? turnstileToken,
   });
 
-  Future<UserCredential?> verifyPhoneOtp({
+  Future<AuthCredentialEntity?> verifyPhoneOtp({
     required String phoneNumber,
     required String verificationId,
     required String smsCode,
@@ -29,27 +29,27 @@ abstract class AuthRepository {
 
   Future<List<String>> fetchSignInMethodsForEmail(String email);
 
-  Future<void> sendEmailVerification(User user);
+  Future<void> sendEmailVerification(AuthUserEntity user);
 
   Future<void> signOut();
 
   Future<void> deleteAccount();
 
-  Future<void> reloadUser(User user);
+  Future<void> reloadUser(AuthUserEntity user);
 
   Future<void> linkEmailPassword({
-    required User user,
+    required AuthUserEntity user,
     required String email,
     required String password,
   });
 
   Future<void> updatePassword({
-    required User user,
+    required AuthUserEntity user,
     required String newPassword,
   });
 
   Future<void> verifyBeforeUpdateEmail({
-    required User user,
+    required AuthUserEntity user,
     required String newEmail,
   });
 }

@@ -1,4 +1,4 @@
-import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart';
 import 'package:jood/features/auth/domain/usecases/check_email_in_use_usecase.dart';
 
 import '../../../../../core/bloc/safe_cubit.dart';
@@ -28,6 +28,12 @@ class RegisterCubit extends SafeCubit<RegisterState> {
   final GetUserByEmailUseCase _getUserByEmail;
   final GetUserByPhoneUseCase _getUserByPhone;
   final CheckEmailInUseUseCase _checkEmailInUse;
+
+  void _debugLog(String message) {
+    if (kDebugMode) {
+      debugPrint(message);
+    }
+  }
 
   void updateFullName(String value) {
     emitSafe(_update(state.copyWith(fullName: value, fullNameTouched: true)));
@@ -90,15 +96,15 @@ class RegisterCubit extends SafeCubit<RegisterState> {
   }
 
   Future<void> submit({String? turnstileToken}) async {
-    debugPrint('[RegisterCubit] submit() called');
+    _debugLog('[RegisterCubit] submit() called');
 
     if (state.status == RegisterStatus.loading) {
-      debugPrint('[RegisterCubit] Already loading, returning early');
+      _debugLog('[RegisterCubit] Already loading, returning early');
       return;
     }
 
     if (!state.isValid) {
-      debugPrint('[RegisterCubit] Form validation failed');
+      _debugLog('[RegisterCubit] Form validation failed');
       emitSafe(_update(state.copyWith(submitAttempted: true)));
       return;
     }
@@ -127,7 +133,7 @@ class RegisterCubit extends SafeCubit<RegisterState> {
       return;
     }
 
-    debugPrint('[RegisterCubit] Form is valid, starting registration process');
+    _debugLog('[RegisterCubit] Form is valid, starting registration process');
     emitSafe(
       state.copyWith(status: RegisterStatus.loading, errorMessage: null),
     );
@@ -136,20 +142,20 @@ class RegisterCubit extends SafeCubit<RegisterState> {
 
     try {
       final providedEmail = state.email.trim();
-      debugPrint('[RegisterCubit] Step 1: Checking email - $providedEmail');
+      _debugLog('[RegisterCubit] Step 1: Checking email');
 
       final emailExistsInAuth = await _checkEmailInUse(providedEmail);
-      debugPrint(
+      _debugLog(
         '[RegisterCubit] Step 2: Email exists in Auth - $emailExistsInAuth',
       );
 
       final emailExistsInDb = (await _getUserByEmail(providedEmail)) != null;
-      debugPrint(
+      _debugLog(
         '[RegisterCubit] Step 3: Email exists in DB - $emailExistsInDb',
       );
 
       if (emailExistsInAuth || emailExistsInDb) {
-        debugPrint('[RegisterCubit] ERROR: Email already registered');
+        _debugLog('[RegisterCubit] ERROR: Email already registered');
         final errorMessage = AppStrings.emailAlreadyRegisteredLong;
         emitSafe(
           state.copyWith(
@@ -162,15 +168,15 @@ class RegisterCubit extends SafeCubit<RegisterState> {
       }
 
       final normalizedPhone = AuthValidators.normalizePhone(state.phone);
-      debugPrint('[RegisterCubit] Step 4: Phone normalized - $normalizedPhone');
+      _debugLog('[RegisterCubit] Step 4: Phone normalized');
 
       final existing = await _getUserByPhone(normalizedPhone);
-      debugPrint(
+      _debugLog(
         '[RegisterCubit] Step 5: Phone already exists - ${existing != null}',
       );
 
       if (existing != null) {
-        debugPrint('[RegisterCubit] ERROR: Phone number already in use');
+        _debugLog('[RegisterCubit] ERROR: Phone number already in use');
         emitSafe(
           state.copyWith(
             status: RegisterStatus.failure,
@@ -181,16 +187,14 @@ class RegisterCubit extends SafeCubit<RegisterState> {
         return;
       }
 
-      debugPrint(
-        '[RegisterCubit] Step 6: Sending OTP to phone - ${state.phone.trim()}',
-      );
+      _debugLog('[RegisterCubit] Step 6: Sending OTP to phone');
       otpSendAttempted = true;
       final verificationId = await _sendPhoneOtp(
         phoneNumber: normalizedPhone,
         mode: OtpMode.register,
         turnstileToken: effectiveTurnstileToken,
       );
-      debugPrint('[RegisterCubit] Step 7: OTP code sent successfully');
+      _debugLog('[RegisterCubit] Step 7: OTP code sent successfully');
       emitSafe(
         state.copyWith(
           status: RegisterStatus.phoneOtpSent,
@@ -199,9 +203,9 @@ class RegisterCubit extends SafeCubit<RegisterState> {
         ),
       );
     } catch (e, stackTrace) {
-      debugPrint('[RegisterCubit] ERROR: Exception - $e');
-      debugPrint('[RegisterCubit] ERROR STACK TRACE: $stackTrace');
-      debugPrint('[RegisterCubit] ERROR TYPE: ${e.runtimeType}');
+      _debugLog('[RegisterCubit] ERROR: Exception - $e');
+      _debugLog('[RegisterCubit] ERROR STACK TRACE: $stackTrace');
+      _debugLog('[RegisterCubit] ERROR TYPE: ${e.runtimeType}');
       emitSafe(
         state.copyWith(
           turnstileToken: otpSendAttempted ? '' : state.turnstileToken,

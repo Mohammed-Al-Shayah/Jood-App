@@ -43,156 +43,164 @@ final RouteObserver<ModalRoute<void>> routeObserver =
 
 class AppRouter {
   Route<dynamic> generateRoute(RouteSettings settings) {
-    switch (settings.name) {
-      case Routes.loginScreen:
-        return MaterialPageRoute(builder: (_) => const LoginPage());
-      case Routes.registerScreen:
-        return MaterialPageRoute(builder: (_) => const RegisterPage());
-      case Routes.forgetPasswordScreen:
-        return MaterialPageRoute(builder: (_) => const ForgetPasswordPage());
-      case Routes.verifyOtpScreen:
-        final args = settings.arguments as VerifyOtpArgs;
-        return MaterialPageRoute(builder: (_) => VerifyOtpPage(args: args));
-      case Routes.changePasswordScreen:
-        return MaterialPageRoute(builder: (_) => const ChangePasswordPage());
-      case Routes.requestUnderReviewScreen:
-        return MaterialPageRoute(
-          builder: (_) => const RequestUnderReviewPage(),
-        );
-      case Routes.beneficiaryCreateStoryScreen:
-        return MaterialPageRoute(
-          builder: (_) => const BeneficiaryCreateStoryPage(),
-        );
-      case Routes.homeScreen:
-        return MaterialPageRoute(builder: (_) => const MainShellScreen());
-      case Routes.ordersScreen:
-        return MaterialPageRoute(builder: (_) => const OrdersScreen());
-      case Routes.orderQrScannerScreen:
-        return MaterialPageRoute(builder: (_) => const OrderQrScannerScreen());
-      case Routes.profileScreen:
-        return MaterialPageRoute(builder: (_) => const ProfileScreen());
-      case Routes.adminDashboardScreen:
-        return MaterialPageRoute(builder: (_) => const AdminDashboardScreen());
-      case Routes.adminRestaurantsScreen:
-        return MaterialPageRoute(
-          builder: (_) => const AdminRestaurantsScreen(),
-        );
-      case Routes.adminRestaurantFormScreen:
-        final args = settings.arguments as AdminRestaurantFormArgs?;
-        return MaterialPageRoute(
-          builder: (_) =>
-              AdminRestaurantFormScreen(restaurant: args?.restaurant),
-        );
-      case Routes.adminAttractionsScreen:
-        return MaterialPageRoute(
-          builder: (_) => const AdminAttractionsScreen(),
-        );
-      case Routes.adminAttractionFormScreen:
-        final args = settings.arguments as AdminAttractionFormArgs?;
-        return MaterialPageRoute(
-          builder: (_) =>
-              AdminAttractionFormScreen(attraction: args?.attraction),
-        );
-      case Routes.adminOffersScreen:
-        return MaterialPageRoute(builder: (_) => const AdminOffersScreen());
-      case Routes.adminOfferFormScreen:
-        final args = settings.arguments as AdminOfferFormArgs?;
-        return MaterialPageRoute(
-          builder: (_) => AdminOfferFormScreen(
-            offer: args?.offer,
-            initialCategory: args?.initialCategory,
-            onSubmit: args?.onSubmit,
-          ),
-        );
-      case Routes.adminAdsScreen:
-        return MaterialPageRoute(builder: (_) => const AdminAdsScreen());
-      case Routes.adminAdFormScreen:
-        final args = settings.arguments as AdminAdFormArgs?;
-        return MaterialPageRoute(
-          builder: (_) =>
-              AdminAdFormScreen(ad: args?.ad, onSubmit: args?.onSubmit),
-        );
-      case Routes.adminUsersScreen:
-        return MaterialPageRoute(builder: (_) => const AdminUsersScreen());
-      case Routes.adminUserFormScreen:
-        final args = settings.arguments as AdminUserFormArgs?;
-        return MaterialPageRoute(
-          builder: (_) => AdminUserFormScreen(user: args?.user),
-        );
-      case Routes.adminCancelledOrdersScreen:
-        return MaterialPageRoute(
-          builder: (_) => const AdminCancelledOrdersScreen(),
-        );
-      case Routes.adminOrdersScreen:
-        return MaterialPageRoute(builder: (_) => const AdminOrdersScreen());
-      case Routes.detailScreen:
-        final args = settings.arguments as DetailScreenArgs;
-        return MaterialPageRoute(
-          builder: (_) => DetailScreen(
-            id: args.id,
-            name: args.name,
-            meta: args.meta,
-            rating: args.rating,
-            image: args.image,
-          ),
-        );
-      case Routes.catalogListScreen:
-        final args = settings.arguments as CatalogListArgs;
-        return MaterialPageRoute(
-          builder: (_) => CatalogListScreen(category: args.category),
-        );
-      case Routes.catalogDetailScreen:
-        final args = settings.arguments as CatalogDetailArgs;
-        return MaterialPageRoute(
-          builder: (_) => CatalogDetailScreen(item: args.item),
-        );
-      case Routes.catalogBookingScreen:
-        final args = settings.arguments as CatalogBookingArgs;
-        return MaterialPageRoute(
-          builder: (_) => CatalogBookingScreen(
-            item: args.item,
-            preferredOfferId: args.preferredOfferId,
-            preferredOfferDate: args.preferredOfferDate,
-          ),
-        );
-      case Routes.selectDateTimeScreen:
-        final args = settings.arguments as SelectDateTimeArgs;
-        return MaterialPageRoute(
-          builder: (_) => SelectDateTimeScreen(
-            name: args.name,
-            restaurantId: args.restaurantId,
-          ),
-        );
-      case Routes.selectGuestsScreen:
-        final args = settings.arguments as SelectGuestsArgs;
-        return MaterialPageRoute(
-          builder: (_) => BlocProvider.value(
-            value: args.cubit,
-            child: SelectGuestsScreen(restaurantName: args.restaurantName),
-          ),
-        );
-      case Routes.paymentScreen:
-        final args = settings.arguments as PaymentArgs;
-        return MaterialPageRoute(
-          builder: (_) => BlocProvider.value(
-            value: args.cubit,
-            child: PaymentScreen(restaurantName: args.restaurantName),
-          ),
-        );
-      case Routes.bookingConfirmedScreen:
-        final args = settings.arguments as BookingConfirmedArgs;
-        return MaterialPageRoute(
-          builder: (_) => BlocProvider.value(
-            value: args.cubit,
-            child: BookingConfirmedScreen(
-              restaurantName: args.restaurantName,
-              bookingCode: args.bookingCode,
-              qrData: args.qrData,
+    try {
+      switch (settings.name) {
+        case Routes.loginScreen:
+          return MaterialPageRoute(builder: (_) => const LoginPage());
+        case Routes.registerScreen:
+          return MaterialPageRoute(builder: (_) => const RegisterPage());
+        case Routes.forgetPasswordScreen:
+          return MaterialPageRoute(builder: (_) => const ForgetPasswordPage());
+        case Routes.verifyOtpScreen:
+          final args = settings.arguments as VerifyOtpArgs;
+          return MaterialPageRoute(builder: (_) => VerifyOtpPage(args: args));
+        case Routes.changePasswordScreen:
+          return MaterialPageRoute(builder: (_) => const ChangePasswordPage());
+        case Routes.requestUnderReviewScreen:
+          return MaterialPageRoute(
+            builder: (_) => const RequestUnderReviewPage(),
+          );
+        case Routes.beneficiaryCreateStoryScreen:
+          return MaterialPageRoute(
+            builder: (_) => const BeneficiaryCreateStoryPage(),
+          );
+        case Routes.homeScreen:
+          return MaterialPageRoute(builder: (_) => const MainShellScreen());
+        case Routes.ordersScreen:
+          return MaterialPageRoute(builder: (_) => const OrdersScreen());
+        case Routes.orderQrScannerScreen:
+          return MaterialPageRoute(
+            builder: (_) => const OrderQrScannerScreen(),
+          );
+        case Routes.profileScreen:
+          return MaterialPageRoute(builder: (_) => const ProfileScreen());
+        case Routes.adminDashboardScreen:
+          return MaterialPageRoute(
+            builder: (_) => const AdminDashboardScreen(),
+          );
+        case Routes.adminRestaurantsScreen:
+          return MaterialPageRoute(
+            builder: (_) => const AdminRestaurantsScreen(),
+          );
+        case Routes.adminRestaurantFormScreen:
+          final args = settings.arguments as AdminRestaurantFormArgs?;
+          return MaterialPageRoute(
+            builder: (_) =>
+                AdminRestaurantFormScreen(restaurant: args?.restaurant),
+          );
+        case Routes.adminAttractionsScreen:
+          return MaterialPageRoute(
+            builder: (_) => const AdminAttractionsScreen(),
+          );
+        case Routes.adminAttractionFormScreen:
+          final args = settings.arguments as AdminAttractionFormArgs?;
+          return MaterialPageRoute(
+            builder: (_) =>
+                AdminAttractionFormScreen(attraction: args?.attraction),
+          );
+        case Routes.adminOffersScreen:
+          return MaterialPageRoute(builder: (_) => const AdminOffersScreen());
+        case Routes.adminOfferFormScreen:
+          final args = settings.arguments as AdminOfferFormArgs?;
+          return MaterialPageRoute(
+            builder: (_) => AdminOfferFormScreen(
+              offer: args?.offer,
+              initialCategory: args?.initialCategory,
+              onSubmit: args?.onSubmit,
             ),
-          ),
-        );
-      default:
-        return MaterialPageRoute(builder: (_) => const LoginPage());
+          );
+        case Routes.adminAdsScreen:
+          return MaterialPageRoute(builder: (_) => const AdminAdsScreen());
+        case Routes.adminAdFormScreen:
+          final args = settings.arguments as AdminAdFormArgs?;
+          return MaterialPageRoute(
+            builder: (_) =>
+                AdminAdFormScreen(ad: args?.ad, onSubmit: args?.onSubmit),
+          );
+        case Routes.adminUsersScreen:
+          return MaterialPageRoute(builder: (_) => const AdminUsersScreen());
+        case Routes.adminUserFormScreen:
+          final args = settings.arguments as AdminUserFormArgs?;
+          return MaterialPageRoute(
+            builder: (_) => AdminUserFormScreen(user: args?.user),
+          );
+        case Routes.adminCancelledOrdersScreen:
+          return MaterialPageRoute(
+            builder: (_) => const AdminCancelledOrdersScreen(),
+          );
+        case Routes.adminOrdersScreen:
+          return MaterialPageRoute(builder: (_) => const AdminOrdersScreen());
+        case Routes.detailScreen:
+          final args = settings.arguments as DetailScreenArgs;
+          return MaterialPageRoute(
+            builder: (_) => DetailScreen(
+              id: args.id,
+              name: args.name,
+              meta: args.meta,
+              rating: args.rating,
+              image: args.image,
+            ),
+          );
+        case Routes.catalogListScreen:
+          final args = settings.arguments as CatalogListArgs;
+          return MaterialPageRoute(
+            builder: (_) => CatalogListScreen(category: args.category),
+          );
+        case Routes.catalogDetailScreen:
+          final args = settings.arguments as CatalogDetailArgs;
+          return MaterialPageRoute(
+            builder: (_) => CatalogDetailScreen(item: args.item),
+          );
+        case Routes.catalogBookingScreen:
+          final args = settings.arguments as CatalogBookingArgs;
+          return MaterialPageRoute(
+            builder: (_) => CatalogBookingScreen(
+              item: args.item,
+              preferredOfferId: args.preferredOfferId,
+              preferredOfferDate: args.preferredOfferDate,
+            ),
+          );
+        case Routes.selectDateTimeScreen:
+          final args = settings.arguments as SelectDateTimeArgs;
+          return MaterialPageRoute(
+            builder: (_) => SelectDateTimeScreen(
+              name: args.name,
+              restaurantId: args.restaurantId,
+            ),
+          );
+        case Routes.selectGuestsScreen:
+          final args = settings.arguments as SelectGuestsArgs;
+          return MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: args.cubit,
+              child: SelectGuestsScreen(restaurantName: args.restaurantName),
+            ),
+          );
+        case Routes.paymentScreen:
+          final args = settings.arguments as PaymentArgs;
+          return MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: args.cubit,
+              child: PaymentScreen(restaurantName: args.restaurantName),
+            ),
+          );
+        case Routes.bookingConfirmedScreen:
+          final args = settings.arguments as BookingConfirmedArgs;
+          return MaterialPageRoute(
+            builder: (_) => BlocProvider.value(
+              value: args.cubit,
+              child: BookingConfirmedScreen(
+                restaurantName: args.restaurantName,
+                bookingCode: args.bookingCode,
+                qrData: args.qrData,
+              ),
+            ),
+          );
+        default:
+          return MaterialPageRoute(builder: (_) => const LoginPage());
+      }
+    } on TypeError {
+      return MaterialPageRoute(builder: (_) => const LoginPage());
     }
   }
 }

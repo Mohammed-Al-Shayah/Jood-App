@@ -5,6 +5,8 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/errors/auth_error.dart';
 import '../../../../core/utils/auth_validators.dart';
 import '../../../../core/utils/device_identity.dart';
+import '../../domain/entities/auth_credential_entity.dart';
+import '../../domain/entities/auth_user_entity.dart';
 import '../../domain/entities/otp_mode.dart';
 import '../../domain/repositories/auth_repository.dart';
 
@@ -15,19 +17,23 @@ class AuthRepositoryImpl implements AuthRepository {
   final FirebaseFunctions _functions;
 
   @override
-  User? getCurrentUser() => _auth.currentUser;
+  AuthUserEntity? getCurrentUser() => _auth.currentUser?.toEntity();
 
   @override
-  Stream<User?> authStateChanges() {
-    return _auth.authStateChanges();
+  Stream<AuthUserEntity?> authStateChanges() {
+    return _auth.authStateChanges().map((user) => user?.toEntity());
   }
 
   @override
-  Future<UserCredential> loginWithEmailAndPassword({
+  Future<AuthCredentialEntity> loginWithEmailAndPassword({
     required String email,
     required String password,
-  }) {
-    return _auth.signInWithEmailAndPassword(email: email, password: password);
+  }) async {
+    final credential = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return credential.toEntity();
   }
 
   @override
@@ -44,7 +50,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserCredential?> verifyPhoneOtp({
+  Future<AuthCredentialEntity?> verifyPhoneOtp({
     required String phoneNumber,
     required String verificationId,
     required String smsCode,
@@ -72,8 +78,8 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> sendEmailVerification(User user) {
-    return user.sendEmailVerification();
+  Future<void> sendEmailVerification(AuthUserEntity user) {
+    return _requireCurrentFirebaseUser(user).sendEmailVerification();
   }
 
   @override
@@ -87,13 +93,13 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> reloadUser(User user) {
-    return user.reload();
+  Future<void> reloadUser(AuthUserEntity user) {
+    return _requireCurrentFirebaseUser(user).reload();
   }
 
   @override
   Future<void> linkEmailPassword({
-    required User user,
+    required AuthUserEntity user,
     required String email,
     required String password,
   }) {
@@ -101,23 +107,23 @@ class AuthRepositoryImpl implements AuthRepository {
       email: email,
       password: password,
     );
-    return user.linkWithCredential(credential);
+    return _requireCurrentFirebaseUser(user).linkWithCredential(credential);
   }
 
   @override
   Future<void> updatePassword({
-    required User user,
+    required AuthUserEntity user,
     required String newPassword,
   }) {
-    return user.updatePassword(newPassword);
+    return _requireCurrentFirebaseUser(user).updatePassword(newPassword);
   }
 
   @override
   Future<void> verifyBeforeUpdateEmail({
-    required User user,
+    required AuthUserEntity user,
     required String newEmail,
   }) {
-    return user.verifyBeforeUpdateEmail(newEmail);
+    return _requireCurrentFirebaseUser(user).verifyBeforeUpdateEmail(newEmail);
   }
 
   Future<String> _sendPhoneOtp({
@@ -154,7 +160,7 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  Future<UserCredential?> _verifyPhoneOtp({
+  Future<AuthCredentialEntity?> _verifyPhoneOtp({
     required String phoneNumber,
     required String verificationId,
     required String smsCode,
@@ -186,7 +192,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       final credential = await _auth.signInWithCustomToken(customToken);
       await credential.user?.reload();
-      return credential;
+      return credential.toEntity();
     } on FirebaseFunctionsException catch (e) {
       throw _mapFunctionsException(e);
     }
@@ -197,6 +203,14 @@ class AuthRepositoryImpl implements AuthRepository {
       return data.map((key, value) => MapEntry(key.toString(), value));
     }
     return <String, dynamic>{};
+  }
+
+  User _requireCurrentFirebaseUser(AuthUserEntity user) {
+    final current = _auth.currentUser;
+    if (current == null || current.uid != user.uid) {
+      throw FirebaseAuthException(code: 'user-token-expired');
+    }
+    return current;
   }
 
   Exception _mapFunctionsException(FirebaseFunctionsException e) {
@@ -228,5 +242,23 @@ class AuthRepositoryImpl implements AuthRepository {
           details: details.isEmpty ? null : details,
         );
     }
+  }
+}
+
+extension on User {
+  AuthUserEntity toEntity() {
+    return AuthUserEntity(
+      uid: uid,
+      email: email,
+      phoneNumber: phoneNumber,
+      displayName: displayName,
+      emailVerified: emailVerified,
+    );
+  }
+}
+
+extension on UserCredential {
+  AuthCredentialEntity toEntity() {
+    return AuthCredentialEntity(user: user?.toEntity());
   }
 }
