@@ -9,16 +9,12 @@ import 'core/theming/app_colors.dart';
 import 'core/utils/app_strings.dart';
 import 'core/widgets/app_keyboard_dismiss_region.dart';
 import 'core/widgets/app_scroll_behavior.dart';
+import 'features/auth/presentation/client_auth_gate.dart';
 
 class JoodApp extends StatelessWidget {
   final AppRouter appRouter;
-  final String initialRoute;
 
-  const JoodApp({
-    super.key,
-    required this.appRouter,
-    required this.initialRoute,
-  });
+  const JoodApp({super.key, required this.appRouter});
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +62,7 @@ class JoodApp extends StatelessWidget {
                   surfaceTintColor: Colors.white,
                 ),
               ),
-              initialRoute: initialRoute,
+              home: const ClientAuthGate(),
               onGenerateRoute: appRouter.generateRoute,
               builder: (context, widget) {
                 final easyLoadingBuilder = EasyLoading.init();
