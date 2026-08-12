@@ -695,6 +695,17 @@ class _ShowcaseCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                    if (item.logoImageUrl.trim().isNotEmpty)
+                      Positioned(
+                        right: 12.w,
+                        bottom: 12.h,
+                        child: _ShowcaseLogoBadge(
+                          url: item.logoImageUrl,
+                          scale: item.logoScale,
+                          offsetX: item.logoOffsetX,
+                          offsetY: item.logoOffsetY,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -773,6 +784,58 @@ class _ShowcaseCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShowcaseLogoBadge extends StatelessWidget {
+  const _ShowcaseLogoBadge({
+    required this.url,
+    required this.scale,
+    required this.offsetX,
+    required this.offsetY,
+  });
+
+  final String url;
+  final double scale;
+  final double offsetX;
+  final double offsetY;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = 46.r;
+    return Container(
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(3.r),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 10.r,
+            offset: Offset(0, 4.h),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: Transform.translate(
+          offset: Offset(
+            offsetX.clamp(-1.0, 1.0) * 10.r,
+            offsetY.clamp(-1.0, 1.0) * 10.r,
+          ),
+          child: Transform.scale(
+            scale: scale.clamp(1.0, 3.0),
+            child: Image.network(
+              url,
+              fit: BoxFit.cover,
+              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
           ),
         ),
       ),

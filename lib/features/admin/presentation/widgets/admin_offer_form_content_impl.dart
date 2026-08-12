@@ -1153,6 +1153,18 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
     }
   }
 
+  String _venueNameForId(String venueId) {
+    final id = venueId.trim();
+    if (id.isEmpty) return '';
+    for (final venue in _currentVenues) {
+      if (venue.id == id) {
+        final name = venue.name.trim();
+        return name;
+      }
+    }
+    return '';
+  }
+
   String? get _restaurantCategoryWarning {
     if (!(_isBuffet || _isSetMenu || _isCombo)) return null;
     final venueId = _venueId;
@@ -1381,6 +1393,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
     final now = DateTime.now();
     final venueId = _venueId ?? '';
+    final venueNameSnapshot = _venueNameForId(venueId);
     final startTime = _startTimeController.text.trim();
     final endTime = _endTimeController.text.trim();
     final typedCurrency = _currencyController.text.trim();
@@ -1420,6 +1433,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       }
       result = _offersForAttractionPackages(
         venueId: venueId,
+        venueNameSnapshot: venueNameSnapshot,
         range: range,
         startTime: startTime,
         endTime: endTime,
@@ -1492,6 +1506,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         result = OfferEntity(
           id: widget.offer!.id,
           restaurantId: venueId,
+          restaurantNameSnapshot: venueNameSnapshot,
           date: AppDateUtils.formatDate(parsedDate),
           startTime: startTime,
           endTime: endTime,
@@ -1535,6 +1550,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         }
         result = _offersForRange(
           venueId: venueId,
+          venueNameSnapshot: venueNameSnapshot,
           range: range,
           startTime: startTime,
           endTime: endTime,
@@ -1585,6 +1601,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
   List<OfferEntity> _offersForAttractionPackages({
     required String venueId,
+    required String venueNameSnapshot,
     required DateTimeRange range,
     required String startTime,
     required String endTime,
@@ -1602,6 +1619,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
       offers.addAll(
         _offersForRange(
           venueId: venueId,
+          venueNameSnapshot: venueNameSnapshot,
           range: range,
           startTime: startTime,
           endTime: endTime,
@@ -1645,6 +1663,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
 
   List<OfferEntity> _offersForRange({
     required String venueId,
+    required String venueNameSnapshot,
     required DateTimeRange range,
     required String startTime,
     required String endTime,
@@ -1687,6 +1706,7 @@ class _AdminOfferFormContentState extends State<AdminOfferFormContent> {
         OfferEntity(
           id: '',
           restaurantId: venueId,
+          restaurantNameSnapshot: venueNameSnapshot,
           date: AppDateUtils.formatDate(date),
           startTime: startTime,
           endTime: endTime,

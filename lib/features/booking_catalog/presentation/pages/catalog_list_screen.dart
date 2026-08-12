@@ -160,6 +160,10 @@ class _CatalogListScreenState extends State<CatalogListScreen> {
                             meta: item.metaLabel,
                             slots: item.slotsLeft,
                             rating: item.ratingLabel,
+                            logoImageUrl: item.logoImageUrl,
+                            logoScale: item.logoScale,
+                            logoOffsetX: item.logoOffsetX,
+                            logoOffsetY: item.logoOffsetY,
                             image: CatalogImage(
                               url: item.coverImageUrl,
                               name: item.name,

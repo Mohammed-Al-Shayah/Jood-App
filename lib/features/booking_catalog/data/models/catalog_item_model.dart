@@ -27,6 +27,10 @@ class CatalogItemModel extends CatalogItemEntity {
     required super.rating,
     required super.reviewsCount,
     required super.coverImageUrl,
+    super.logoImageUrl,
+    super.logoScale,
+    super.logoOffsetX,
+    super.logoOffsetY,
     required super.description,
     super.descriptionEn,
     super.descriptionAr,
@@ -159,6 +163,10 @@ class CatalogItemModel extends CatalogItemEntity {
       rating: NumberUtils.toDouble(data['rating']),
       reviewsCount: NumberUtils.toInt(data['reviewsCount']),
       coverImageUrl: _stringValue(data['coverImageUrl']),
+      logoImageUrl: _stringValue(data['logoImageUrl']),
+      logoScale: _clampLogoScale(NumberUtils.toDouble(data['logoScale'])),
+      logoOffsetX: _clampLogoOffset(NumberUtils.toDouble(data['logoOffsetX'])),
+      logoOffsetY: _clampLogoOffset(NumberUtils.toDouble(data['logoOffsetY'])),
       description: resolveLocalizedText(
         english: descriptionEn,
         arabic: descriptionAr,
@@ -368,6 +376,10 @@ class CatalogItemModel extends CatalogItemEntity {
       rating: NumberUtils.toDouble(data['rating']),
       reviewsCount: NumberUtils.toInt(data['reviewsCount']),
       coverImageUrl: _stringValue(data['coverImageUrl']),
+      logoImageUrl: '',
+      logoScale: 1,
+      logoOffsetX: 0,
+      logoOffsetY: 0,
       description: resolveLocalizedText(
         english: descriptionEn,
         arabic: descriptionAr,
@@ -468,6 +480,15 @@ class CatalogItemModel extends CatalogItemEntity {
   static String _stringValue(dynamic value) {
     if (value == null) return '';
     return value.toString().trim();
+  }
+
+  static double _clampLogoScale(double value) {
+    if (value <= 0) return 1;
+    return value.clamp(1.0, 3.0).toDouble();
+  }
+
+  static double _clampLogoOffset(double value) {
+    return value.clamp(-1.0, 1.0).toDouble();
   }
 
   static _CatalogGeoPoint _resolveGeoPoint(Map<String, dynamic> data) {

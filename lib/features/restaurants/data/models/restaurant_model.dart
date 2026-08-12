@@ -13,6 +13,10 @@ class RestaurantModel extends RestaurantEntity {
     required super.rating,
     required super.reviewsCount,
     required super.coverImageUrl,
+    super.logoImageUrl,
+    super.logoScale,
+    super.logoOffsetX,
+    super.logoOffsetY,
     required super.about,
     required super.phone,
     required super.address,
@@ -337,6 +341,10 @@ class RestaurantModel extends RestaurantEntity {
       rating: NumberUtils.toDouble(data['rating']),
       reviewsCount: (data['reviewsCount'] as num?)?.toInt() ?? 0,
       coverImageUrl: _stringValue(data['coverImageUrl']),
+      logoImageUrl: _stringValue(data['logoImageUrl']),
+      logoScale: _clampLogoScale(NumberUtils.toDouble(data['logoScale'])),
+      logoOffsetX: _clampLogoOffset(NumberUtils.toDouble(data['logoOffsetX'])),
+      logoOffsetY: _clampLogoOffset(NumberUtils.toDouble(data['logoOffsetY'])),
       about: resolveLocalizedText(english: aboutEn, arabic: aboutAr),
       phone: _stringValue(data['phone']),
       address: resolveLocalizedText(english: addressEn, arabic: addressAr),
@@ -540,6 +548,10 @@ class RestaurantModel extends RestaurantEntity {
       rating: restaurant.rating,
       reviewsCount: restaurant.reviewsCount,
       coverImageUrl: restaurant.coverImageUrl,
+      logoImageUrl: restaurant.logoImageUrl,
+      logoScale: restaurant.logoScale,
+      logoOffsetX: restaurant.logoOffsetX,
+      logoOffsetY: restaurant.logoOffsetY,
       about: restaurant.about,
       phone: restaurant.phone,
       address: restaurant.address,
@@ -750,6 +762,10 @@ class RestaurantModel extends RestaurantEntity {
       'rating': rating,
       'reviewsCount': reviewsCount,
       'coverImageUrl': coverImageUrl,
+      'logoImageUrl': logoImageUrl.trim(),
+      'logoScale': _clampLogoScale(logoScale),
+      'logoOffsetX': _clampLogoOffset(logoOffsetX),
+      'logoOffsetY': _clampLogoOffset(logoOffsetY),
       'about': _baseText(aboutEn, about),
       'aboutAr': aboutAr.trim(),
       'phone': phone,
@@ -802,6 +818,15 @@ class RestaurantModel extends RestaurantEntity {
   static String _stringValue(dynamic value) {
     if (value == null) return '';
     return value.toString().trim();
+  }
+
+  static double _clampLogoScale(double value) {
+    if (value <= 0) return 1;
+    return value.clamp(1.0, 3.0).toDouble();
+  }
+
+  static double _clampLogoOffset(double value) {
+    return value.clamp(-1.0, 1.0).toDouble();
   }
 
   static Map<String, dynamic> _asMap(dynamic value) {

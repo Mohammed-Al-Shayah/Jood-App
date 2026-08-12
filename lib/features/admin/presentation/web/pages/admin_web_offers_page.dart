@@ -121,11 +121,18 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
       if (!mounted) return;
       setState(() {
         _venueNames = {
-          for (final restaurant in restaurants) restaurant.id: restaurant.name,
+          for (final restaurant in restaurants)
+            restaurant.id: _firstNonEmptyText(
+              restaurant.name,
+              restaurant.nameEn,
+              restaurant.nameAr,
+              'Unnamed restaurant',
+            ),
           for (final attraction in attractions)
-            attraction.id: attraction.name.trim().isNotEmpty
-                ? attraction.name
-                : attraction.id,
+            attraction.id: _firstNonEmptyText(
+              attraction.name,
+              'Unnamed attraction',
+            ),
         };
       });
     } catch (_) {
@@ -303,9 +310,35 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
   }
 
   String _venueLabel(OfferEntity offer) {
-    final value = (_venueNames[offer.restaurantId] ?? offer.restaurantId)
-        .trim();
-    return value.isEmpty ? '-' : value;
+    final venueId = offer.restaurantId.trim();
+    final mappedName = (_venueNames[venueId] ?? '').trim();
+    if (mappedName.isNotEmpty && mappedName != venueId) return mappedName;
+
+    final snapshotName = offer.restaurantNameSnapshot.trim();
+    if (snapshotName.isNotEmpty && snapshotName != venueId) {
+      return snapshotName;
+    }
+
+    return _missingVenueLabel(offer);
+  }
+
+  String _firstNonEmptyText(
+    String? first, [
+    String? second,
+    String? third,
+    String? fourth,
+  ]) {
+    for (final value in [first, second, third, fourth]) {
+      final text = value?.trim() ?? '';
+      if (text.isNotEmpty) return text;
+    }
+    return '';
+  }
+
+  String _missingVenueLabel(OfferEntity offer) {
+    return _normalizedCategory(offer) == 'attraction'
+        ? 'Attraction not found'
+        : 'Restaurant not found';
   }
 
   String _offerSortKey(OfferEntity offer) {
@@ -563,7 +596,7 @@ class _AdminWebOffersPageState extends State<AdminWebOffersPage> {
                     else
                       _OffersTable(
                         items: filteredItems,
-                        venueNames: _venueNames,
+                        venueLabelBuilder: _venueLabel,
                         onEdit: _openEditForm,
                         onDelete: _confirmDelete,
                         categoryLabelBuilder: _displayCategory,
@@ -771,7 +804,7 @@ class _OffersToolbar extends StatelessWidget {
 class _OffersTable extends StatelessWidget {
   const _OffersTable({
     required this.items,
-    required this.venueNames,
+    required this.venueLabelBuilder,
     required this.onEdit,
     required this.onDelete,
     required this.categoryLabelBuilder,
@@ -780,7 +813,7 @@ class _OffersTable extends StatelessWidget {
   });
 
   final List<OfferEntity> items;
-  final Map<String, String> venueNames;
+  final String Function(OfferEntity) venueLabelBuilder;
   final ValueChanged<OfferEntity> onEdit;
   final ValueChanged<OfferEntity> onDelete;
   final String Function(OfferEntity) categoryLabelBuilder;
@@ -817,8 +850,7 @@ class _OffersTable extends StatelessWidget {
         rows: items
             .map((offer) {
               final isSelected = selectedIds.contains(offer.id);
-              final venueName =
-                  venueNames[offer.restaurantId] ?? offer.restaurantId;
+              final venueName = venueLabelBuilder(offer);
               final primaryOfferLabel = offer.packageName.trim().isNotEmpty
                   ? offer.packageName
                   : offer.title;

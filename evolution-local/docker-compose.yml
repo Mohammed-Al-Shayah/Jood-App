@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: evolution-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution123
+      POSTGRES_DB: evolution
+    volumes:
+      - evolution_postgres:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: evolution-redis
+    restart: always
+    ports:
+      - "6380:6379"
+
+  evolution-api:
+    image: evoapicloud/evolution-api:latest
+    container_name: evolution-api
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_NAME: evolution
+      SERVER_TYPE: http
+      SERVER_PORT: 8080
+      SERVER_URL: http://localhost:8080
+      SERVER_DISABLE_DOCS: "false"
+      SERVER_DISABLE_MANAGER: "false"
+
+      CORS_ORIGIN: "*"
+      CORS_METHODS: POST,GET,PUT,DELETE
+      CORS_CREDENTIALS: "true"
+
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:evolution123@postgres:5432/evolution
+      DATABASE_CONNECTION_CLIENT_NAME: evolution
+
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379
+      CACHE_REDIS_PREFIX_KEY: evolution-cache
+      CACHE_REDIS_SAVE_INSTANCES: "true"
+      CACHE_LOCAL_ENABLED: "true"
+
+      AUTHENTICATION_API_KEY: jood_evolution_secret_123
+
+      CONFIG_SESSION_PHONE_CLIENT: Jood
+      CONFIG_SESSION_PHONE_NAME: Chrome
+      QRCODE_LIMIT: 30
+      LANGUAGE: en
+
+volumes:
+  evolution_postgres:

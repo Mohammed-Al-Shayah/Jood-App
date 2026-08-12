@@ -22,6 +22,7 @@ class OfferEntity extends Equatable {
     required this.entryConditions,
     required this.createdAt,
     required this.updatedAt,
+    this.restaurantNameSnapshot = '',
     this.bookingCategory = '',
     this.bookableType = 'restaurant',
     this.guestPricingMode = '',
@@ -56,6 +57,7 @@ class OfferEntity extends Equatable {
   final List<String> entryConditions;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String restaurantNameSnapshot;
   final String bookingCategory;
   final String bookableType;
   final String guestPricingMode;
@@ -105,6 +107,7 @@ class OfferEntity extends Equatable {
     entryConditions,
     createdAt,
     updatedAt,
+    restaurantNameSnapshot,
     bookingCategory,
     bookableType,
     guestPricingMode,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/di/service_locator.dart';
@@ -41,33 +43,27 @@ class _ClientAuthSyncGate extends StatefulWidget {
 }
 
 class _ClientAuthSyncGateState extends State<_ClientAuthSyncGate> {
-  Future<void>? _syncFuture;
-
   @override
   void initState() {
     super.initState();
-    _syncFuture = _syncAuthUser(widget.authUser);
+    _startAuthSync(widget.authUser);
   }
 
   @override
   void didUpdateWidget(covariant _ClientAuthSyncGate oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.authUser.uid != widget.authUser.uid) {
-      _syncFuture = _syncAuthUser(widget.authUser);
+      _startAuthSync(widget.authUser);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _syncFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const AuthPlaceholderScreen();
-        }
-        return const MainShellScreen();
-      },
-    );
+    return const MainShellScreen();
+  }
+
+  void _startAuthSync(AuthUserEntity authUser) {
+    unawaited(_syncAuthUser(authUser));
   }
 
   Future<void> _syncAuthUser(AuthUserEntity authUser) async {

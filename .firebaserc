@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "joodapp-3051e"
-  }
+  },
+  "targets": {
+    "joodapp-3051e": {
+      "hosting": {
+        "web": [
+          "joodapp-3051e-a1b2c3"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

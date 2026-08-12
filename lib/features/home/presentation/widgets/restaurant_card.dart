@@ -17,6 +17,10 @@ class RestaurantCard extends StatelessWidget {
     required this.slots,
     required this.rating,
     required this.image,
+    this.logoImageUrl = '',
+    this.logoScale = 1,
+    this.logoOffsetX = 0,
+    this.logoOffsetY = 0,
     this.onTap,
   });
 
@@ -28,6 +32,10 @@ class RestaurantCard extends StatelessWidget {
   final String slots;
   final String rating;
   final Widget image;
+  final String logoImageUrl;
+  final double logoScale;
+  final double logoOffsetX;
+  final double logoOffsetY;
   final VoidCallback? onTap;
 
   @override
@@ -41,6 +49,7 @@ class RestaurantCard extends StatelessWidget {
     final priceValue = _normalizeDisplayedPrice(strippedPrice);
     final hasFromLabel = strippedPrice != trimmedPrice;
     final hasBadge = badge.trim().isNotEmpty;
+    final hasLogo = logoImageUrl.trim().isNotEmpty;
     final hasDualPrice = trimmedPrice.isNotEmpty && trimmedDiscount.isNotEmpty;
     final showNoOffersMessage =
         trimmedPrice.isEmpty &&
@@ -103,6 +112,17 @@ class RestaurantCard extends StatelessWidget {
                             height: 1.1,
                           ),
                         ),
+                      ),
+                    ),
+                  if (hasLogo)
+                    Positioned(
+                      right: 12.w,
+                      bottom: 12.h,
+                      child: _RestaurantLogoBadge(
+                        url: logoImageUrl,
+                        scale: logoScale,
+                        offsetX: logoOffsetX,
+                        offsetY: logoOffsetY,
                       ),
                     ),
                 ],
@@ -252,6 +272,58 @@ class RestaurantCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RestaurantLogoBadge extends StatelessWidget {
+  const _RestaurantLogoBadge({
+    required this.url,
+    required this.scale,
+    required this.offsetX,
+    required this.offsetY,
+  });
+
+  final String url;
+  final double scale;
+  final double offsetX;
+  final double offsetY;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = 52.r;
+    return Container(
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(3.r),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 10.r,
+            offset: Offset(0, 4.h),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: Transform.translate(
+          offset: Offset(
+            offsetX.clamp(-1.0, 1.0) * 12.r,
+            offsetY.clamp(-1.0, 1.0) * 12.r,
+          ),
+          child: Transform.scale(
+            scale: scale.clamp(1.0, 3.0),
+            child: Image.network(
+              url,
+              fit: BoxFit.cover,
+              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
           ),
         ),
       ),

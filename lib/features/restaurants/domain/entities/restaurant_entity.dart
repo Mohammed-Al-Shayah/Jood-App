@@ -9,6 +9,10 @@ class RestaurantEntity extends Equatable {
     required this.rating,
     required this.reviewsCount,
     required this.coverImageUrl,
+    this.logoImageUrl = '',
+    this.logoScale = 1,
+    this.logoOffsetX = 0,
+    this.logoOffsetY = 0,
     required this.about,
     required this.phone,
     required this.address,
@@ -127,6 +131,10 @@ class RestaurantEntity extends Equatable {
   final double rating;
   final int reviewsCount;
   final String coverImageUrl;
+  final String logoImageUrl;
+  final double logoScale;
+  final double logoOffsetX;
+  final double logoOffsetY;
   final String about;
   final String phone;
   final String address;
@@ -246,6 +254,10 @@ class RestaurantEntity extends Equatable {
     rating,
     reviewsCount,
     coverImageUrl,
+    logoImageUrl,
+    logoScale,
+    logoOffsetX,
+    logoOffsetY,
     about,
     phone,
     address,

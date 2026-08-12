@@ -23,6 +23,10 @@ class CatalogItemEntity extends Equatable {
     required this.rating,
     required this.reviewsCount,
     required this.coverImageUrl,
+    this.logoImageUrl = '',
+    this.logoScale = 1,
+    this.logoOffsetX = 0,
+    this.logoOffsetY = 0,
     required this.description,
     this.descriptionEn = '',
     this.descriptionAr = '',
@@ -66,6 +70,10 @@ class CatalogItemEntity extends Equatable {
   final double rating;
   final int reviewsCount;
   final String coverImageUrl;
+  final String logoImageUrl;
+  final double logoScale;
+  final double logoOffsetX;
+  final double logoOffsetY;
   final String description;
   final String descriptionEn;
   final String descriptionAr;
@@ -125,6 +133,10 @@ class CatalogItemEntity extends Equatable {
     rating,
     reviewsCount,
     coverImageUrl,
+    logoImageUrl,
+    logoScale,
+    logoOffsetX,
+    logoOffsetY,
     description,
     descriptionEn,
     descriptionAr,

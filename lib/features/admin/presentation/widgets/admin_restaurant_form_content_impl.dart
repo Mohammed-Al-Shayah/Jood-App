@@ -56,6 +56,7 @@ class _AdminRestaurantFormContentState
   late final TextEditingController _ratingController;
   late final TextEditingController _reviewsCountController;
   late final TextEditingController _coverImageUrlController;
+  late final TextEditingController _logoImageUrlController;
   late final TextEditingController _aboutController;
   late final TextEditingController _aboutArController;
   late final TextEditingController _phoneController;
@@ -129,6 +130,7 @@ class _AdminRestaurantFormContentState
 
   bool _isActive = true;
   bool _isUploadingImage = false;
+  bool _isUploadingLogo = false;
   bool _isSubmitting = false;
   bool _isSearchingLocation = false;
   bool _isResolvingAddress = false;
@@ -139,7 +141,11 @@ class _AdminRestaurantFormContentState
   final MapController _locationMapController = MapController();
   LatLng? _selectedMapLocation;
   double _locationMapZoom = _initialMapZoom;
+  double _logoScale = 1;
+  double _logoOffsetX = 0;
+  double _logoOffsetY = 0;
   String? _imageError;
+  String? _logoError;
   String? _locationSearchError;
   List<OsmPlaceResult> _locationSearchResults = const [];
 
@@ -171,6 +177,12 @@ class _AdminRestaurantFormContentState
     _coverImageUrlController = TextEditingController(
       text: restaurant?.coverImageUrl ?? '',
     )..addListener(_handleCoverImageChanged);
+    _logoImageUrlController = TextEditingController(
+      text: restaurant?.logoImageUrl ?? '',
+    )..addListener(_handleLogoImageChanged);
+    _logoScale = _clampLogoScale(restaurant?.logoScale ?? 1);
+    _logoOffsetX = _clampLogoOffset(restaurant?.logoOffsetX ?? 0);
+    _logoOffsetY = _clampLogoOffset(restaurant?.logoOffsetY ?? 0);
     _aboutController = TextEditingController(
       text: _preferredText(restaurant?.aboutEn, restaurant?.about),
     );
@@ -502,6 +514,9 @@ class _AdminRestaurantFormContentState
     _coverImageUrlController
       ..removeListener(_handleCoverImageChanged)
       ..dispose();
+    _logoImageUrlController
+      ..removeListener(_handleLogoImageChanged)
+      ..dispose();
     _aboutController.dispose();
     _aboutArController.dispose();
     _phoneController.dispose();
@@ -578,6 +593,20 @@ class _AdminRestaurantFormContentState
   void _handleCoverImageChanged() {
     if (!mounted) return;
     setState(() {});
+  }
+
+  void _handleLogoImageChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  double _clampLogoScale(double value) {
+    if (value <= 0) return 1;
+    return value.clamp(1.0, 3.0).toDouble();
+  }
+
+  double _clampLogoOffset(double value) {
+    return value.clamp(-1.0, 1.0).toDouble();
   }
 
   LatLng _resolveInitialGeoPoint(RestaurantEntity? restaurant) {
@@ -1238,6 +1267,117 @@ class _AdminRestaurantFormContentState
           ),
           SizedBox(height: 14.h),
           AdminSectionCard(
+            title: 'Restaurant Logo',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(child: _logoPreview()),
+                SizedBox(height: 12.h),
+                _textField(_logoImageUrlController, 'Logo Image URL'),
+                SizedBox(height: 10.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isUploadingLogo || _isSubmitting
+                            ? null
+                            : _pickAndUploadLogo,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: _isUploadingLogo
+                            ? SizedBox(
+                                height: 16.h,
+                                width: 16.h,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Upload Logo'),
+                      ),
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _isUploadingLogo || _isSubmitting
+                            ? null
+                            : _deleteLogo,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                          side: const BorderSide(color: Colors.redAccent),
+                          padding: EdgeInsets.symmetric(vertical: 12.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: const Text('Delete Logo'),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 14.h),
+                _logoSlider(
+                  label: 'Logo zoom',
+                  value: _logoScale,
+                  min: 1,
+                  max: 3,
+                  divisions: 20,
+                  onChanged: (value) =>
+                      setState(() => _logoScale = _clampLogoScale(value)),
+                ),
+                _logoSlider(
+                  label: 'Horizontal position',
+                  value: _logoOffsetX,
+                  min: -1,
+                  max: 1,
+                  divisions: 20,
+                  onChanged: (value) =>
+                      setState(() => _logoOffsetX = _clampLogoOffset(value)),
+                ),
+                _logoSlider(
+                  label: 'Vertical position',
+                  value: _logoOffsetY,
+                  min: -1,
+                  max: 1,
+                  divisions: 20,
+                  onChanged: (value) =>
+                      setState(() => _logoOffsetY = _clampLogoOffset(value)),
+                ),
+                Align(
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: TextButton(
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => setState(() {
+                            _logoScale = 1;
+                            _logoOffsetX = 0;
+                            _logoOffsetY = 0;
+                          }),
+                    child: const Text('Reset logo framing'),
+                  ),
+                ),
+                if (_logoError != null)
+                  Padding(
+                    padding: EdgeInsets.only(top: 8.h),
+                    child: Text(
+                      _logoError!,
+                      style: TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 12.sp,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(height: 14.h),
+          AdminSectionCard(
             title: 'Visibility',
             child: SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -1253,7 +1393,9 @@ class _AdminRestaurantFormContentState
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isUploadingImage || _isSubmitting ? null : _submit,
+              onPressed: _isUploadingImage || _isUploadingLogo || _isSubmitting
+                  ? null
+                  : _submit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -1633,6 +1775,10 @@ class _AdminRestaurantFormContentState
           existingRestaurant?.reviewsCount ??
           0,
       coverImageUrl: _coverImageUrlController.text.trim(),
+      logoImageUrl: _logoImageUrlController.text.trim(),
+      logoScale: _clampLogoScale(_logoScale),
+      logoOffsetX: _clampLogoOffset(_logoOffsetX),
+      logoOffsetY: _clampLogoOffset(_logoOffsetY),
       about: aboutEn,
       phone: _phoneController.text.trim(),
       address: addressEn,
@@ -1812,6 +1958,114 @@ class _AdminRestaurantFormContentState
     );
   }
 
+  Widget _logoPreview() {
+    final url = _logoImageUrlController.text.trim();
+    final size = 112.r;
+    return Column(
+      children: [
+        Container(
+          width: size,
+          height: size,
+          padding: EdgeInsets.all(4.r),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.shadowColor,
+                blurRadius: 12.r,
+                offset: Offset(0, 4.h),
+              ),
+            ],
+          ),
+          child: ClipOval(
+            child: url.isEmpty
+                ? Container(
+                    color: const Color(0xFFF6F7FB),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'Logo',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  )
+                : Transform.translate(
+                    offset: Offset(_logoOffsetX * 22.r, _logoOffsetY * 22.r),
+                    child: Transform.scale(
+                      scale: _logoScale,
+                      child: Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                        webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+                        errorBuilder: (_, _, _) => Container(
+                          color: const Color(0xFFF6F7FB),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.redAccent,
+                            size: 28.sp,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          'Circular preview',
+          style: AppTextStyles.cardMeta.copyWith(
+            fontSize: 12.sp,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _logoSlider({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: AppTextStyles.cardMeta),
+              Text(
+                value.toStringAsFixed(2),
+                style: AppTextStyles.cardMeta.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: value.clamp(min, max).toDouble(),
+            min: min,
+            max: max,
+            divisions: divisions,
+            activeColor: AppColors.primary,
+            onChanged: _isSubmitting ? null : onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickAndUploadImage() async {
     setState(() => _imageError = null);
     final picker = ImagePicker();
@@ -1868,6 +2122,69 @@ class _AdminRestaurantFormContentState
     } finally {
       if (mounted) {
         setState(() => _isUploadingImage = false);
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadLogo() async {
+    setState(() => _logoError = null);
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
+    if (picked == null) return;
+    setState(() => _isUploadingLogo = true);
+    try {
+      final url = await getIt<UploadRestaurantImageUseCase>()(
+        restaurantId: widget.restaurant?.id ?? '',
+        file: picked,
+      );
+      _logoImageUrlController.text = url;
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        'Logo uploaded successfully.',
+        type: SnackBarType.success,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _logoError = 'Failed to upload logo.');
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingLogo = false);
+      }
+    }
+  }
+
+  Future<void> _deleteLogo() async {
+    final url = _logoImageUrlController.text.trim();
+    if (url.isEmpty) {
+      setState(() => _logoError = 'No logo to delete.');
+      return;
+    }
+    setState(() {
+      _isUploadingLogo = true;
+      _logoError = null;
+    });
+    try {
+      await getIt<DeleteStorageFileUseCase>()(url);
+      _logoImageUrlController.text = '';
+      _logoScale = 1;
+      _logoOffsetX = 0;
+      _logoOffsetY = 0;
+      if (!mounted) return;
+      showAppSnackBar(
+        context,
+        'Logo deleted successfully.',
+        type: SnackBarType.success,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _logoError = 'Failed to delete logo.');
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingLogo = false);
       }
     }
   }

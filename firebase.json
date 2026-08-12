@@ -27,7 +27,7 @@
   },
   "hosting": [
     {
-      "site": "joodapp-3051e",
+      "target": "web",
       "public": "build/web",
       "ignore": [
         "firebase.json",
